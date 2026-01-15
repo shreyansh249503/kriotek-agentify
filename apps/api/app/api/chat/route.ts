@@ -2,17 +2,27 @@ import { streamText } from "ai";
 import { google } from "@ai-sdk/google";
 import { buildSystemPrompt } from "../lib/agent";
 import { retrieveWebsiteContext } from "../lib/rag";
+import { getBotByPublicKey } from "../lib/bot";
 
 export async function POST(req: Request) {
-  const { message, botId } = await req.json();
+  const { message, botKey } = await req.json();
 
-  const websiteContext = await retrieveWebsiteContext(botId, message);
+  if (!botKey || !message) {
+    return Response.json(
+      { error: "botKey and message are required" },
+      { status: 400 }
+    );
+  }
+
+  const bot = await getBotByPublicKey(botKey);
+
+  const websiteContext = await retrieveWebsiteContext(botKey, message);
 
   const systemPrompt = buildSystemPrompt(
     {
-      companyName: "Demo Company",
-      companyDescription: "We provide SaaS tools for startups",
-      tone: "friendly",
+      companyName: bot.name,
+      companyDescription: bot.description,
+      tone: bot.tone,
     },
     {
       websiteContext,

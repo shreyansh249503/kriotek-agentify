@@ -13,11 +13,13 @@
     "@qdrant/js-client-rest": "^1.16.2",
     "ai": "^6.0.33",
     "next": "16.1.1",
+    "pg": "^8.17.1",
     "react": "19.2.3",
     "react-dom": "19.2.3"
   },
   "devDependencies": {
     "@types/node": "^20",
+    "@types/pg": "^8.16.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "typescript": "^5"

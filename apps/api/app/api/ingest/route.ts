@@ -1,11 +1,16 @@
-
 import { ingestDocument } from "../lib/ingest";
 
-export async function POST() {
-  await ingestDocument(
-    "demo-agentify",
-    "Pricing starts at $29/month with a 7-day free trial."
-  );
+export async function POST(req: Request) {
+  const { botKey, content } = await req.json();
+
+  if (!botKey || !content) {
+    return Response.json(
+      { error: "botKey and content are required." },
+      { status: 400 }
+    );
+  }
+
+  await ingestDocument(botKey, content);
 
   return Response.json({
     status: "success",
