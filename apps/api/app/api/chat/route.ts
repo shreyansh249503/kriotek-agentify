@@ -1,9 +1,12 @@
 import { streamText } from "ai";
 import { google } from "@ai-sdk/google";
 import { buildSystemPrompt } from "../lib/agent";
+import { retrieveWebsiteContext } from "../lib/rag";
 
 export async function POST(req: Request) {
-  const { message } = await req.json();
+  const { message, botId } = await req.json();
+
+  const websiteContext = await retrieveWebsiteContext(botId, message);
 
   const systemPrompt = buildSystemPrompt(
     {
@@ -12,11 +15,7 @@ export async function POST(req: Request) {
       tone: "friendly",
     },
     {
-      websiteContext: `
-Pricing starts at $29/month.
-We offer customer support 24/7.
-Free trial available for 7 days.
-      `,
+      websiteContext,
     }
   );
 
