@@ -1,22 +1,38 @@
 import { streamText } from "ai";
 import { google } from "@ai-sdk/google";
-import { buildSystemPrompt } from "../lib/agent";
-import { retrieveWebsiteContext } from "../lib/rag";
 import { getBotByPublicKey } from "../lib/bot";
+import { retrieveWebsiteContext } from "../lib/rag";
+import { buildSystemPrompt } from "../lib/agent";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST,OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+};
+
+export async function OPTIONS() {
+  return new Response(null, {
+    status: 204,
+    headers: corsHeaders,
+  });
+}
 
 export async function POST(req: Request) {
-  const { message, botKey } = await req.json();
+  const { message, publicKey } = await req.json();
 
-  if (!botKey || !message) {
-    return Response.json(
-      { error: "botKey and message are required" },
-      { status: 400 }
+  if (!publicKey || !message) {
+    return new Response(
+      JSON.stringify({ error: "publicKey and message are required" }),
+      {
+        status: 400,
+        headers: corsHeaders,
+      },
     );
   }
 
-  const bot = await getBotByPublicKey(botKey);
+  const bot = await getBotByPublicKey(publicKey);
 
-  const websiteContext = await retrieveWebsiteContext(botKey, message);
+  const websiteContext = await retrieveWebsiteContext(publicKey, message);
 
   const systemPrompt = buildSystemPrompt(
     {
@@ -26,7 +42,7 @@ export async function POST(req: Request) {
     },
     {
       websiteContext,
-    }
+    },
   );
 
   const result = await streamText({
@@ -35,5 +51,7 @@ export async function POST(req: Request) {
     prompt: message,
   });
 
-  return result.toTextStreamResponse();
+  return result.toTextStreamResponse({
+    headers: corsHeaders,
+  });
 }

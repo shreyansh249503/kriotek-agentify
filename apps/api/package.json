@@ -11,6 +11,7 @@
     "@ai-sdk/google": "^3.0.7",
     "@ai-sdk/openai": "^3.0.9",
     "@qdrant/js-client-rest": "^1.16.2",
+    "@supabase/supabase-js": "^2.90.1",
     "ai": "^6.0.33",
     "next": "16.1.1",
     "pg": "^8.17.1",
