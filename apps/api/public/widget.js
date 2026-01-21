@@ -1,9 +1,12 @@
 (function () {
-  const script = document.currentScript;
-  const publicKey = script.getAttribute("data-bot");
+
+  const publicKey = document
+    .querySelector("script[bot-id]")
+    ?.getAttribute("bot-id");
+
 
   if (!publicKey) {
-    console.error("Chatbot widget: missing data-bot");
+    console.error("Chatbot widget: missing bot-id");
     return;
   }
 
@@ -21,7 +24,7 @@
       display: flex;
       flex-direction: column;
       font-family: system-ui;
-      z-index: 9999;
+      z-index: 1000;
     ">
       <div style="padding: 12px; font-weight: bold; border-bottom: 1px solid #eee;">
         Chat with us

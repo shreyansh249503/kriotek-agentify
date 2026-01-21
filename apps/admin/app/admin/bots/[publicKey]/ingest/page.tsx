@@ -1,14 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import EmbedSuccess from "@/components/EmbedSuccess";
 
 export default function IngestPage() {
-    const { publicKey } = useParams();
-    const router = useRouter();
+    const { publicKey } = useParams<{ publicKey: string }>();
     const [content, setContent] = useState("");
     const [loading, setLoading] = useState(false);
+    const [success, setSuccess] = useState(false);
 
     async function ingest() {
         setLoading(true);
@@ -28,24 +29,33 @@ export default function IngestPage() {
         });
 
         setLoading(false);
-        router.push("/admin");
+
+        setSuccess(true);
     }
 
     return (
         <div style={{ maxWidth: 800 }}>
             <h2>Ingest Knowledge</h2>
 
-            <textarea
-                rows={12}
-                placeholder="Paste website content, FAQs, docs..."
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                style={{ width: "100%", marginBottom: 16 }}
-            />
+            {!success && (
+                <>
+                    <textarea
+                        rows={12}
+                        placeholder="Paste website content, FAQs, docs..."
+                        value={content}
+                        onChange={(e) => setContent(e.target.value)}
+                        style={{ width: "100%", marginBottom: 16 }}
+                    />
 
-            <button onClick={ingest} disabled={loading}>
-                {loading ? "Ingesting..." : "Ingest"}
-            </button>
+                    <button onClick={ingest} disabled={loading}>
+                        {loading ? "Ingesting..." : "Ingest"}
+                    </button>
+                </>
+            )}
+
+            {success && (
+                <EmbedSuccess publicKey={publicKey} />
+            )}
         </div>
     );
 }
