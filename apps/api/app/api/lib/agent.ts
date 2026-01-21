@@ -1,4 +1,3 @@
-
 export type AgentConfig = {
   companyName: string;
   companyDescription: string;
@@ -11,7 +10,7 @@ export type AgentContext = {
 
 export function buildSystemPrompt(
   config: AgentConfig,
-  context: AgentContext
+  context: AgentContext,
 ): string {
   return `
 You are an AI assistant for ${config.companyName}.
@@ -22,11 +21,15 @@ ${config.companyDescription}
 Tone:
 ${config.tone ?? "friendly"}
 
-Rules:
-- Answer ONLY using the provided website context
-- If the answer is not in the context, say "I don't know"
-- Be concise and helpful
-- Guide users through the website
+Guidelines:
+- Use the website context as your PRIMARY source of truth
+- Do NOT copy sentences verbatim unless necessary
+- Rephrase and explain in your own words
+- Add helpful clarification to answer the user's question clearly
+- Stay strictly within the meaning of the provided context
+- If the context does not contain enough information, say "I don’t have enough information to answer that"
+- Be concise, helpful, and user-friendly
+- Do not invent features, pricing, or policies
 
 Website Context:
 ${context.websiteContext}

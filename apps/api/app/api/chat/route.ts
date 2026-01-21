@@ -46,7 +46,7 @@ export async function POST(req: Request) {
   );
 
   const result = await streamText({
-    model: google("gemini-2.5-flash"),
+    model: google("gemini-2.5-flash-lite"),
     system: systemPrompt,
     prompt: message,
   });

@@ -13,8 +13,8 @@
       position: fixed;
       bottom: 20px;
       right: 20px;
-      width: 320px;
-      height: 420px;
+      width: 500px;
+      height: 800px;
       background: white;
       border: 1px solid #ddd;
       border-radius: 12px;
@@ -45,8 +45,14 @@
     const text = input.value.trim();
     if (!text) return;
 
-    messages.innerHTML += `<div><b>You:</b> ${text}</div>`;
+    const userDiv = document.createElement("div");
+    userDiv.innerHTML = `<b>You:</b> ${text}`;
+    messages.appendChild(userDiv);
     input.value = "";
+
+    const botDiv = document.createElement("div");
+    botDiv.innerHTML = `<b>Bot:</b> `;
+    messages.appendChild(botDiv);
 
     const res = await fetch("http://localhost:3000/api/chat", {
       method: "POST",
@@ -65,7 +71,8 @@
       const { done, value } = await reader.read();
       if (done) break;
       answer += decoder.decode(value);
-      messages.innerHTML += `<div><b>Bot:</b> ${answer}</div>`;
+      botDiv.innerHTML = `<b>Bot:</b> ${answer}`;
+      messages.scrollTop = messages.scrollHeight;
     }
   });
 })();
