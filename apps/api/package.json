@@ -13,6 +13,8 @@
     "@qdrant/js-client-rest": "^1.16.2",
     "@supabase/supabase-js": "^2.90.1",
     "ai": "^6.0.33",
+    "axios": "^1.13.2",
+    "cheerio": "^1.1.2",
     "next": "16.1.1",
     "pg": "^8.17.1",
     "react": "19.2.3",
