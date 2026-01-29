@@ -43,7 +43,6 @@ function createBotMessage() {
     margin: 6px 0;
     font-size: 14px;
     line-height: 1.4;
-    white-space: pre-wrap;
   `;
   return div;
 }
@@ -62,6 +61,18 @@ function createLoadingBubble() {
   div.textContent = "Typing…";
   return div;
 }
+
+// Load marked dynamically (safe for embeds)
+(function loadMarked() {
+  if (window.marked) return;
+
+  const script = document.createElement("script");
+  script.src = "https://cdn.jsdelivr.net/npm/marked/marked.min.js";
+  script.async = true;
+  script.onload = () => console.log("marked loaded");
+  script.onerror = () => console.error("Failed to load marked");
+  document.head.appendChild(script);
+})();
 
 (async function () {
   const script = document.querySelector("script[bot-id]");
@@ -157,6 +168,47 @@ function createLoadingBubble() {
 
   document.body.appendChild(widget);
 
+  const markdownStyle = document.createElement("style");
+  markdownStyle.textContent = `
+  #ai-messages p {
+    margin: 0;
+    padding: 0;
+    display: inline;
+  }
+
+  #ai-messages br {
+    line-height: 1.2;
+  }
+
+  #ai-messages ul,
+  #ai-messages ol {
+    margin: 2px 0;
+    padding-left: 14px;
+  }
+
+  #ai-messages li {
+    margin: 0;
+    padding: 0;
+  }
+
+  #ai-messages h1,
+  #ai-messages h2,
+  #ai-messages h3,
+  #ai-messages h4 {
+    margin: 2px 0;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  #ai-messages pre {
+    margin: 4px 0;
+    padding: 6px;
+    font-size: 12px;
+  }
+`;
+  document.head.appendChild(markdownStyle);
+
+
   let isOpen = false;
 
   function openWidget() {
@@ -227,7 +279,7 @@ function createLoadingBubble() {
       const { done, value } = await reader.read();
       if (done) break;
       answer += decoder.decode(value);
-      botBubble.textContent = answer;
+      botBubble.innerHTML = marked.parse(answer);
       messages.scrollTop = messages.scrollHeight;
     }
   });
