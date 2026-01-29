@@ -52,6 +52,10 @@ export async function POST(req: Request) {
   });
 
   return result.toTextStreamResponse({
-    headers: corsHeaders,
+    headers: {
+      ...corsHeaders,
+      "X-Bot-Name": bot.name,
+      "X-Bot-Color": bot.primary_color,
+    },
   });
 }
