@@ -1,13 +1,13 @@
-import Link from "next/link";
+import { Header } from "@/components";
+import { HomeContainer, Title } from "./styled";
 
 export default async function AdminHome() {
   return (
-    <div>
-      <h1>Adentify </h1>
-      <Link href={"/login"}>Login</Link>
-      <br />
-      <br />
-      <Link href={"/signup"}>SignUp</Link>
-    </div>
+    <>
+      <Header />
+      <HomeContainer>
+        <Title>Adentify</Title>
+      </HomeContainer>
+    </>
   );
 }

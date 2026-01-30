@@ -1,12 +1,10 @@
-import AuthGuard from "@/components/AuthGuard";
 import AdminContent from "./AdminContent";
-
+import { Container } from "./styled";
 
 export default async function AdminPage() {
-
-    return (
-        <AuthGuard>
-            <AdminContent />
-        </AuthGuard>
-    );
+  return (
+    <Container>
+      <AdminContent />
+    </Container>
+  );
 }

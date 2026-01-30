@@ -2,11 +2,10 @@ import { db } from "../../lib/db";
 
 export async function GET(
   _req: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
-  const result = await db.query("SELECT * FROM bots WHERE id = $1", [
-    params.id,
-  ]);
+  const { id } = await params;
+  const result = await db.query("SELECT * FROM bots WHERE id = $1", [id]);
 
   if (!result.rows[0]) {
     return Response.json({ error: "Bot not found" }, { status: 404 });
@@ -17,8 +16,9 @@ export async function GET(
 
 export async function PUT(
   req: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const { id } = await params;
   const body = await req.json();
 
   const { name, description, tone, primaryColor } = body;
@@ -33,7 +33,7 @@ export async function PUT(
       primary_color = $4
     WHERE id = $5
     `,
-    [name, description, tone, primaryColor, params.id],
+    [name, description, tone, primaryColor, id],
   );
 
   return Response.json({ status: "ok" });

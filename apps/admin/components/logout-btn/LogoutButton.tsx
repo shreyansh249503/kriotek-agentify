@@ -2,8 +2,9 @@
 
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
+import { LogoutBtn } from "./styled";
 
-export default function LogoutButton() {
+export const LogoutButton = () => {
     const router = useRouter();
 
     async function logout() {
@@ -12,8 +13,8 @@ export default function LogoutButton() {
     }
 
     return (
-        <button onClick={logout}>
+        <LogoutBtn onClick={logout}>
             Logout
-        </button>
+        </LogoutBtn>
     );
 }

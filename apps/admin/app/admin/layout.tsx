@@ -1,20 +1,15 @@
-import LogoutButton from "@/components/LogoutButton";
+import AuthGuard from "@/components/AuthGuard";
+import { Adminheader } from "./components";
 
 export default function AdminLayout({
-    children,
+  children,
 }: {
-    children: React.ReactNode;
+  children: React.ReactNode;
 }) {
-    return (
-        <>
-            <header style={{ padding: 16, borderBottom: "1px solid #ddd" }}>
-                <span style={{ marginRight: 16 }}>AI Bot Admin</span>
-                <LogoutButton />
-            </header>
-
-            <main style={{ padding: 24 }}>
-                {children}
-            </main>
-        </>
-    );
+  return (
+    <AuthGuard>
+      <Adminheader />
+      <main style={{ padding: 24 }}>{children}</main>
+    </AuthGuard>
+  );
 }

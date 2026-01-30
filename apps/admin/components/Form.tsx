@@ -21,20 +21,20 @@ export const Label = styled.label`
 
 export const Input = styled.input`
   width: 100%;
-  padding: 10px;
-  border: 1px solid ${({ theme }) => theme.colors.border};
+  height: 40px;
+  border: 1px solid #e5e7eb;
   border-radius: 6px;
 `;
 
 export const TextArea = styled.textarea`
   width: 100%;
   padding: 10px;
-  border: 1px solid ${({ theme }) => theme.colors.border};
+  border: 1px solid #e5e7eb;
   border-radius: 6px;
 `;
 
 export const Button = styled.button`
-  background: ${({ theme }) => theme.colors.primary};
+  background: #4f46e5;
   color: white;
   padding: 10px 16px;
   border-radius: 6px;
