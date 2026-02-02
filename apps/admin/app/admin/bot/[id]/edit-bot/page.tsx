@@ -1,12 +1,14 @@
 "use client";
-import BotForm from "@/components/BotForm";
+import { BotForm, Loader } from "@/components";
 import { supabase } from "@/lib/supabase";
+import { Bot, UpdateBotInput } from "@/types/bot";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { NewBotContainer } from "./styled";
 
 export default function EditBotPage() {
   const { id } = useParams<{ id: string }>();
-  const [bot, setBot] = useState<any>(null);
+  const [bot, setBot] = useState<Bot | undefined>(undefined);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -18,34 +20,39 @@ export default function EditBotPage() {
       });
   }, [id]);
 
-  async function updateBot(data: any) {
+  async function updateBot(data: UpdateBotInput) {
     const session = await supabase.auth.getSession();
 
-   const res = await fetch(`http://localhost:3000/api/bots/${id}`, {
+    const res = await fetch(`http://localhost:3000/api/bots/${id}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${session.data.session?.access_token}`,
       },
       body: JSON.stringify(data),
-   });
+    });
     if (!res.ok) {
       alert("Failed to update bot");
       return;
     }
 
     alert("Bot updated successfully");
+    window.location.href = "/admin";
   }
 
-  if (loading) return <p>Loading...</p>;
+  if (loading) return <Loader fullScreen />;
   return (
-    <div>
-      <h2>Edit Bot</h2>
+    <NewBotContainer>
       <BotForm
+        title="Edit Bot"
         initialData={bot}
         submitLabel="Update Bot"
-        onSubmit={updateBot}
+        onSubmit={async (data) => {
+          if (bot?.id) {
+            await updateBot({ ...data, id: bot.id });
+          }
+        }}
       />
-    </div>
+    </NewBotContainer>
   );
 }

@@ -4,7 +4,21 @@ import { useState } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import EmbedSuccess from "@/components/EmbedSuccess";
-import { IngestContainer } from "./styled";
+import {
+  NewBotContainer,
+  NewBotTitle,
+  NewBotWrapper,
+  TabContainer,
+  TabButton,
+  FormSection,
+  TextArea,
+  Input,
+  SubmitButton,
+  LoadingText,
+  ErrorText,
+  SuccessContainer,
+  ChunksText,
+} from "./styled";
 
 type Mode = "text" | "url";
 
@@ -75,84 +89,67 @@ export default function IngestPage() {
   }
 
   return (
-    <IngestContainer>
-      <h2>Ingest Knowledge</h2>
-      <div>
-        {/* MODE TOGGLE */}
+    <NewBotContainer>
+      <NewBotWrapper>
+        <NewBotTitle>Ingest Knowledge</NewBotTitle>
         {!success && (
-          <div style={{ marginBottom: 16 }}>
-            <button
+          <TabContainer>
+            <TabButton
+              isActive={mode === "text"}
               onClick={() => setMode("text")}
-              style={{
-                marginRight: 8,
-                fontWeight: mode === "text" ? "bold" : "normal",
-              }}
             >
               Text Ingest
-            </button>
-
-            <button
-              onClick={() => setMode("url")}
-              style={{
-                fontWeight: mode === "url" ? "bold" : "normal",
-              }}
-            >
+            </TabButton>
+            <TabButton isActive={mode === "url"} onClick={() => setMode("url")}>
               URL Ingest
-            </button>
-          </div>
+            </TabButton>
+          </TabContainer>
         )}
 
-        {/* TEXT INGEST */}
         {!success && mode === "text" && (
-          <>
-            <textarea
+          <FormSection>
+            <TextArea
               rows={12}
-              placeholder="Paste website content, FAQs, docs..."
+              placeholder="Paste website content, FAQs, documentation, or any text you want your bot to learn from..."
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              style={{ width: "100%", marginBottom: 16 }}
             />
-
-            <button onClick={ingest} disabled={loading}>
-              {loading ? "Ingesting..." : "Ingest Text"}
-            </button>
-          </>
+            <SubmitButton onClick={ingest} disabled={loading}>
+              {loading ? "Ingesting..." : " Ingest Text"}
+            </SubmitButton>
+          </FormSection>
         )}
 
-        {/* URL INGEST */}
         {!success && mode === "url" && (
-          <>
-            <input
+          <FormSection>
+            <Input
               type="text"
               placeholder="https://example.com"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              style={{ width: "100%", marginBottom: 16 }}
             />
-
-            <button onClick={ingest} disabled={loading}>
-              {loading ? "Crawling..." : "Ingest URL"}
-            </button>
-          </>
+            <SubmitButton onClick={ingest} disabled={loading}>
+              {loading ? "Crawling..." : " Ingest URL"}
+            </SubmitButton>
+          </FormSection>
         )}
 
-        {loading && <p>⏳ Processing…</p>}
+        {loading && <LoadingText> Processing your content...</LoadingText>}
 
-        {error && <p style={{ color: "red" }}>{error}</p>}
+        {error && <ErrorText>{error}</ErrorText>}
 
-        {/* SUCCESS */}
         {success && (
-          <>
+          <SuccessContainer>
             {chunks !== null && (
-              <p>
-                Ingested <b>{chunks}</b> chunks from website
-              </p>
+              <ChunksText>
+                Successfully ingested <b>{chunks}</b> chunks from website
+              </ChunksText>
             )}
 
             <EmbedSuccess publicKey={publicKey} />
-          </>
+          </SuccessContainer>
         )}
-      </div>
-    </IngestContainer>
+      </NewBotWrapper>
+    </NewBotContainer>
   );
 }

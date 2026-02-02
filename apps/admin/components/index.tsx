@@ -1,2 +1,7 @@
 export * from "./header";
 export * from "./logout-btn";
+export * from "./bot-form";
+export * from "./custom-select";
+export * from "./scroll-to-top";
+export * from "./loader";
+export * from "./color-picker";

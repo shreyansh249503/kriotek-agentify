@@ -1,5 +1,4 @@
-
-import BotForm from "@/components/BotForm";
+import { BotForm } from "@/components";
 import { supabase } from "@/lib/supabase";
 import { Bot, CreateBotInput } from "@/types/bot";
 
@@ -34,6 +33,7 @@ export default async function EditBotPage({ params }: EditBotPageProps) {
 
     return (
         <BotForm
+            title="Edit Bot"
             initialData={bot}
             submitLabel="Update Bot"
             onSubmit={updateBot}

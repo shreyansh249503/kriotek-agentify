@@ -9,6 +9,7 @@ export const HeaderContainer = styled.header`
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   background-color: #ffffff;
   border-bottom: 1px solid #e5e7eb;
+  z-index: 9999;
 `;
 export const InnerHeaderwrapper = styled.div`
   width: 85%;
@@ -17,12 +18,13 @@ export const InnerHeaderwrapper = styled.div`
   justify-content: space-between;
   align-items: center;
 `;
-export const HeaderTitle = styled.h1`
+export const HeaderTitle = styled(Link)`
   display: flex;
   align-items: center;
   gap: 12px;
   font-size: 24px;
   color: #454c4c;
+  text-decoration: none;
 `;
 export const ButtonWrapper = styled.div`
   display: flex;

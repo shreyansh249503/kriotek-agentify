@@ -11,7 +11,7 @@ export const Adminheader = () => {
   return (
     <HeaderContainer>
       <InnerHeaderwrapper>
-        <HeaderTitle>AI Bot Admin</HeaderTitle>
+        <HeaderTitle href={"/admin"}>AI Bot Admin</HeaderTitle>
         <ButtonWrapper>
           <LogoutButton />
           <GoToHomeButton href={"/"}>Go to Home</GoToHomeButton>

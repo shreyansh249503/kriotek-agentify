@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Loader } from "@/components";
 import { supabase } from "@/lib/supabase";
 import { Bot } from "@/types/bot";
 import {
@@ -45,19 +46,22 @@ export default function AdminContent() {
         <PlusCircle size="sm" />
       </AddNewBotButton>
       <AdminContentWrapper>
-        {loading && <p>Loading bots...</p>}
-        {bots.map((bot) => (
-          <BotCardContainer key={bot.id}>
-            <strong>{bot.name}</strong>
+        {loading ? (
+          <Loader />
+        ) : (
+          bots.map((bot) => (
+            <BotCardContainer key={bot.id}>
+              <strong>{bot.name}</strong>
 
-            <IngestButton href={`/admin/bots/${bot.public_key}/ingest`}>
-              Ingest
-            </IngestButton>
-            <EditBotButton href={`/admin/bot/${bot.id}/edit-bot`}>
-              Edit Bot
-            </EditBotButton>
-          </BotCardContainer>
-        ))}
+              <IngestButton href={`/admin/bots/${bot.public_key}/ingest`}>
+                Ingest
+              </IngestButton>
+              <EditBotButton href={`/admin/bot/${bot.id}/edit-bot`}>
+                Edit Bot
+              </EditBotButton>
+            </BotCardContainer>
+          ))
+        )}
       </AdminContentWrapper>
     </AdminContainer>
   );
