@@ -20,13 +20,14 @@ import {
   ChunksText,
 } from "./styled";
 
-type Mode = "text" | "url";
+type Mode = "text" | "url" | "pdf";
 
 export default function IngestPage() {
   const { publicKey } = useParams<{ publicKey: string }>();
   const [mode, setMode] = useState<Mode>("text");
   const [content, setContent] = useState("");
   const [url, setUrl] = useState("");
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [chunks, setChunks] = useState<number | null>(null);
@@ -77,6 +78,24 @@ export default function IngestPage() {
         setChunks(data.chunksIngested);
         setSuccess(true);
       }
+      if (mode === "pdf") {
+        if (!pdfFile) throw new Error("Please select a PDF");
+
+        const form = new FormData();
+        form.append("file", pdfFile);
+        form.append("publicKey", publicKey);
+
+        const res = await fetch("http://localhost:3000/api/ingest-pdf", {
+          method: "POST",
+          body: form,
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "PDF ingest failed");
+
+        setChunks(data.chunks);
+        setSuccess(true);
+      }
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
@@ -102,6 +121,9 @@ export default function IngestPage() {
             </TabButton>
             <TabButton isActive={mode === "url"} onClick={() => setMode("url")}>
               URL Ingest
+            </TabButton>
+            <TabButton isActive={mode === "pdf"} onClick={() => setMode("pdf")}>
+              PDF
             </TabButton>
           </TabContainer>
         )}
@@ -130,6 +152,19 @@ export default function IngestPage() {
             />
             <SubmitButton onClick={ingest} disabled={loading}>
               {loading ? "Crawling..." : " Ingest URL"}
+            </SubmitButton>
+          </FormSection>
+        )}
+
+        {!success && mode === "pdf" && (
+          <FormSection>
+            <Input
+              type="file"
+              accept="application/pdf"
+              onChange={(e) => setPdfFile(e.target.files?.[0] || null)}
+            />
+            <SubmitButton onClick={ingest} disabled={loading}>
+              {loading ? "Uploading..." : "Ingest PDF"}
             </SubmitButton>
           </FormSection>
         )}

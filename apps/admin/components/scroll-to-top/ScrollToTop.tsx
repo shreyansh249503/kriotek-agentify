@@ -30,7 +30,7 @@ export const ScrollToTop = () => {
 
   return (
     <ScrollButton
-      visible={isVisible}
+      $visible={isVisible}
       onClick={scrollToTop}
       aria-label="Scroll to top"
     >

@@ -24,7 +24,7 @@ const fadeOut = keyframes`
   }
 `;
 
-export const ScrollButton = styled.button<{ visible: boolean }>`
+export const ScrollButton = styled.button<{ $visible: boolean }>`
   position: fixed;
   bottom: 40px;
   right: 40px;
@@ -41,8 +41,8 @@ export const ScrollButton = styled.button<{ visible: boolean }>`
   box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
   z-index: 100;
   transition: all 0.3s ease;
-  visibility: ${(props) => (props.visible ? "visible" : "hidden")};
-  animation: ${(props) => (props.visible ? fadeIn : fadeOut)} 0.3s forwards;
+  visibility: ${(props) => (props.$visible ? "visible" : "hidden")};
+  animation: ${(props) => (props.$visible ? fadeIn : fadeOut)} 0.3s forwards;
 
   &:hover {
     transform: translateY(-5px);
