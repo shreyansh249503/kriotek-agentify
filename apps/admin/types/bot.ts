@@ -6,6 +6,8 @@ export interface Bot {
   tone: string;
   primary_color: string;
   created_at: string;
+  contact_prompt: string;
+  contact_email_message: string;
 }
 
 export interface CreateBotInput {
@@ -13,6 +15,8 @@ export interface CreateBotInput {
   description?: string;
   tone?: string;
   primaryColor?: string;
+  contactPrompt?: string;
+  contactEmailMessage?: string;
 }
 
 export interface UpdateBotInput extends CreateBotInput {

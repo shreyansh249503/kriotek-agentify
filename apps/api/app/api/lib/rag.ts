@@ -22,8 +22,6 @@ export async function retrieveWebsiteContext(
       },
     });
 
-    console.log("Search results:", result);
-
     if (!result || result.length === 0) {
       return "No relevant website information found.";
     }

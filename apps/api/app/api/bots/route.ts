@@ -3,7 +3,7 @@ import { db } from "../lib/db";
 import { getUserFromRequest } from "../lib/auth";
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "http://localhost:3001",
+  "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
@@ -48,17 +48,19 @@ export async function POST(req: Request) {
     description,
     tone = "friendly",
     primaryColor = "#000000",
+    contactPrompt = "Would you like us to contact you for more details?",
+    contactEmailMessage = "Thanks for reaching out! Our team will contact you shortly.",
   } = body;
 
   const publicKey = nanoid(16);
 
   const result = await db.query(
     `
-    INSERT INTO bots (public_key, name, description, tone, primary_color, user_id)
-    VALUES ($1, $2, $3, $4, $5, $6)
+    INSERT INTO bots (public_key, name, description, tone, primary_color, contact_prompt, contact_email_message, user_id)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
     RETURNING *
     `,
-    [publicKey, name, description, tone, primaryColor, user.id],
+    [publicKey, name, description, tone, primaryColor, contactPrompt, contactEmailMessage, user.id],
   );
 
   return new Response(JSON.stringify(result.rows[0]), {

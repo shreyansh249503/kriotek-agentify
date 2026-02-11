@@ -12,7 +12,6 @@ export default function EmbedSuccess({ publicKey }: { publicKey: string }) {
     navigator.clipboard.writeText(script);
     setCopied(true);
 
-    // reset back after 2 seconds
     setTimeout(() => setCopied(false), 2000);
   }
 
@@ -36,15 +35,6 @@ export default function EmbedSuccess({ publicKey }: { publicKey: string }) {
           backgroundColor: "#111",
         }}
       >
-        {/* <div
-          style={{
-            width: "100%",
-            display: "flex",
-            justifyContent: "space-between",
-            paddingRight: "12px",
-          }}
-        > */}
-        {/* <div /> */}
       </div>
       <pre
         style={{
@@ -64,18 +54,15 @@ export default function EmbedSuccess({ publicKey }: { publicKey: string }) {
             position: "absolute",
               top: 10,
             right: 10,
-            // marginTop: 12,
             width: "fit-content",
             color: "white",
             cursor: "pointer",
             fontSize: "12px",
-            // height: "10px",
           }}
         >
           {copied ? "Copied" : <CopyIcon size={16} weight="duotone" />}
         </span>
       </pre>
-      {/* </div> */}
 
       <p style={{ marginTop: 12, fontSize: 14, color: "#555" }}>
         Bot Public Key: <code>{publicKey}</code>

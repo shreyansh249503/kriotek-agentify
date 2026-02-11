@@ -64,8 +64,6 @@ textarea:-webkit-autofill {
   -webkit-text-fill-color: #333 ;
 }
 
-
-  /* SCROLLBAR */
  ::-webkit-scrollbar {
     width: 10px; 
   }

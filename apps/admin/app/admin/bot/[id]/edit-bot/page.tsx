@@ -19,6 +19,7 @@ export default function EditBotPage() {
         setLoading(false);
       });
   }, [id]);
+  console.log(bot);
 
   async function updateBot(data: UpdateBotInput) {
     const session = await supabase.auth.getSession();

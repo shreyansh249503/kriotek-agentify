@@ -18,10 +18,8 @@ export async function crawlWebsite(url: string): Promise<string> {
 
   const $ = cheerio.load(html);
 
-  // Remove only truly useless tags
   $("script, style, noscript").remove();
 
-  // Prefer readable content
   let text = $("main").text() || $("article").text() || $("body").text();
 
   text = text.replace(/\s+/g, " ").trim();

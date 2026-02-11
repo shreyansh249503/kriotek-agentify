@@ -33,8 +33,6 @@ export default async function AdminHome() {
     <>
       <Header />
       <ScrollToTop />
-
-      {/* Hero Section */}
       <HeroSection>
         <HeroContent>
           <MainHeading>Build Intelligent AI Agents</MainHeading>
@@ -48,8 +46,6 @@ export default async function AdminHome() {
           </CTAContainer>
         </HeroContent>
       </HeroSection>
-
-      {/* Features Section */}
       <FeaturesSection>
         <SectionContainer>
           <SectionTitle>Powerful Features</SectionTitle>
@@ -115,7 +111,6 @@ export default async function AdminHome() {
         </SectionContainer>
       </FeaturesSection>
 
-      {/* Benefits Section - How It Works */}
       <BenefitsSection>
         <SectionContainer>
           <SectionTitle>How It Works</SectionTitle>
@@ -173,7 +168,6 @@ export default async function AdminHome() {
         </SectionContainer>
       </BenefitsSection>
 
-      {/* Final CTA */}
       <FinalCTA>
         <CTATitle>Ready to Transform Your Customer Experience?</CTATitle>
         <CTADescription>

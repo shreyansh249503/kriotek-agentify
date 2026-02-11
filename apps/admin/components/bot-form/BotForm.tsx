@@ -24,6 +24,12 @@ export const BotForm = ({
     description: initialData?.description ?? "",
     tone: initialData?.tone ?? "friendly",
     primaryColor: initialData?.primary_color ?? "#4f46e5",
+    contactPrompt:
+      initialData?.contact_prompt ??
+      "Would you like us to contact you for more details?",
+    contactEmailMessage:
+      initialData?.contact_email_message ??
+      "Thanks for reaching out! Our team will contact you shortly.",
   });
 
   function update<K extends keyof CreateBotInput>(
@@ -82,8 +88,26 @@ export const BotForm = ({
       <Field>
         <Label>Primary Color</Label>
         <ColorPicker
-          value={form.primaryColor}
+          value={form.primaryColor || "#4f46e5"}
           onChange={(hex) => update("primaryColor", hex)}
+        />
+      </Field>
+
+      <Field>
+        <Label>Contact Prompt (shown in chat)</Label>
+        <TextArea
+          placeholder="Would you like us to contact you?"
+          value={form.contactPrompt}
+          onChange={(e) => update("contactPrompt", e.target.value)}
+        />
+      </Field>
+
+      <Field>
+        <Label>Email Message (sent to user)</Label>
+        <TextArea
+          placeholder="Thanks for reaching out! Our team will contact you shortly."
+          value={form.contactEmailMessage}
+          onChange={(e) => update("contactEmailMessage", e.target.value)}
         />
       </Field>
 

@@ -62,15 +62,12 @@ function createLoadingBubble() {
   return div;
 }
 
-// Load marked dynamically (safe for embeds)
 (function loadMarked() {
   if (window.marked) return;
 
   const script = document.createElement("script");
   script.src = "https://cdn.jsdelivr.net/npm/marked/marked.min.js";
   script.async = true;
-  script.onload = () => console.log("marked loaded");
-  script.onerror = () => console.error("Failed to load marked");
   document.head.appendChild(script);
 })();
 
@@ -82,6 +79,11 @@ function createLoadingBubble() {
     console.error("Chatbot widget: missing bot-id");
     return;
   }
+
+  const conversationKey = `chat_conversation_id_${publicKey}`;
+  const conversationId =
+    localStorage.getItem(conversationKey) || crypto.randomUUID();
+  localStorage.setItem(conversationKey, conversationId);
 
   const bot = await fetchBotConfig(publicKey);
 
@@ -208,7 +210,6 @@ function createLoadingBubble() {
 `;
   document.head.appendChild(markdownStyle);
 
-
   let isOpen = false;
 
   function openWidget() {
@@ -262,8 +263,10 @@ function createLoadingBubble() {
 
     const res = await fetch("http://localhost:3000/api/chat", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ publicKey, message: text }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ publicKey, message: text, conversationId }),
     });
 
     loadingBubble.remove();

@@ -20,7 +20,6 @@ interface ColorPickerProps {
 }
 
 export const ColorPicker = ({ value, onChange }: ColorPickerProps) => {
-  // Internal state for HSV
   const [hsv, setHsv] = useState({ h: 250, s: 70, v: 90 });
   const [isDraggingSat, setIsDraggingSat] = useState(false);
   const [isDraggingHue, setIsDraggingHue] = useState(false);
@@ -28,7 +27,6 @@ export const ColorPicker = ({ value, onChange }: ColorPickerProps) => {
   const satRef = useRef<HTMLDivElement>(null);
   const hueRef = useRef<HTMLDivElement>(null);
 
-  // Sync internal state with prop value if it changes externally
   useEffect(() => {
     if (isValidHex(value)) {
       const currentHex = hsvToHex(hsv.h, hsv.s, hsv.v);
@@ -38,7 +36,7 @@ export const ColorPicker = ({ value, onChange }: ColorPickerProps) => {
         setHsv(newHsv);
       }
     }
-  }, [value, hsv]); // Added hsv to dependency array to satisfy exhaustive-deps, but logic prevents loop
+  }, [value, hsv]);
 
   const handleSaturationMove = useCallback(
     (e: MouseEvent | TouchEvent) => {
@@ -50,7 +48,6 @@ export const ColorPicker = ({ value, onChange }: ColorPickerProps) => {
       let x = (clientX - rect.left) / rect.width;
       let y = (clientY - rect.top) / rect.height;
 
-      // Clamp
       x = Math.max(0, Math.min(1, x));
       y = Math.max(0, Math.min(1, y));
 
@@ -70,7 +67,6 @@ export const ColorPicker = ({ value, onChange }: ColorPickerProps) => {
       const rect = hueRef.current.getBoundingClientRect();
       const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
 
-      // Vertical slider logic
       let y = (clientY - rect.top) / rect.height;
       y = Math.max(0, Math.min(1, y));
 
@@ -82,7 +78,6 @@ export const ColorPicker = ({ value, onChange }: ColorPickerProps) => {
     [hsv, onChange],
   );
 
-  // Event Listeners for Dragging
   useEffect(() => {
     const handleUp = () => {
       setIsDraggingSat(false);

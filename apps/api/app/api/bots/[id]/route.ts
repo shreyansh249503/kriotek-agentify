@@ -21,7 +21,14 @@ export async function PUT(
   const { id } = await params;
   const body = await req.json();
 
-  const { name, description, tone, primaryColor } = body;
+  const {
+    name,
+    description,
+    tone,
+    primaryColor,
+    contactPrompt,
+    contactEmailMessage,
+  } = body;
 
   await db.query(
     `
@@ -30,10 +37,20 @@ export async function PUT(
       name = $1,
       description = $2,
       tone = $3,
-      primary_color = $4
-    WHERE id = $5
+      primary_color = $4,
+      contact_prompt = $5,
+      contact_email_message = $6
+    WHERE id = $7
     `,
-    [name, description, tone, primaryColor, id],
+    [
+      name,
+      description,
+      tone,
+      primaryColor,
+      contactPrompt,
+      contactEmailMessage,
+      id,
+    ],
   );
 
   return Response.json({ status: "ok" });

@@ -121,7 +121,6 @@ export const SecondaryButton = styled.button`
   }
 `;
 
-// Features Section
 export const FeaturesSection = styled.section`
   padding: 100px 20px;
   background: #ffffff;
@@ -202,7 +201,6 @@ export const FeatureDescription = styled.p`
   line-height: 1.6;
 `;
 
-// Benefits Section
 export const BenefitsSection = styled.section`
   padding: 100px 20px;
   background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
@@ -264,7 +262,6 @@ export const BenefitDescription = styled.p`
   line-height: 1.6;
 `;
 
-// Final CTA Section
 export const FinalCTA = styled.section`
   padding: 100px 20px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);

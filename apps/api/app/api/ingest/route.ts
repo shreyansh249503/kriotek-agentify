@@ -3,7 +3,7 @@ import { db } from "../lib/db";
 import { ingestDocument } from "../lib/ingest";
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "http://localhost:3001",
+  "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST,OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };

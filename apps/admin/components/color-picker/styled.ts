@@ -7,7 +7,6 @@ export const PickerWrapper = styled.div`
     0 10px 15px -3px rgba(0, 0, 0, 0.1),
     0 4px 6px -2px rgba(0, 0, 0, 0.05);
   width: 100%;
-  /* max-width: 350px; */
   color: white;
   font-family: inherit;
   overflow: hidden;
@@ -47,7 +46,6 @@ export const BodyContainer = styled.div`
   height: 150px;
 `;
 
-// Saturation Map
 export const SaturationArea = styled.div<{ $hue: number }>`
   position: relative;
   flex: 1;
@@ -74,7 +72,6 @@ export const Thumb = styled.div`
   pointer-events: none;
 `;
 
-// Hue Slider
 export const HueSliderContainer = styled.div`
   position: relative;
   width: 24px;
@@ -107,7 +104,6 @@ export const HueThumb = styled.div`
   pointer-events: none;
 `;
 
-// Hidden input for logic but visible representation is in Header
 export const HiddenInput = styled.input`
   display: none;
 `;

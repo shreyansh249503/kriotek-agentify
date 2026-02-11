@@ -19,7 +19,6 @@ export async function POST(req: Request) {
 
   const text = data.text;
 
-  // simple chunking
   const chunks = text.match(/(.|[\r\n]){1,800}/g) || [];
 
   for (const chunk of chunks) {
