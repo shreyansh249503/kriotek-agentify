@@ -27,6 +27,7 @@ export async function PUT(
     tone,
     primaryColor,
     contactEnabled,
+    contactEmail,
     contactPrompt,
     contactEmailMessage,
   } = body;
@@ -40,9 +41,10 @@ export async function PUT(
       tone = $3,
       primary_color = $4,
       contact_enabled = $5,
-      contact_prompt = $6,
-      contact_email_message = $7
-    WHERE id = $8
+      contact_email = $6,
+      contact_prompt = $7,
+      contact_email_message = $8
+    WHERE id = $9
     `,
     [
       name,
@@ -50,6 +52,7 @@ export async function PUT(
       tone,
       primaryColor,
       contactEnabled,
+      contactEmail,
       contactPrompt,
       contactEmailMessage,
       id,

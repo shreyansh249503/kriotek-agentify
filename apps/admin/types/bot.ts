@@ -7,6 +7,7 @@ export interface Bot {
   primary_color: string;
   created_at: string;
   contact_enabled: boolean;
+  contact_email: string;
   contact_prompt: string;
   contact_email_message: string;
 }
@@ -16,8 +17,9 @@ export interface CreateBotInput {
   description?: string;
   tone?: string;
   primaryColor?: string;
-  contactPrompt?: string;
   contactEnabled?: boolean;
+  contactEmail?: string;
+  contactPrompt?: string;
   contactEmailMessage?: string;
 }
 

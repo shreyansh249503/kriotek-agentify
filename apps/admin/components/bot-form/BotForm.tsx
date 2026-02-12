@@ -24,13 +24,14 @@ export const BotForm = ({
     description: initialData?.description ?? "",
     tone: initialData?.tone ?? "friendly",
     primaryColor: initialData?.primary_color ?? "#4f46e5",
+    contactEnabled: initialData?.contact_enabled ?? false,
+    contactEmail: initialData?.contact_email ?? "",
     contactPrompt:
       initialData?.contact_prompt ??
       "Would you like us to contact you for more details?",
     contactEmailMessage:
       initialData?.contact_email_message ??
       "Thanks for reaching out! Our team will contact you shortly.",
-    contactEnabled: initialData?.contact_enabled ?? false,
   });
 
   function update<K extends keyof CreateBotInput>(
@@ -107,6 +108,15 @@ export const BotForm = ({
       </Field>
       {form.contactEnabled && (
         <>
+          <Field>
+            <Label>Contact Email</Label>
+            <Input
+              disabled={!form.contactEnabled}
+              placeholder="[EMAIL_ADDRESS]"
+              value={form.contactEmail}
+              onChange={(e) => update("contactEmail", e.target.value)}
+            />
+          </Field>
           <Field>
             <Label>Contact Prompt (shown in chat)</Label>
             <TextArea

@@ -142,9 +142,9 @@ export async function POST(req: Request) {
       html: userEmailHtml,
     });
 
-    if (bot.owner_email) {
+    if (bot.contact_email) {
       await sendOwnerNotification({
-        ownerEmail: bot.owner_email,
+        ownerEmail: bot.contact_email,
         botName: bot.name,
         leadData: {
           name: convo.name,
