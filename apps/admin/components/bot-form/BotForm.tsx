@@ -30,6 +30,7 @@ export const BotForm = ({
     contactEmailMessage:
       initialData?.contact_email_message ??
       "Thanks for reaching out! Our team will contact you shortly.",
+    contactEnabled: initialData?.contact_enabled ?? false,
   });
 
   function update<K extends keyof CreateBotInput>(
@@ -94,22 +95,39 @@ export const BotForm = ({
       </Field>
 
       <Field>
-        <Label>Contact Prompt (shown in chat)</Label>
-        <TextArea
-          placeholder="Would you like us to contact you?"
-          value={form.contactPrompt}
-          onChange={(e) => update("contactPrompt", e.target.value)}
-        />
+        <Label>Enable Contact Flow</Label>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <input
+            type="checkbox"
+            checked={form.contactEnabled}
+            onChange={(e) => update("contactEnabled", e.target.checked)}
+          />
+          <span>{form.contactEnabled ? "Enabled" : "Disabled"}</span>
+        </div>
       </Field>
+      {form.contactEnabled && (
+        <>
+          <Field>
+            <Label>Contact Prompt (shown in chat)</Label>
+            <TextArea
+              disabled={!form.contactEnabled}
+              placeholder="Would you like us to contact you?"
+              value={form.contactPrompt}
+              onChange={(e) => update("contactPrompt", e.target.value)}
+            />
+          </Field>
 
-      <Field>
-        <Label>Email Message (sent to user)</Label>
-        <TextArea
-          placeholder="Thanks for reaching out! Our team will contact you shortly."
-          value={form.contactEmailMessage}
-          onChange={(e) => update("contactEmailMessage", e.target.value)}
-        />
-      </Field>
+          <Field>
+            <Label>Email Message (sent to user)</Label>
+            <TextArea
+              disabled={!form.contactEnabled}
+              placeholder="Thanks for reaching out! Our team will contact you shortly."
+              value={form.contactEmailMessage}
+              onChange={(e) => update("contactEmailMessage", e.target.value)}
+            />
+          </Field>
+        </>
+      )}
 
       <Button type="submit">{submitLabel}</Button>
     </Form>

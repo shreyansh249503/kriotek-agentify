@@ -66,7 +66,12 @@ export async function POST(req: Request) {
 
   const lower = message.toLowerCase();
 
+  if (!bot.contact_enabled) {
+    convo.declined = true;
+  }
+
   if (
+    bot.contact_enabled &&
     convo.state === "idle" &&
     convo.prompted &&
     YES_WORDS.some((w) => lower.includes(w))
@@ -79,6 +84,7 @@ export async function POST(req: Request) {
   }
 
   if (
+    bot.contact_enabled &&
     convo.state === "idle" &&
     convo.prompted &&
     NO_WORDS.some((w) => lower.includes(w))
@@ -136,17 +142,17 @@ export async function POST(req: Request) {
       html: userEmailHtml,
     });
 
-     if (bot.owner_email) {
-       await sendOwnerNotification({
-         ownerEmail: bot.owner_email,
-         botName: bot.name,
-         leadData: {
-           name: convo.name,
-           email: convo.email,
-           phone: message,
-         },
-       });
-     }
+    if (bot.owner_email) {
+      await sendOwnerNotification({
+        ownerEmail: bot.owner_email,
+        botName: bot.name,
+        leadData: {
+          name: convo.name,
+          email: convo.email,
+          phone: message,
+        },
+      });
+    }
 
     return new Response("Thanks! Our team will contact you shortly.", {
       headers: corsHeaders,
@@ -174,7 +180,8 @@ export async function POST(req: Request) {
   );
 
   const result = await streamText({
-    model: google("gemini-3-flash-preview"),
+    // model: google("gemini-3-flash-preview"),
+    model: google("gemini-2.5-flash"),
     system: systemPrompt,
     prompt: conversationHistory,
   });
@@ -185,9 +192,10 @@ export async function POST(req: Request) {
   }
 
   if (
+    bot.contact_enabled &&
     convo.state === "idle" &&
     convo.message_count >= CONTACT_TRIGGER_AFTER &&
-    convo.message_count % 3 === 0 && 
+    convo.message_count % 3 === 0 &&
     !convo.declined &&
     bot.contact_prompt &&
     !ACK_WORDS.includes(lower)

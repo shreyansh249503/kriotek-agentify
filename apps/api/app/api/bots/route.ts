@@ -48,6 +48,7 @@ export async function POST(req: Request) {
     description,
     tone = "friendly",
     primaryColor = "#000000",
+    contactEnabled = false,
     contactPrompt = "Would you like us to contact you for more details?",
     contactEmailMessage = "Thanks for reaching out! Our team will contact you shortly.",
   } = body;
@@ -56,11 +57,11 @@ export async function POST(req: Request) {
 
   const result = await db.query(
     `
-    INSERT INTO bots (public_key, name, description, tone, primary_color, contact_prompt, contact_email_message, user_id)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    INSERT INTO bots (public_key, name, description, tone, primary_color,contact_enabled, contact_prompt, contact_email_message, user_id)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
     RETURNING *
     `,
-    [publicKey, name, description, tone, primaryColor, contactPrompt, contactEmailMessage, user.id],
+    [publicKey, name, description, tone, primaryColor, contactEnabled, contactPrompt, contactEmailMessage, user.id],
   );
 
   return new Response(JSON.stringify(result.rows[0]), {
