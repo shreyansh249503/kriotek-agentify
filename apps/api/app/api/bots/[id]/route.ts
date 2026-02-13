@@ -5,7 +5,13 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
+
+  console.log("Fetching bot with ID:", id);
+  console.log("ID type:", typeof id);
   const result = await db.query("SELECT * FROM bots WHERE id = $1", [id]);
+
+  console.log("Query result:", result.rows);
+  console.log("Rows found:", result.rows.length);
 
   if (!result.rows[0]) {
     return Response.json({ error: "Bot not found" }, { status: 404 });

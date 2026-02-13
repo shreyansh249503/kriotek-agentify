@@ -13,13 +13,23 @@ export default function EditBotPage() {
 
   useEffect(() => {
     fetch(`http://localhost:3000/api/bots/${id}`)
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        return res.json();
+      })
       .then((data) => {
+        console.log("Fetched bot:", data);
         setBot(data);
         setLoading(false);
+      })
+      .catch((error) => {
+        console.error("Error fetching bot:", error);
+        setLoading(false);
+        alert("Failed to load bot");
       });
   }, [id]);
-  console.log(bot);
 
   async function updateBot(data: UpdateBotInput) {
     const session = await supabase.auth.getSession();

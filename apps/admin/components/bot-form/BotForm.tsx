@@ -1,7 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { Form, Field, Label, Input, TextArea, Button } from "./styled";
+import {
+  Form,
+  Field,
+  Label,
+  Input,
+  TextArea,
+  Button,
+  FormSection,
+  SectionHeader,
+  SectionTitle,
+  HelperText,
+  ToggleContainer,
+  ToggleSwitch,
+} from "./styled";
 import { Bot, CreateBotInput, UpdateBotInput } from "@/types/bot";
 import { CustomSelect } from "../custom-select";
 import { ColorPicker } from "../color-picker";
@@ -19,6 +32,7 @@ export const BotForm = ({
   submitLabel,
   title,
 }: BotFormProps) => {
+  const [loading, setLoading] = useState(false);
   const [form, setForm] = useState<CreateBotInput>({
     name: initialData?.name ?? "",
     description: initialData?.description ?? "",
@@ -43,7 +57,14 @@ export const BotForm = ({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    await onSubmit(form);
+    setLoading(true);
+    try {
+      await onSubmit(form);
+    } catch (error) {
+      console.error("Error submitting form:", error);
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -51,95 +72,150 @@ export const BotForm = ({
       <h2
         style={{
           marginBottom: "10px",
-          fontSize: "24px",
+          fontSize: "28px",
           fontWeight: "700",
-          color: "#1f2937",
+          color: "#2E2E2E",
+          textAlign: "center",
         }}
       >
         {title}
       </h2>
-      <Field>
-        <Label>Bot Name</Label>
-        <Input
-          value={form.name}
-          onChange={(e) => update("name", e.target.value)}
-          required
-        />
-      </Field>
 
-      <Field>
-        <Label>Description</Label>
-        <TextArea
-          value={form.description}
-          onChange={(e) => update("description", e.target.value)}
-        />
-      </Field>
+      <FormSection>
+        <SectionHeader>
+          <SectionTitle>🤖 Basic Information</SectionTitle>
+        </SectionHeader>
 
-      <Field>
-        <Label>Tone</Label>
-        <CustomSelect
-          value={form.tone || "friendly"}
-          onChange={(value) => update("tone", value)}
-          options={[
-            { value: "friendly", label: "Friendly" },
-            { value: "professional", label: "Professional" },
-          ]}
-        />
-      </Field>
-
-      <Field>
-        <Label>Primary Color</Label>
-        <ColorPicker
-          value={form.primaryColor || "#4f46e5"}
-          onChange={(hex) => update("primaryColor", hex)}
-        />
-      </Field>
-
-      <Field>
-        <Label>Enable Contact Flow</Label>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <input
-            type="checkbox"
-            checked={form.contactEnabled}
-            onChange={(e) => update("contactEnabled", e.target.checked)}
+        <Field>
+          <Label>Bot Name</Label>
+          <Input
+            value={form.name}
+            onChange={(e) => update("name", e.target.value)}
+            required
+            placeholder="e.g. Support Assistant"
           />
-          <span>{form.contactEnabled ? "Enabled" : "Disabled"}</span>
-        </div>
-      </Field>
-      {form.contactEnabled && (
-        <>
-          <Field>
-            <Label>Contact Email</Label>
-            <Input
-              disabled={!form.contactEnabled}
-              placeholder="[EMAIL_ADDRESS]"
-              value={form.contactEmail}
-              onChange={(e) => update("contactEmail", e.target.value)}
-            />
-          </Field>
-          <Field>
-            <Label>Contact Prompt (shown in chat)</Label>
-            <TextArea
-              disabled={!form.contactEnabled}
-              placeholder="Would you like us to contact you?"
-              value={form.contactPrompt}
-              onChange={(e) => update("contactPrompt", e.target.value)}
-            />
-          </Field>
+          <HelperText>Give your bot a recognizable name.</HelperText>
+        </Field>
 
-          <Field>
-            <Label>Email Message (sent to user)</Label>
-            <TextArea
-              disabled={!form.contactEnabled}
-              placeholder="Thanks for reaching out! Our team will contact you shortly."
-              value={form.contactEmailMessage}
-              onChange={(e) => update("contactEmailMessage", e.target.value)}
-            />
-          </Field>
-        </>
-      )}
+        <Field>
+          <Label>Description</Label>
+          <TextArea
+            value={form.description}
+            onChange={(e) => update("description", e.target.value)}
+            placeholder="Describe what this bot does..."
+          />
+          <HelperText>
+            {form.description?.length || 0} characters used
+          </HelperText>
+        </Field>
 
-      <Button type="submit">{submitLabel}</Button>
+        <Field>
+          <Label>Tone</Label>
+          <CustomSelect
+            value={form.tone || "friendly"}
+            onChange={(value) => update("tone", value)}
+            options={[
+              { value: "friendly", label: "Friendly & Casual" },
+              { value: "professional", label: "Professional & Formal" },
+              { value: "empathetic", label: "Empathetic & Supportive" },
+              { value: "concise", label: "Concise & Direct" },
+            ]}
+          />
+        </Field>
+      </FormSection>
+
+      <FormSection>
+        <SectionHeader>
+          <SectionTitle>🎨 Appearance</SectionTitle>
+        </SectionHeader>
+
+        <Field>
+          <Label>Primary Color</Label>
+          <ColorPicker
+            value={form.primaryColor || "#4f46e5"}
+            onChange={(hex) => update("primaryColor", hex)}
+          />
+          <HelperText>
+            This color will be used for buttons and accents.
+          </HelperText>
+        </Field>
+      </FormSection>
+
+      <FormSection>
+        <SectionHeader>
+          <SectionTitle>📬 Contact Settings</SectionTitle>
+        </SectionHeader>
+
+        <Field>
+          <ToggleContainer>
+            <ToggleSwitch
+              checked={form.contactEnabled || false}
+              onClick={() => update("contactEnabled", !form.contactEnabled)}
+            />
+            <span style={{ fontWeight: 600 }}>Enable Lead Collection</span>
+          </ToggleContainer>
+          <HelperText>
+            Allow the bot to collect user contact information.
+          </HelperText>
+        </Field>
+
+        {form.contactEnabled && (
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "20px",
+              marginTop: "10px",
+            }}
+          >
+            <Field>
+              <Label>Notification Email</Label>
+              <Input
+                disabled={!form.contactEnabled}
+                placeholder="email@example.com"
+                value={form.contactEmail}
+                onChange={(e) => update("contactEmail", e.target.value)}
+                type="email"
+              />
+              <HelperText>Where should we send collected leads?</HelperText>
+            </Field>
+
+            <Field>
+              <Label>Contact Prompt</Label>
+              <TextArea
+                disabled={!form.contactEnabled}
+                placeholder="Would you like us to contact you?"
+                value={form.contactPrompt}
+                onChange={(e) => update("contactPrompt", e.target.value)}
+                rows={2}
+                style={{ minHeight: "80px" }}
+              />
+              <HelperText>
+                The message shown to users to ask for their email.
+              </HelperText>
+            </Field>
+
+            <Field>
+              <Label>Confirmation Message</Label>
+              <TextArea
+                disabled={!form.contactEnabled}
+                placeholder="Thanks for reaching out! Our team will contact you shortly."
+                value={form.contactEmailMessage}
+                onChange={(e) => update("contactEmailMessage", e.target.value)}
+                rows={2}
+                style={{ minHeight: "80px" }}
+              />
+              <HelperText>
+                Sent to the user after they provide their email.
+              </HelperText>
+            </Field>
+          </div>
+        )}
+      </FormSection>
+
+      <Button type="submit" disabled={loading}>
+        {loading ? "Saving..." : submitLabel}
+      </Button>
     </Form>
   );
 };

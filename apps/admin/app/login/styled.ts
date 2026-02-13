@@ -1,91 +1,122 @@
-import styled from "styled-components";
+import styled, { keyframes } from "styled-components";
+import Link from "next/link";
+
+const fadeIn = keyframes`
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+`;
 
 export const AuthContainer = styled.div`
   min-height: 100vh;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 20px;
+  background: ${({ theme }) => theme.colors.white};
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+  }
+`;
+
+export const BannerSection = styled.div`
+  flex: 1;
+  background-color: ${({ theme }) => theme.colors.dark};
+  background-image:
+    radial-gradient(at 0% 0%, #1a1a1a 0, transparent 50%),
+    radial-gradient(at 100% 0%, #333333 0, transparent 50%);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 64px;
   position: relative;
   overflow: hidden;
 
   &::before {
     content: "";
     position: absolute;
+    width: 100%;
+    height: 100%;
     top: 0;
     left: 0;
-    right: 0;
-    bottom: 0;
-    background: radial-gradient(
-      circle at 80% 20%,
-      rgba(255, 255, 255, 0.1) 0%,
-      transparent 50%
-    );
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23A8E10C' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    pointer-events: none;
+  }
+
+  @media (max-width: 768px) {
+    display: none;
   }
 `;
 
-export const AuthCard = styled.div`
+export const BannerContent = styled.div`
   position: relative;
-  z-index: 1;
-  width: 100%;
-  max-width: 450px;
-  background: rgba(255, 255, 255, 0.98);
-  backdrop-filter: blur(10px);
-  border-radius: 20px;
-  padding: 48px 40px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  animation: slideIn 0.5s ease-out;
+  z-index: 10;
+  max-width: 480px;
+  animation: ${fadeIn} 0.8s ease-out;
+`;
 
-  @keyframes slideIn {
-    from {
-      opacity: 0;
-      transform: translateY(-30px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
+export const Logo = styled.div`
+  font-size: 28px;
+  font-weight: 800;
+  color: ${({ theme }) => theme.colors.white};
+  display: flex;
+  align-items: center;
+  gap: 12px;
+`;
 
-  @media (max-width: 480px) {
-    padding: 40px 24px;
+export const Quote = styled.blockquote`
+  font-size: 32px;
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.white};
+  line-height: 1.3;
+  margin: 0 0 24px 0;
+`;
+
+export const Author = styled.div`
+  font-size: 16px;
+  color: ${({ theme }) => theme.colors.primary};
+  font-weight: 600;
+`;
+
+export const FormSection = styled.div`
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  background: ${({ theme }) => theme.colors.white};
+
+  @media (max-width: 768px) {
+    padding: 24px;
+    align-items: flex-start;
+    padding-top: 80px;
   }
 `;
 
-export const LogoSection = styled.div`
+export const FormContainer = styled.div`
+  width: 100%;
+  max-width: 400px;
+  animation: ${fadeIn} 0.6s ease-out;
+`;
+
+export const Header = styled.div`
+  margin-bottom: 40px;
   text-align: center;
 `;
 
-export const LogoText = styled.h1`
+export const Title = styled.h1`
   font-size: 32px;
   font-weight: 800;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  margin-bottom: 8px;
+  color: ${({ theme }) => theme.colors.dark};
+  margin-bottom: 12px;
 `;
 
-export const FormSection = styled.form`
+export const Subtitle = styled.p`
+  font-size: 16px;
+  color: ${({ theme }) => theme.colors.textSecondary};
+`;
+
+export const Form = styled.form`
   display: flex;
   flex-direction: column;
   gap: 24px;
-`;
-
-export const FormTitle = styled.h2`
-  font-size: 28px;
-  font-weight: 700;
-  color: #1f2937;
-  margin-bottom: 8px;
-  text-align: center;
-`;
-
-export const FormSubtitle = styled.p`
-  font-size: 15px;
-  color: #6b7280;
-  text-align: center;
-  margin-bottom: 16px;
 `;
 
 export const FormGroup = styled.div`
@@ -97,133 +128,103 @@ export const FormGroup = styled.div`
 export const Label = styled.label`
   font-size: 14px;
   font-weight: 600;
-  color: #374151;
+  color: ${({ theme }) => theme.colors.text};
 `;
 
 export const Input = styled.input`
   width: 100%;
-  padding: 14px 16px;
-  font-size: 15px;
-  font-family: inherit;
-  border: 2px solid #e5e7eb;
+  padding: 12px 16px;
   border-radius: 12px;
-  transition: all 0.3s ease;
-  background: #ffffff;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  font-size: 16px;
+  transition: all 0.2s;
+  background: ${({ theme }) => theme.colors.light};
 
   &:focus {
     outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+    border-color: ${({ theme }) => theme.colors.primary};
+    background: ${({ theme }) => theme.colors.white};
+    box-shadow: 0 0 0 3px rgba(168, 225, 12, 0.1);
   }
 
   &::placeholder {
-    color: #9ca3af;
+    color: #94a3b8;
   }
 `;
 
-export const PasswordWrapper = styled.div`
+export const PasswordInputWrapper = styled.div`
   position: relative;
-  width: 100%;
 `;
 
-export const ToggleButton = styled.button`
+export const PasswordToggle = styled.button`
   position: absolute;
   right: 12px;
   top: 50%;
   transform: translateY(-50%);
   background: none;
   border: none;
+  color: ${({ theme }) => theme.colors.textSecondary};
   cursor: pointer;
-  color: #6b7280;
   padding: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: color 0.2s;
 
   &:hover {
-    color: #4f46e5;
+    color: ${({ theme }) => theme.colors.primary};
   }
 `;
 
-export const SubmitButton = styled.button<{ disabled?: boolean }>`
+export const SubmitButton = styled.button`
   width: 100%;
-  padding: 16px;
-  font-size: 16px;
-  font-weight: 600;
+  padding: 14px;
+  background: ${({ theme }) => theme.colors.primary};
+  color: ${({ theme }) => theme.colors.dark};
   border: none;
   border-radius: 12px;
-  cursor: ${(props) => (props.disabled ? "not-allowed" : "pointer")};
-  background: ${(props) =>
-    props.disabled
-      ? "#d1d5db"
-      : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"};
-  color: #ffffff;
-  transition: all 0.3s ease;
-  box-shadow: ${(props) =>
-    props.disabled ? "none" : "0 4px 12px rgba(102, 126, 234, 0.4)"};
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
   margin-top: 8px;
+  box-shadow: 0 4px 12px ${({ theme }) => theme.colors.shadow};
 
   &:hover {
-    transform: ${(props) => (props.disabled ? "none" : "translateY(-2px)")};
-    box-shadow: ${(props) =>
-      props.disabled ? "none" : "0 6px 16px rgba(102, 126, 234, 0.5)"};
+    background: ${({ theme }) => theme.colors.primaryHover};
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(168, 225, 12, 0.3);
   }
 
-  &:active {
-    transform: ${(props) => (props.disabled ? "none" : "translateY(0)")};
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
   }
 `;
 
 export const ErrorMessage = styled.div`
-  padding: 12px 16px;
+  padding: 12px;
   background: #fee2e2;
-  border: 1px solid #fecaca;
+  color: #b91c1c;
   border-radius: 8px;
-  color: #dc2626;
   font-size: 14px;
-  font-weight: 500;
+  margin-bottom: 24px;
   display: flex;
   align-items: center;
   gap: 8px;
 `;
 
-export const Divider = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin: 24px 0;
-
-  &::before,
-  &::after {
-    content: "";
-    flex: 1;
-    height: 1px;
-    background: #e5e7eb;
-  }
-`;
-
-export const DividerText = styled.span`
-  font-size: 14px;
-  color: #9ca3af;
-`;
-
-export const FooterText = styled.p`
+export const Footer = styled.div`
+  margin-top: 32px;
   text-align: center;
   font-size: 14px;
-  color: #6b7280;
-  margin-top: 24px;
+  color: ${({ theme }) => theme.colors.textSecondary};
 `;
 
-export const FooterLink = styled.a`
-  color: #667eea;
+export const LinkText = styled(Link)`
+  color: ${({ theme }) => theme.colors.primary};
   font-weight: 600;
   text-decoration: none;
-  cursor: pointer;
-  transition: color 0.2s ease;
+  margin-left: 4px;
 
   &:hover {
-    color: #764ba2;
     text-decoration: underline;
+    color: ${({ theme }) => theme.colors.primaryHover};
   }
 `;

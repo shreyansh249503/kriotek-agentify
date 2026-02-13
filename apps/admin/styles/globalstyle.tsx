@@ -40,6 +40,7 @@ html {
     height: 100%;
     font-family: poppins, sans-serif;
     overflow-x: hidden;
+    background-color: #9FCD6B;
   }
 
     * {
@@ -61,7 +62,7 @@ input:-webkit-autofill,
 textarea:-webkit-autofill {
   background-color: transparent ;
   -webkit-box-shadow: 0 0 0 1000px white inset ;
-  -webkit-text-fill-color: #333 ;
+  -webkit-text-fill-color: #2E2E2E ;
 }
 
  ::-webkit-scrollbar {
@@ -73,12 +74,12 @@ textarea:-webkit-autofill {
    
   }
   ::-webkit-scrollbar-thumb {
-    background-color: rgba(0, 0, 0, 0.3); 
-    border: 2px solid white; 
+    background-color: rgba(168, 225, 12, 0.4); 
+    border: 2px solid #9FCD6B; 
     border-radius: 10px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(0, 0, 0, 0.5); 
+    background-color: rgba(168, 225, 12, 0.6); 
   }
 `;

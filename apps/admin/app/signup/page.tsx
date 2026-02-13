@@ -3,24 +3,30 @@
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
+import { Eye, EyeSlash, CircleNotch } from "@phosphor-icons/react";
 import {
   AuthContainer,
-  AuthCard,
-  LogoSection,
-  LogoText,
+  BannerSection,
+  BannerContent,
+  Logo,
+  Quote,
+  Author,
   FormSection,
-  FormTitle,
-  FormSubtitle,
+  FormContainer,
+  Header,
+  Title,
+  Subtitle,
+  Form,
   FormGroup,
   Label,
   Input,
+  PasswordInputWrapper,
+  PasswordToggle,
   SubmitButton,
   ErrorMessage,
   SuccessMessage,
-  FooterText,
-  FooterLink,
-  PasswordWrapper,
-  ToggleButton,
+  Footer,
+  LinkText,
 } from "./styled";
 
 export default function SignupPage() {
@@ -59,103 +65,166 @@ export default function SignupPage() {
 
   return (
     <AuthContainer>
-      <AuthCard>
-        <LogoSection>
-          <LogoText>Agentify</LogoText>
-        </LogoSection>
-
-        <FormTitle>Create Account</FormTitle>
-        <FormSubtitle>Get started with your AI agent platform</FormSubtitle>
-
-        {error && <ErrorMessage> {error}</ErrorMessage>}
-        {success && (
-          <SuccessMessage>
-            ✅ Account created! Redirecting to login...
-          </SuccessMessage>
-        )}
-
-        <FormSection onSubmit={handleSignup}>
-          <FormGroup>
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              disabled={success}
+      <BannerSection>
+        <Logo>
+          <svg
+            width="32"
+            height="32"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M12 2L2 7L12 12L22 7L12 2Z"
+              stroke="white"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             />
-          </FormGroup>
+            <path
+              d="M2 17L12 22L22 17"
+              stroke="white"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M2 12L12 17L22 12"
+              stroke="white"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          Agentify
+        </Logo>
+        <BannerContent>
+          <Quote>
+            &ldquo;Join the revolution of automated customer support. Create
+            intelligent agents in minutes.&rdquo;
+          </Quote>
+          <Author>Start Your Journey</Author>
+        </BannerContent>
+        <div />
+      </BannerSection>
 
-          <FormGroup>
-            <Label htmlFor="password">Password</Label>
-            <PasswordWrapper>
+      <FormSection>
+        <FormContainer>
+          <Header>
+            <Title>Create Account</Title>
+            <Subtitle>Get started with your free account today.</Subtitle>
+          </Header>
+
+          {error && (
+            <ErrorMessage>
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                />
+                <path
+                  d="M12 8V12"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+                <circle cx="12" cy="16" r="1" fill="currentColor" />
+              </svg>
+              {error}
+            </ErrorMessage>
+          )}
+
+          {success && (
+            <SuccessMessage>
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M20 6L9 17L4 12"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              Account created! Redirecting to login...
+            </SuccessMessage>
+          )}
+
+          <Form onSubmit={handleSignup}>
+            <FormGroup>
+              <Label htmlFor="email">Email</Label>
               <Input
-                id="password"
-                type={showPassword ? "text" : "password"}
-                placeholder="Create a strong password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                id="email"
+                type="email"
+                placeholder="Enter your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 required
                 disabled={success}
-                minLength={6}
               />
-              <ToggleButton
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                aria-label={showPassword ? "Hide password" : "Show password"}
-              >
-                {showPassword ? (
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth={1.5}
-                    stroke="currentColor"
-                    style={{ width: "20px", height: "20px" }}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"
-                    />
-                  </svg>
-                ) : (
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth={1.5}
-                    stroke="currentColor"
-                    style={{ width: "20px", height: "20px" }}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"
-                    />
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                    />
-                  </svg>
-                )}
-              </ToggleButton>
-            </PasswordWrapper>
-          </FormGroup>
+            </FormGroup>
 
-          <SubmitButton type="submit" disabled={loading || success}>
-            {loading ? "Creating account..." : "Sign Up"}
-          </SubmitButton>
-        </FormSection>
+            <FormGroup>
+              <Label htmlFor="password">Password</Label>
+              <PasswordInputWrapper>
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Create a strong password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  disabled={success}
+                  minLength={6}
+                />
+                <PasswordToggle
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeSlash size={20} /> : <Eye size={20} />}
+                </PasswordToggle>
+              </PasswordInputWrapper>
+            </FormGroup>
 
-        <FooterText>
-          Already have an account?{" "}
-          <FooterLink href="/login">Sign in</FooterLink>
-        </FooterText>
-      </AuthCard>
+            <SubmitButton type="submit" disabled={loading || success}>
+              {loading ? (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "8px",
+                  }}
+                >
+                  <CircleNotch size={20} className="animate-spin" />
+                  Creating account...
+                </div>
+              ) : (
+                "Sign Up"
+              )}
+            </SubmitButton>
+          </Form>
+
+          <Footer>
+            Already have an account?
+            <LinkText href="/login">Sign in</LinkText>
+          </Footer>
+        </FormContainer>
+      </FormSection>
     </AuthContainer>
   );
 }

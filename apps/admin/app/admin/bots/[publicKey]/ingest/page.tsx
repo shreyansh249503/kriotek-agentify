@@ -18,7 +18,9 @@ import {
   ErrorText,
   SuccessContainer,
   ChunksText,
+  FileUploadZone,
 } from "./styled";
+import { CloudArrowUp } from "@phosphor-icons/react";
 
 type Mode = "text" | "url" | "pdf";
 
@@ -158,12 +160,24 @@ export default function IngestPage() {
 
         {!success && mode === "pdf" && (
           <FormSection>
-            <Input
-              type="file"
-              accept="application/pdf"
-              onChange={(e) => setPdfFile(e.target.files?.[0] || null)}
-            />
-            <SubmitButton onClick={ingest} disabled={loading}>
+            <FileUploadZone>
+              <CloudArrowUp size={32} color="#A8E10C" />
+              <input
+                type="file"
+                accept="application/pdf"
+                onChange={(e) => setPdfFile(e.target.files?.[0] || null)}
+                style={{ display: "none" }}
+              />
+              {pdfFile ? (
+                <strong>{pdfFile.name}</strong>
+              ) : (
+                <>
+                  <strong>Choose a PDF file</strong>
+                  <span>or drag and drop here</span>
+                </>
+              )}
+            </FileUploadZone>
+            <SubmitButton onClick={ingest} disabled={loading || !pdfFile}>
               {loading ? "Uploading..." : "Ingest PDF"}
             </SubmitButton>
           </FormSection>

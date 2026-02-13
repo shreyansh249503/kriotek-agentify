@@ -20,7 +20,8 @@ export function StyledComponentsRegistry({
     return styles;
   });
 
-  if (typeof window !== "undefined") return <>{children}</>;
+  if (typeof window !== "undefined")
+    return <ThemeProviders>{children}</ThemeProviders>;
 
   return (
     <StyleSheetManager sheet={styledComponentsStyleSheet.instance}>

@@ -1,3 +1,5 @@
+"use client";
+
 import { LogoutButton } from "@/components";
 import {
   ButtonWrapper,

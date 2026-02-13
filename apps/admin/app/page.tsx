@@ -1,3 +1,5 @@
+"use client";
+
 import { Header, ScrollToTop } from "@/components";
 import {
   HeroSection,
@@ -27,35 +29,51 @@ import {
   CTATitle,
   CTADescription,
 } from "./styled";
+import {
+  Lightning,
+  Palette,
+  Books,
+  ChartBar,
+  ChatsCircle,
+  ShieldCheck,
+} from "@phosphor-icons/react";
 
-export default async function AdminHome() {
+export default function AdminHome() {
   return (
     <>
       <Header />
       <ScrollToTop />
       <HeroSection>
         <HeroContent>
-          <MainHeading>Build Intelligent AI Agents</MainHeading>
+          <MainHeading>
+            Build Intelligent
+            <br />
+            AI Agents
+          </MainHeading>
           <SubHeading>
             Create powerful, customizable AI chatbots that understand your
-            business and engage your customers 24/7
+            business and engage your customers 24/7. No coding required.
           </SubHeading>
           <CTAContainer>
-            <PrimaryButton>Get Started Free</PrimaryButton>
-            <SecondaryButton>Watch Demo</SecondaryButton>
+            <PrimaryButton href="/signup">Get Started Free</PrimaryButton>
+            <SecondaryButton href="#demo">Watch Demo</SecondaryButton>
           </CTAContainer>
         </HeroContent>
       </HeroSection>
+
       <FeaturesSection>
         <SectionContainer>
           <SectionTitle>Powerful Features</SectionTitle>
           <SectionSubtitle>
-            Everything you need to build and deploy intelligent AI agents
+            Everything you need to build and deploy intelligent AI agents that
+            scale with your business.
           </SectionSubtitle>
 
           <FeaturesGrid>
             <FeatureCard>
-              <FeatureIcon>⚡</FeatureIcon>
+              <FeatureIcon>
+                <Lightning weight="duotone" />
+              </FeatureIcon>
               <FeatureTitle>Easy Integration</FeatureTitle>
               <FeatureDescription>
                 Integrate your AI agent into any platform with simple embed
@@ -64,7 +82,9 @@ export default async function AdminHome() {
             </FeatureCard>
 
             <FeatureCard>
-              <FeatureIcon>🎨</FeatureIcon>
+              <FeatureIcon>
+                <Palette weight="duotone" />
+              </FeatureIcon>
               <FeatureTitle>Customizable Responses</FeatureTitle>
               <FeatureDescription>
                 Train your agent with your own knowledge base. Fine-tune
@@ -73,38 +93,46 @@ export default async function AdminHome() {
             </FeatureCard>
 
             <FeatureCard>
-              <FeatureIcon>📚</FeatureIcon>
-              <FeatureTitle>Knowledge Base Management</FeatureTitle>
+              <FeatureIcon>
+                <Books weight="duotone" />
+              </FeatureIcon>
+              <FeatureTitle>Knowledge Base</FeatureTitle>
               <FeatureDescription>
                 Upload documents, websites, and FAQs to build a comprehensive
-                knowledge base your agent can reference.
+                knowledge base your agent can reference instantly.
               </FeatureDescription>
             </FeatureCard>
 
             <FeatureCard>
-              <FeatureIcon>📊</FeatureIcon>
+              <FeatureIcon>
+                <ChartBar weight="duotone" />
+              </FeatureIcon>
               <FeatureTitle>Real-time Analytics</FeatureTitle>
               <FeatureDescription>
                 Track conversations, user satisfaction, and performance metrics
-                in real-time with detailed dashboards.
+                in real-time with detailed dashboards and insights.
               </FeatureDescription>
             </FeatureCard>
 
             <FeatureCard>
-              <FeatureIcon>💬</FeatureIcon>
+              <FeatureIcon>
+                <ChatsCircle weight="duotone" />
+              </FeatureIcon>
               <FeatureTitle>Multi-channel Support</FeatureTitle>
               <FeatureDescription>
                 Deploy your agent across web, mobile, Slack, Discord, and more
-                from a single dashboard.
+                from a single unified dashboard.
               </FeatureDescription>
             </FeatureCard>
 
             <FeatureCard>
-              <FeatureIcon>🔒</FeatureIcon>
+              <FeatureIcon>
+                <ShieldCheck weight="duotone" />
+              </FeatureIcon>
               <FeatureTitle>Secure & Scalable</FeatureTitle>
               <FeatureDescription>
                 Enterprise-grade security with data encryption, role-based
-                access, and unlimited scalability.
+                access, and unlimited scalability for growing teams.
               </FeatureDescription>
             </FeatureCard>
           </FeaturesGrid>
@@ -115,23 +143,23 @@ export default async function AdminHome() {
         <SectionContainer>
           <SectionTitle>How It Works</SectionTitle>
           <SectionSubtitle>
-            Get your AI agent up and running in just a few simple steps
+            Get your AI agent up and running in just a few simple steps.
           </SectionSubtitle>
 
           <BenefitsList>
             <BenefitItem>
-              <BenefitNumber>1</BenefitNumber>
+              <BenefitNumber>01</BenefitNumber>
               <BenefitContent>
                 <BenefitTitle>Create Your Agent</BenefitTitle>
                 <BenefitDescription>
                   Sign up and create a new AI agent in seconds. Choose a name
-                  and configure basic settings to match your needs.
+                  and configure basic settings to match your specific needs.
                 </BenefitDescription>
               </BenefitContent>
             </BenefitItem>
 
             <BenefitItem>
-              <BenefitNumber>2</BenefitNumber>
+              <BenefitNumber>02</BenefitNumber>
               <BenefitContent>
                 <BenefitTitle>Add Your Knowledge</BenefitTitle>
                 <BenefitDescription>
@@ -143,19 +171,19 @@ export default async function AdminHome() {
             </BenefitItem>
 
             <BenefitItem>
-              <BenefitNumber>3</BenefitNumber>
+              <BenefitNumber>03</BenefitNumber>
               <BenefitContent>
                 <BenefitTitle>Customize & Train</BenefitTitle>
                 <BenefitDescription>
                   Fine-tune your agent&apos;s personality, response style, and
-                  behavior. Test conversations to ensure it meets your
+                  behavior. Test conversations to ensure it meets your high
                   standards.
                 </BenefitDescription>
               </BenefitContent>
             </BenefitItem>
 
             <BenefitItem>
-              <BenefitNumber>4</BenefitNumber>
+              <BenefitNumber>04</BenefitNumber>
               <BenefitContent>
                 <BenefitTitle>Deploy Anywhere</BenefitTitle>
                 <BenefitDescription>
@@ -169,12 +197,12 @@ export default async function AdminHome() {
       </BenefitsSection>
 
       <FinalCTA>
-        <CTATitle>Ready to Transform Your Customer Experience?</CTATitle>
+        <CTATitle>Ready to Transform Your Experience?</CTATitle>
         <CTADescription>
           Join thousands of businesses using Agentify to automate support and
-          engage customers intelligently
+          engage customers intelligently.
         </CTADescription>
-        <PrimaryButton>Start Building Now</PrimaryButton>
+        <PrimaryButton href="/signup">Start Building Now</PrimaryButton>
       </FinalCTA>
     </>
   );
