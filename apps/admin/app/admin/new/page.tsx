@@ -9,7 +9,7 @@ export default function NewBotPage() {
   async function createBot(data: CreateBotInput) {
     const session = await supabase.auth.getSession();
 
-    await fetch("http://localhost:3000/api/bots", {
+    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bots`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

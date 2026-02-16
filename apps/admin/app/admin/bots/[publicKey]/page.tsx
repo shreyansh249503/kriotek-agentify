@@ -9,7 +9,7 @@ type EditBotPageProps = {
 };
 
 async function getBot(id: string): Promise<Bot> {
-    const res = await fetch(`http://localhost:3000/api/bots/${id}`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bots/${id}`, {
         cache: "no-store",
     });
     return res.json();
@@ -20,7 +20,7 @@ export default async function EditBotPage({ params }: EditBotPageProps) {
     const session = await supabase.auth.getSession();
 
     async function updateBot(data: CreateBotInput) {
-        await fetch(`http://localhost:3000/api/bots/${bot.id}`, {
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bots/${bot.id}`, {
             method: "PUT",
             headers: {
                 "Content-Type": "application/json",

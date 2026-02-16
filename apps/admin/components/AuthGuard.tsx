@@ -22,3 +22,26 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
 
   return <>{children}</>;
 }
+
+export const RefreshAuthGuard = ({
+  children,
+}: {
+  children: React.ReactNode;
+}) => {
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) {
+        router.replace("/admin");
+      } else {
+        setLoading(false);
+      }
+    });
+  }, [router]);
+
+  if (loading) return null;
+
+  return <>{children}</>;
+};

@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import EmbedSuccess from "@/components/EmbedSuccess";
 import {
   NewBotContainer,
   NewBotTitle,
@@ -20,7 +19,8 @@ import {
   ChunksText,
   FileUploadZone,
 } from "./styled";
-import { CloudArrowUp } from "@phosphor-icons/react";
+import { CloudArrowUpIcon } from "@phosphor-icons/react";
+import { EmbedSuccess } from "@/components";
 
 type Mode = "text" | "url" | "pdf";
 
@@ -43,7 +43,7 @@ export default function IngestPage() {
       const session = await supabase.auth.getSession();
 
       if (mode === "text") {
-        await fetch("http://localhost:3000/api/ingest", {
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/ingest`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -59,17 +59,20 @@ export default function IngestPage() {
       }
 
       if (mode === "url") {
-        const res = await fetch("http://localhost:3000/api/ingest-url", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session.data.session?.access_token}`,
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/ingest-url`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${session.data.session?.access_token}`,
+            },
+            body: JSON.stringify({
+              publicKey,
+              url,
+            }),
           },
-          body: JSON.stringify({
-            publicKey,
-            url,
-          }),
-        });
+        );
 
         const data = await res.json();
 
@@ -87,10 +90,13 @@ export default function IngestPage() {
         form.append("file", pdfFile);
         form.append("publicKey", publicKey);
 
-        const res = await fetch("http://localhost:3000/api/ingest-pdf", {
-          method: "POST",
-          body: form,
-        });
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/ingest-pdf`,
+          {
+            method: "POST",
+            body: form,
+          },
+        );
 
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "PDF ingest failed");
@@ -161,7 +167,7 @@ export default function IngestPage() {
         {!success && mode === "pdf" && (
           <FormSection>
             <FileUploadZone>
-              <CloudArrowUp size={32} color="#A8E10C" />
+              <CloudArrowUpIcon size={32} color="#A8E10C" />
               <input
                 type="file"
                 accept="application/pdf"

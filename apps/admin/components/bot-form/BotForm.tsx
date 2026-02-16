@@ -14,6 +14,7 @@ import {
   HelperText,
   ToggleContainer,
   ToggleSwitch,
+  BotFormTitle,
 } from "./styled";
 import { Bot, CreateBotInput, UpdateBotInput } from "@/types/bot";
 import { CustomSelect } from "../custom-select";
@@ -69,17 +70,7 @@ export const BotForm = ({
 
   return (
     <Form onSubmit={handleSubmit}>
-      <h2
-        style={{
-          marginBottom: "10px",
-          fontSize: "28px",
-          fontWeight: "700",
-          color: "#2E2E2E",
-          textAlign: "center",
-        }}
-      >
-        {title}
-      </h2>
+      <BotFormTitle>{title}</BotFormTitle>
 
       <FormSection>
         <SectionHeader>

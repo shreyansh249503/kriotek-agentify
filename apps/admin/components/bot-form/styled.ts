@@ -3,11 +3,21 @@
 import styled from "styled-components";
 
 export const Form = styled.form`
-  width: 100%;
+  width: 80%;
   background: transparent;
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.lg};
+`;
+
+export const BotFormTitle = styled.h2`
+  font-size: 24px;
+  font-weight: 700;
+  color: ${({ theme }) => theme.colors.dark};
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.sm};
 `;
 
 export const Field = styled.div`

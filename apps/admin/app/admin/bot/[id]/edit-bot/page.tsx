@@ -12,7 +12,7 @@ export default function EditBotPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`http://localhost:3000/api/bots/${id}`)
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bots/${id}`)
       .then((res) => {
         if (!res.ok) {
           throw new Error(`HTTP error! status: ${res.status}`);
@@ -34,7 +34,7 @@ export default function EditBotPage() {
   async function updateBot(data: UpdateBotInput) {
     const session = await supabase.auth.getSession();
 
-    const res = await fetch(`http://localhost:3000/api/bots/${id}`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bots/${id}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",

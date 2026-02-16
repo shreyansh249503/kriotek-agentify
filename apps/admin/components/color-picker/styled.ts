@@ -31,12 +31,29 @@ export const ColorPreview = styled.div`
   box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
 `;
 
-export const HexText = styled.span`
-  color: black;
+export const HexText = styled.input`
+  color: #374151;
   font-family: monospace;
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 13px;
+  font-weight: 600;
   text-transform: uppercase;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  outline: none;
+  width: 80px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+
+  &:focus {
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
+  }
+
+  &::selection {
+    background: #e0e7ff;
+    color: #4f46e5;
+  }
 `;
 
 export const BodyContainer = styled.div`

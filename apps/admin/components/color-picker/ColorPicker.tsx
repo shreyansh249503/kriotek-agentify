@@ -32,7 +32,6 @@ export const ColorPicker = ({ value, onChange }: ColorPickerProps) => {
       const currentHex = hsvToHex(hsv.h, hsv.s, hsv.v);
       if (value.toLowerCase() !== currentHex.toLowerCase()) {
         const newHsv = hexToHsv(value);
-        // eslint-disable-next-line
         setHsv(newHsv);
       }
     }
@@ -105,12 +104,36 @@ export const ColorPicker = ({ value, onChange }: ColorPickerProps) => {
   }, [isDraggingSat, isDraggingHue, handleSaturationMove, handleHueMove]);
 
   const currentHex = hsvToHex(hsv.h, hsv.s, hsv.v);
+  const [inputValue, setInputValue] = useState(currentHex);
+
+  useEffect(() => {
+    setInputValue(currentHex);
+  }, [currentHex]);
+
+  const handleHexChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setInputValue(val);
+    if (isValidHex(val)) {
+      const newHsv = hexToHsv(val);
+      setHsv(newHsv);
+      onChange(hsvToHex(newHsv.h, newHsv.s, newHsv.v));
+    }
+  };
+
+  const handleBlur = () => {
+    setInputValue(currentHex);
+  };
 
   return (
     <PickerWrapper>
       <Header>
         <ColorPreview style={{ backgroundColor: currentHex }} />
-        <HexText>{currentHex}</HexText>
+        <HexText
+          value={inputValue}
+          onChange={handleHexChange}
+          onBlur={handleBlur}
+          spellCheck={false}
+        />
       </Header>
 
       <BodyContainer>

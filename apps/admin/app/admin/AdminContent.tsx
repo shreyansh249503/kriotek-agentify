@@ -1,12 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import {
-  Loader,
-  SearchBar,
-  EmptyState,
-  StatusBadge,
-} from "@/components";
+import { Loader, SearchBar, EmptyState, StatusBadge } from "@/components";
 import { supabase } from "@/lib/supabase";
 import { Bot } from "@/types/bot";
 import {
@@ -21,12 +16,9 @@ import {
   BotMeta,
   BotDescription,
   BotActions,
+  BotName,
 } from "./styled";
-import {
-  PlusCircle,
-  Robot as BotIcon,
-} from "@boxicons/react";
-import Link from "next/link";
+import { PlusCircle, Robot as BotIcon } from "@boxicons/react";
 
 export default function AdminContent() {
   const [bots, setBots] = useState<Bot[]>([]);
@@ -40,7 +32,7 @@ export default function AdminContent() {
       const session = await supabase.auth.getSession();
 
       try {
-        const res = await fetch("http://localhost:3000/api/bots", {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bots`, {
           headers: {
             Authorization: `Bearer ${session.data.session?.access_token}`,
           },
@@ -87,7 +79,6 @@ export default function AdminContent() {
 
   return (
     <AdminContainer>
-
       <ControlsContainer>
         <SearchBar placeholder="Search bots..." onSearch={setSearchTerm} />
         <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
@@ -111,18 +102,14 @@ export default function AdminContent() {
           {filteredBots.map((bot) => (
             <BotCardContainer key={bot.id}>
               <BotMeta>
-                <Link
-                  href={`/admin/bot/${bot.id}/edit-bot`}
-                  style={{ textDecoration: "none" }}
-                >
-                  <strong>{bot.name}</strong>
-                </Link>
+                <BotName>{bot.name}</BotName>
                 <StatusBadge status="active" />
               </BotMeta>
 
               <BotDescription>
-                {/* Description placeholder if not in type */}A helpful AI
-                assistant ready to chat with users and answer questions.
+                {/* A helpful AI assistant ready to chat with users and answer
+                questions. */}
+                {bot.description}
               </BotDescription>
 
               <BotActions>

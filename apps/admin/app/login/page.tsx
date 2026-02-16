@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
-import { Eye, EyeSlash, CircleNotch } from "@phosphor-icons/react";
+import { CircleNotchIcon, EyeSlashIcon, EyeIcon } from "@phosphor-icons/react";
 import {
   AuthContainer,
   BannerSection,
@@ -27,6 +27,7 @@ import {
   Footer,
   LinkText,
 } from "./styled";
+import { RefreshAuthGuard } from "@/components/AuthGuard";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -56,143 +57,149 @@ export default function LoginPage() {
   }
 
   return (
-    <AuthContainer>
-      <BannerSection>
-        <Logo>
-          <svg
-            width="32"
-            height="32"
-            viewBox="0 0 24 24"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M12 2L2 7L12 12L22 7L12 2Z"
-              stroke="white"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            <path
-              d="M2 17L12 22L22 17"
-              stroke="white"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            <path
-              d="M2 12L12 17L22 12"
-              stroke="white"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-          Agentify
-        </Logo>
-        <BannerContent>
-          <Quote>
-            &ldquo;The future of customer engagement is here. Build simpler,
-            smarter, and faster with AI agents.&rdquo;
-          </Quote>
-          <Author>Platform Vision</Author>
-        </BannerContent>
-        <div /> {/* Spacer */}
-      </BannerSection>
-
-      <FormSection>
-        <FormContainer>
-          <Header>
-            <Title>Welcome Back</Title>
-            <Subtitle>Please enter your details to sign in.</Subtitle>
-          </Header>
-
-          {error && (
-            <ErrorMessage>
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <circle
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                />
-                <path
-                  d="M12 8V12"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-                <circle cx="12" cy="16" r="1" fill="currentColor" />
-              </svg>
-              {error}
-            </ErrorMessage>
-          )}
-
-          <Form onSubmit={handleLogin}>
-            <FormGroup>
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
+    <RefreshAuthGuard>
+      <AuthContainer>
+        <BannerSection>
+          <Logo>
+            <svg
+              width="32"
+              height="32"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M12 2L2 7L12 12L22 7L12 2Z"
+                stroke="white"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               />
-            </FormGroup>
+              <path
+                d="M2 17L12 22L22 17"
+                stroke="white"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M2 12L12 17L22 12"
+                stroke="white"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            Agentify
+          </Logo>
+          <BannerContent>
+            <Quote>
+              &ldquo;The future of customer engagement is here. Build simpler,
+              smarter, and faster with AI agents.&rdquo;
+            </Quote>
+            <Author>Platform Vision</Author>
+          </BannerContent>
+          <div /> {/* Spacer */}
+        </BannerSection>
 
-            <FormGroup>
-              <Label htmlFor="password">Password</Label>
-              <PasswordInputWrapper>
+        <FormSection>
+          <FormContainer>
+            <Header>
+              <Title>Welcome Back</Title>
+              <Subtitle>Please enter your details to sign in.</Subtitle>
+            </Header>
+
+            {error && (
+              <ErrorMessage>
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  />
+                  <path
+                    d="M12 8V12"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                  <circle cx="12" cy="16" r="1" fill="currentColor" />
+                </svg>
+                {error}
+              </ErrorMessage>
+            )}
+
+            <Form onSubmit={handleLogin}>
+              <FormGroup>
+                <Label htmlFor="email">Email</Label>
                 <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  id="email"
+                  type="email"
+                  placeholder="Enter your email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   required
                 />
-                <PasswordToggle
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? <EyeSlash size={20} /> : <Eye size={20} />}
-                </PasswordToggle>
-              </PasswordInputWrapper>
-            </FormGroup>
+              </FormGroup>
 
-            <SubmitButton type="submit" disabled={loading}>
-              {loading ? (
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "8px",
-                  }}
-                >
-                  <CircleNotch size={20} className="animate-spin" />
-                  Signing in...
-                </div>
-              ) : (
-                "Sign In"
-              )}
-            </SubmitButton>
-          </Form>
+              <FormGroup>
+                <Label htmlFor="password">Password</Label>
+                <PasswordInputWrapper>
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                  <PasswordToggle
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? (
+                      <EyeSlashIcon size={20} />
+                    ) : (
+                      <EyeIcon size={20} />
+                    )}
+                  </PasswordToggle>
+                </PasswordInputWrapper>
+              </FormGroup>
 
-          <Footer>
-            Don&apos;t have an account?
-            <LinkText href="/signup">Sign up for free</LinkText>
-          </Footer>
-        </FormContainer>
-      </FormSection>
-    </AuthContainer>
+              <SubmitButton type="submit" disabled={loading}>
+                {loading ? (
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "8px",
+                    }}
+                  >
+                    <CircleNotchIcon size={20} className="animate-spin" />
+                    Signing in...
+                  </div>
+                ) : (
+                  "Sign In"
+                )}
+              </SubmitButton>
+            </Form>
+
+            <Footer>
+              Don&apos;t have an account?
+              <LinkText href="/signup">Sign up for free</LinkText>
+            </Footer>
+          </FormContainer>
+        </FormSection>
+      </AuthContainer>
+    </RefreshAuthGuard>
   );
 }

@@ -5,7 +5,7 @@ export * from "./custom-select";
 export * from "./scroll-to-top";
 export * from "./loader";
 export * from "./color-picker";
-export * from "./stats-card";
 export * from "./empty-state";
 export * from "./search-bar";
 export * from "./status-badge";
+export * from "./embed-success";

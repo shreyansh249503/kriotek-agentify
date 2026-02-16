@@ -156,6 +156,18 @@ export const BotMeta = styled.div`
   align-items: center;
   margin-bottom: ${({ theme }) => theme.spacing.xs};
 `;
+export const BotName = styled.h3`
+  font-size: 18px;
+  font-weight: 500;
+  color: ${({ theme }) => theme.colors.dark};
+  text-decoration: none;
+  transition: all 0.3s ease;
+  cursor: pointer;
+
+  &:hover {
+    color: ${({ theme }) => theme.colors.primary};
+  }
+`;
 
 export const BotDescription = styled.p`
   font-size: 14px;
