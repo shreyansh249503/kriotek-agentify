@@ -5,15 +5,21 @@ import {
   ButtonWrapper,
   GoToHomeButton,
   HeaderContainer,
-  HeaderTitle,
   InnerHeaderwrapper,
+  LogoContainer,
+  Logo,
 } from "./styled";
+import BotLogo from "@/assets/images/agentigy-logo-black.png";
+import { useRouter } from "next/navigation";
 
 export const Adminheader = () => {
+  const router = useRouter();
   return (
     <HeaderContainer>
       <InnerHeaderwrapper>
-        <HeaderTitle href={"/admin"}>AI Bot Admin</HeaderTitle>
+        <LogoContainer  onClick={() => router.push("/admin")}>
+          <Logo src={BotLogo} alt="Agentigy Logo" width={140} />
+        </LogoContainer>
         <ButtonWrapper>
           <LogoutButton />
           <GoToHomeButton href={"/"}>Go to Home</GoToHomeButton>

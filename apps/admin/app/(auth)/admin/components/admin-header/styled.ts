@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import styled from "styled-components";
 
@@ -28,6 +29,23 @@ export const InnerHeaderwrapper = styled.div`
     flex-direction: column;
     gap: ${({ theme }) => theme.spacing.md};
   }
+`;
+
+export const LogoContainer = styled.div`
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+
+  &:hover {
+    transform: scale(1.02);
+  }
+`;
+
+export const Logo = styled(Image)`
+  width: auto;
+  height: 50px;
+  object-fit: contain;
 `;
 
 export const HeaderTitle = styled(Link)`

@@ -12,7 +12,6 @@ import {
   EditBotButton,
   IngestButton,
   ControlsContainer,
-  FilterSelect,
   BotMeta,
   BotDescription,
   BotActions,
@@ -24,7 +23,6 @@ export default function AdminContent() {
   const [bots, setBots] = useState<Bot[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState("");
-  // const [filterStatus, setFilterStatus] = useState("all");
 
   useEffect(() => {
     async function loadBots() {
@@ -79,12 +77,10 @@ export default function AdminContent() {
     <AdminContainer>
       <ControlsContainer>
         <SearchBar placeholder="Search bots..." onSearch={setSearchTerm} />
-        {/* <div style={{ display: "flex", gap: "12px", alignItems: "center" }}> */}
           <AddNewBotButton href={"/admin/new"}>
             New Bot
             <PlusCircle size="sm" />
           </AddNewBotButton>
-        {/* </div> */}
       </ControlsContainer>
 
       {filteredBots.length > 0 ? (
