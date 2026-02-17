@@ -130,8 +130,10 @@ export const FormSection = styled.div`
   gap: ${({ theme }) => theme.spacing.lg};
   padding: ${({ theme }) => theme.spacing.xl};
   background-color: ${({ theme }) => theme.colors.cream};
+  /* background-color: #a8e10c2f; */
   border-radius: ${({ theme }) => theme.borderRadius.lg};
   border: 1px solid ${({ theme }) => theme.colors.border};
+  box-shadow: 0 20px 40px -5px rgba(0, 0, 0, 0.1);
 `;
 
 export const SectionHeader = styled.div`

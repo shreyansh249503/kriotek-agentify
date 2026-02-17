@@ -52,14 +52,14 @@ export const TabContainer = styled.div`
   padding-bottom: ${({ theme }) => theme.spacing.xs};
 `;
 
-export const TabButton = styled.button<{ isActive: boolean }>`
+export const TabButton = styled.button<{ $isActive: boolean }>`
   background: none;
   border: none;
   padding: ${({ theme }) => theme.spacing.sm} ${({ theme }) => theme.spacing.lg};
   font-size: 16px;
   font-weight: 600;
-  color: ${({ isActive, theme }) =>
-    isActive ? theme.colors.primary : theme.colors.textSecondary};
+  color: ${({ $isActive, theme }) =>
+    $isActive ? theme.colors.primary : theme.colors.textSecondary};
   cursor: pointer;
   position: relative;
   transition: all 0.3s ease;
@@ -71,8 +71,8 @@ export const TabButton = styled.button<{ isActive: boolean }>`
     left: 0;
     width: 100%;
     height: 3px;
-    background-color: ${({ isActive, theme }) =>
-      isActive ? theme.colors.primary : "transparent"};
+    background-color: ${({ $isActive, theme }) =>
+      $isActive ? theme.colors.primary : "transparent"};
     border-radius: 3px 3px 0 0;
     transition: all 0.3s ease;
   }

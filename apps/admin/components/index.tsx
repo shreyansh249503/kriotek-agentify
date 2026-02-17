@@ -9,3 +9,4 @@ export * from "./empty-state";
 export * from "./search-bar";
 export * from "./status-badge";
 export * from "./embed-success";
+export * from "./footer";

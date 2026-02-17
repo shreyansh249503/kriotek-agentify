@@ -10,12 +10,11 @@ export const Container = styled.div`
   flex-direction: column;
   justify-content: flex-start;
   align-items: center;
-  padding: ${({ theme }) => theme.spacing.xxl}
-    ${({ theme }) => theme.spacing.md};
+  background-color: ${({ theme }) => theme.colors.primary};
+  padding: ${({ theme }) => theme.spacing.xxl} ${({ theme }) => theme.spacing.md};
 
   @media (max-width: ${({ theme }) => theme.breakpoints.tablet}) {
-    padding: ${({ theme }) => theme.spacing.lg}
-      ${({ theme }) => theme.spacing.md};
+    padding: ${({ theme }) => theme.spacing.lg} ${({ theme }) => theme.spacing.md};
   }
 `;
 
@@ -24,6 +23,7 @@ export const AdminContainer = styled.div`
   max-width: 1400px;
   display: flex;
   flex-direction: column;
+  background-color: ${({ theme }) => theme.colors.primary};
   gap: ${({ theme }) => theme.spacing.xl};
 `;
 
@@ -124,6 +124,7 @@ export const BotCardContainer = styled.div`
   background-color: ${({ theme }) => theme.colors.white};
   border-radius: ${({ theme }) => theme.borderRadius.lg};
   box-shadow: 0 4px 12px ${({ theme }) => theme.colors.shadow};
+  border: 1px solid ${({ theme }) => theme.colors.border};
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;

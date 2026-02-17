@@ -16,8 +16,7 @@ export const HeaderContainer = styled.header`
 `;
 
 export const InnerHeaderwrapper = styled.div`
-  width: 90%;
-  max-width: 1400px;
+  width: 75%;
   padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.xl};
   display: flex;
   justify-content: space-between;

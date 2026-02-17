@@ -9,7 +9,7 @@ export default function AdminLayout({
   return (
     <AuthGuard>
       <Adminheader />
-      <main style={{ padding: 24 }}>{children}</main>
+      <main>{children}</main>
     </AuthGuard>
   );
 }

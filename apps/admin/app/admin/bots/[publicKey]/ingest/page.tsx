@@ -122,15 +122,21 @@ export default function IngestPage() {
         {!success && (
           <TabContainer>
             <TabButton
-              isActive={mode === "text"}
+              $isActive={mode === "text"}
               onClick={() => setMode("text")}
             >
               Text Ingest
             </TabButton>
-            <TabButton isActive={mode === "url"} onClick={() => setMode("url")}>
+            <TabButton
+              $isActive={mode === "url"}
+              onClick={() => setMode("url")}
+            >
               URL Ingest
             </TabButton>
-            <TabButton isActive={mode === "pdf"} onClick={() => setMode("pdf")}>
+            <TabButton
+              $isActive={mode === "pdf"}
+              onClick={() => setMode("pdf")}
+            >
               PDF
             </TabButton>
           </TabContainer>

@@ -1,16 +1,18 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   HeaderContainer,
-  HeaderTitle,
   InnerHeaderwrapper,
+  LogoContainer,
+  Logo,
+  NavLinks,
   LinkTag,
   LoginSignupContainer,
-  Logo,
+  AuthButton,
   PersonLogo,
 } from "./styled";
-import BotLogo from "@/assets/images/bot-logo.png";
+import BotLogo from "@/assets/images/agentigy-logo-black.png";
 import PersonAvatar from "@/assets/images/person-avatar.png";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
@@ -24,26 +26,36 @@ export const Header = () => {
       setUser(data.session?.user || null);
     });
   }, []);
+
   return (
     <HeaderContainer>
       <InnerHeaderwrapper>
-        <HeaderTitle>
-          <Logo src={BotLogo} alt="Company Logo" width={40} height={40} />
-          Agentify
-        </HeaderTitle>
+        <LogoContainer onClick={() => router.push("/")}>
+          <Logo src={BotLogo} alt="Agentigy Logo" width={140} />
+        </LogoContainer>
+
+        <NavLinks>
+          <LinkTag href="/#features">Features</LinkTag>
+          <LinkTag href="/#benefits">Benefits</LinkTag>
+          <LinkTag href="/pricing">Pricing</LinkTag>
+          <LinkTag href="/docs">Docs</LinkTag>
+        </NavLinks>
+
         <LoginSignupContainer>
           {user ? (
             <PersonLogo
               src={PersonAvatar}
-              alt="Company Logo"
+              alt="User Avatar"
               width={40}
               height={40}
               onClick={() => router.push("/admin")}
             />
           ) : (
             <>
-              <LinkTag href={"/login"}>Login</LinkTag>
-              <LinkTag href={"/signup"}>SignUp</LinkTag>
+              <AuthButton href="/login">Login</AuthButton>
+              <AuthButton href="/signup" $variant="primary">
+                Sign Up
+              </AuthButton>
             </>
           )}
         </LoginSignupContainer>

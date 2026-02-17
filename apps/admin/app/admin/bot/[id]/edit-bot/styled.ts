@@ -9,6 +9,7 @@ export const NewBotContainer = styled.div`
   justify-content: center;
   align-items: center;
   padding: ${({ theme }) => theme.spacing.lg};
+  /* background-color: ${({ theme }) => theme.colors.primaryHover}; */
 `;
 
 export const NewBotWrapper = styled.div`

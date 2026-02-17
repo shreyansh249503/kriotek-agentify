@@ -40,7 +40,7 @@ html {
     height: 100%;
     font-family: poppins, sans-serif;
     overflow-x: hidden;
-    background-color: #9FCD6B;
+    /* background-color: #9FCD6B; */
   }
 
     * {

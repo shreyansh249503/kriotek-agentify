@@ -24,7 +24,7 @@ export default function AdminContent() {
   const [bots, setBots] = useState<Bot[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterStatus, setFilterStatus] = useState("all");
+  // const [filterStatus, setFilterStatus] = useState("all");
 
   useEffect(() => {
     async function loadBots() {
@@ -57,11 +57,9 @@ export default function AdminContent() {
       const matchesSearch = bot.name
         .toLowerCase()
         .includes(searchTerm.toLowerCase());
-      // Assuming bots might have a status field in the future, currently just mock logic or all active
-      const matchesFilter = filterStatus === "all" || "active" === filterStatus;
-      return matchesSearch && matchesFilter;
+      return matchesSearch;
     });
-  }, [bots, searchTerm, filterStatus]);
+  }, [bots, searchTerm]);
 
   if (loading) {
     return (
@@ -81,20 +79,12 @@ export default function AdminContent() {
     <AdminContainer>
       <ControlsContainer>
         <SearchBar placeholder="Search bots..." onSearch={setSearchTerm} />
-        <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-          <FilterSelect
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-          >
-            <option value="all">All Status</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-          </FilterSelect>
+        {/* <div style={{ display: "flex", gap: "12px", alignItems: "center" }}> */}
           <AddNewBotButton href={"/admin/new"}>
             New Bot
             <PlusCircle size="sm" />
           </AddNewBotButton>
-        </div>
+        {/* </div> */}
       </ControlsContainer>
 
       {filteredBots.length > 0 ? (
