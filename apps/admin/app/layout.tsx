@@ -1,3 +1,4 @@
+import ReactQueryProvider from "@/lib/react-query-provider";
 import { StyledComponentsRegistry } from "@/styles/registry";
 
 export default function RootLayout({
@@ -8,7 +9,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <StyledComponentsRegistry>{children}</StyledComponentsRegistry>
+        <ReactQueryProvider>
+          <StyledComponentsRegistry>{children}</StyledComponentsRegistry>
+        </ReactQueryProvider>
       </body>
     </html>
   );

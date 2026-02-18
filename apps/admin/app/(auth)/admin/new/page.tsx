@@ -1,32 +1,30 @@
 "use client";
 
 import { BotForm } from "@/components";
-import { supabase } from "@/lib/supabase";
 import { CreateBotInput } from "@/types/bot";
 import { NewBotContainer } from "./styled";
+import { useRouter } from "next/navigation";
+import { useCreateBot } from "@/hooks/useBot";
 
 export default function NewBotPage() {
-  async function createBot(data: CreateBotInput) {
-    const session = await supabase.auth.getSession();
+  const router = useRouter();
+  const { mutate, isPending } = useCreateBot();
 
-    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bots`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${session.data.session?.access_token}`,
+  const handleCreate = (data: CreateBotInput) => {
+    mutate(data, {
+      onSuccess: () => {
+        router.push("/admin");
       },
-      body: JSON.stringify(data),
     });
-
-    window.location.href = "/admin";
-  }
+  };
 
   return (
     <NewBotContainer>
       <BotForm
         title="Create New Bot"
         submitLabel="Create Bot"
-        onSubmit={createBot}
+        onSubmit={handleCreate}
+        loading={isPending}
       />
     </NewBotContainer>
   );

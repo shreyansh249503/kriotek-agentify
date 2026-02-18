@@ -65,7 +65,7 @@ export default function AdminContent() {
         style={{
           justifyContent: "center",
           alignItems: "center",
-          minHeight: "50vh",
+          minHeight: "80vh",
         }}
       >
         <Loader />

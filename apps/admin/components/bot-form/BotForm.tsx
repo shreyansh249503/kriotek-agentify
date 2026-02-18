@@ -16,37 +16,48 @@ import {
   ToggleSwitch,
   BotFormTitle,
 } from "./styled";
-import { Bot, CreateBotInput, UpdateBotInput } from "@/types/bot";
+import { CreateBotInput } from "@/types/bot";
 import { CustomSelect } from "../custom-select";
 import { ColorPicker } from "../color-picker";
-
-interface BotFormProps {
-  initialData?: Bot;
-  onSubmit: (data: CreateBotInput | UpdateBotInput) => Promise<void>;
-  submitLabel: string;
-  title: string;
-}
+import { BotFormProps } from "./type";
 
 export const BotForm = ({
   initialData,
   onSubmit,
   submitLabel,
   title,
+  loading = false,
 }: BotFormProps) => {
-  const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState<CreateBotInput>({
-    name: initialData?.name ?? "",
-    description: initialData?.description ?? "",
-    tone: initialData?.tone ?? "friendly",
-    primaryColor: initialData?.primary_color ?? "#4f46e5",
-    contactEnabled: initialData?.contact_enabled ?? false,
-    contactEmail: initialData?.contact_email ?? "",
-    contactPrompt:
-      initialData?.contact_prompt ??
-      "Would you like us to contact you for more details?",
+  const defaultValues: CreateBotInput = {
+    name: "",
+    description: "",
+    tone: "friendly",
+    primaryColor: "#4f46e5",
+    contactEnabled: false,
+    contactEmail: "",
+    contactPrompt: "Would you like us to contact you for more details?",
     contactEmailMessage:
-      initialData?.contact_email_message ??
       "Thanks for reaching out! Our team will contact you shortly.",
+  };
+
+  const [form, setForm] = useState<CreateBotInput>(() => {
+    if (initialData) {
+      return {
+        name: initialData.name ?? "",
+        description: initialData.description ?? "",
+        tone: (initialData.tone as CreateBotInput["tone"]) ?? "friendly",
+        primaryColor: initialData.primary_color ?? "#4f46e5",
+        contactEnabled: initialData.contact_enabled ?? false,
+        contactEmail: initialData.contact_email ?? "",
+        contactPrompt:
+          initialData.contact_prompt ??
+          "Would you like us to contact you for more details?",
+        contactEmailMessage:
+          initialData.contact_email_message ??
+          "Thanks for reaching out! Our team will contact you shortly.",
+      };
+    }
+    return defaultValues;
   });
 
   function update<K extends keyof CreateBotInput>(
@@ -58,14 +69,7 @@ export const BotForm = ({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
-    try {
-      await onSubmit(form);
-    } catch (error) {
-      console.error("Error submitting form:", error);
-    } finally {
-      setLoading(false);
-    }
+    await onSubmit(form);
   }
 
   return (

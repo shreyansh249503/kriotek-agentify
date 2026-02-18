@@ -11,7 +11,7 @@ export const Container = styled.div`
   flex-direction: column;
   justify-content: flex-start;
   align-items: center;
-  background-color: ${COLOR.PRIMARY};
+  background-color: ${COLOR.LIGHT};
   padding: 48px 16px;
 
   @media (max-width: ${BREAKPOINTS.TABLET}) {
@@ -24,7 +24,6 @@ export const AdminContainer = styled.div`
   max-width: 1400px;
   display: flex;
   flex-direction: column;
-  background-color: ${COLOR.PRIMARY};
   gap: 32px;
 `;
 

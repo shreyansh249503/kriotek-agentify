@@ -7,6 +7,7 @@ import {
   SearchIcon,
   ClearButton,
 } from "./styled";
+import { MagnifyingGlassIcon, XCircleIcon } from "@phosphor-icons/react";
 
 interface SearchBarProps {
   placeholder?: string;
@@ -50,7 +51,9 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 
   return (
     <SearchBarContainer>
-      <SearchIcon>🔍</SearchIcon>
+      <SearchIcon>
+        <MagnifyingGlassIcon weight="bold" />
+      </SearchIcon>
       <SearchInput
         type="text"
         value={value}
@@ -59,7 +62,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
       />
       {value && (
         <ClearButton onClick={handleClear} aria-label="Clear search">
-          ✕
+          <XCircleIcon weight="fill" size={24} />
         </ClearButton>
       )}
     </SearchBarContainer>
