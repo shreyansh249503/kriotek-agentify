@@ -1,5 +1,6 @@
 "use client";
 
+import { BREAKPOINTS, COLOR } from "@/styles";
 import Link from "next/link";
 import styled from "styled-components";
 
@@ -10,11 +11,11 @@ export const Container = styled.div`
   flex-direction: column;
   justify-content: flex-start;
   align-items: center;
-  background-color: ${({ theme }) => theme.colors.primary};
-  padding: ${({ theme }) => theme.spacing.xxl} ${({ theme }) => theme.spacing.md};
+  background-color: ${COLOR.PRIMARY};
+  padding: 48px 16px;
 
-  @media (max-width: ${({ theme }) => theme.breakpoints.tablet}) {
-    padding: ${({ theme }) => theme.spacing.lg} ${({ theme }) => theme.spacing.md};
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    padding: 24px 16px;
   }
 `;
 
@@ -23,21 +24,21 @@ export const AdminContainer = styled.div`
   max-width: 1400px;
   display: flex;
   flex-direction: column;
-  background-color: ${({ theme }) => theme.colors.primary};
-  gap: ${({ theme }) => theme.spacing.xl};
+  background-color: ${COLOR.PRIMARY};
+  gap: 32px;
 `;
 
 export const StatsGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: ${({ theme }) => theme.spacing.lg};
+  gap: 24px;
   width: 100%;
 
-  @media (max-width: ${({ theme }) => theme.breakpoints.desktop}) {
+  @media (max-width: ${BREAKPOINTS.DESKTOP}) {
     grid-template-columns: repeat(2, 1fr);
   }
 
-  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
     grid-template-columns: 1fr;
   }
 `;
@@ -47,19 +48,19 @@ export const ControlsContainer = styled.div`
   justify-content: space-between;
   align-items: center;
   width: 100%;
-  gap: ${({ theme }) => theme.spacing.md};
+  gap: 16px;
   flex-wrap: wrap;
-  margin-bottom: ${({ theme }) => theme.spacing.md};
+  margin-bottom: 16px;
 `;
 
 export const FilterSelect = styled.select`
-  padding: ${({ theme }) => theme.spacing.md};
-  padding-right: ${({ theme }) => theme.spacing.xl};
-  background-color: ${({ theme }) => theme.colors.white};
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: ${({ theme }) => theme.borderRadius.pill};
+  padding: 16px;
+  padding-right: 32px;
+  background-color: ${COLOR.WHITE};
+  border: 1px solid ${COLOR.BORDER};
+  border-radius: 999px;
   font-size: 14px;
-  color: ${({ theme }) => theme.colors.dark};
+  color: ${COLOR.DARK};
   cursor: pointer;
   outline: none;
   appearance: none;
@@ -70,7 +71,7 @@ export const FilterSelect = styled.select`
   min-width: 150px;
 
   &:focus {
-    border-color: ${({ theme }) => theme.colors.primary};
+    border-color: ${COLOR.PRIMARY};
   }
 `;
 
@@ -79,24 +80,24 @@ export const AddNewBotButton = styled(Link)`
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: ${({ theme }) => theme.spacing.sm};
-  padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.xl};
-  background-color: ${({ theme }) => theme.colors.primary};
-  color: ${({ theme }) => theme.colors.dark};
-  border-radius: ${({ theme }) => theme.borderRadius.pill};
+  gap: 8px;
+  padding: 16px 32px;
+  background-color: ${COLOR.PRIMARY};
+  color: ${COLOR.WHITE};
+  border-radius: 999px;
   text-decoration: none;
   font-size: 17px;
   font-weight: 700;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 12px ${({ theme }) => theme.colors.shadow};
+  box-shadow: 0 4px 12px ${COLOR.SHADOW};
 
   &:hover {
-    background-color: ${({ theme }) => theme.colors.primaryHover};
+    background-color: ${COLOR.PRIMARY_HOVER};
     transform: translateY(-3px);
     box-shadow: 0 8px 20px rgba(168, 225, 12, 0.3);
   }
 
-  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
     width: 100%;
   }
 `;
@@ -104,14 +105,14 @@ export const AddNewBotButton = styled(Link)`
 export const AdminContentWrapper = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: ${({ theme }) => theme.spacing.lg};
+  gap: 24px;
   width: 100%;
 
-  @media (max-width: ${({ theme }) => theme.breakpoints.tablet}) {
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   }
 
-  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
     grid-template-columns: 1fr;
   }
 `;
@@ -119,12 +120,12 @@ export const AdminContentWrapper = styled.div`
 export const BotCardContainer = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.md};
-  padding: ${({ theme }) => theme.spacing.xl};
-  background-color: ${({ theme }) => theme.colors.white};
-  border-radius: ${({ theme }) => theme.borderRadius.lg};
-  box-shadow: 0 4px 12px ${({ theme }) => theme.colors.shadow};
-  border: 1px solid ${({ theme }) => theme.colors.border};
+  gap: 16px;
+  padding: 32px;
+  background-color: ${COLOR.WHITE};
+  border-radius: 16px;
+  box-shadow: 0 4px 12px ${COLOR.SHADOW};
+  border: 1px solid ${COLOR.BORDER};
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
@@ -136,7 +137,7 @@ export const BotCardContainer = styled.div`
     left: 0;
     width: 4px;
     height: 100%;
-    background-color: ${({ theme }) => theme.colors.primary};
+    background-color: ${COLOR.PRIMARY};
     opacity: 0;
     transition: opacity 0.3s ease;
   }
@@ -155,24 +156,24 @@ export const BotMeta = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: ${({ theme }) => theme.spacing.xs};
+  margin-bottom: 4px;
 `;
 export const BotName = styled.h3`
   font-size: 18px;
   font-weight: 500;
-  color: ${({ theme }) => theme.colors.dark};
+  color: ${COLOR.DARK};
   text-decoration: none;
   transition: all 0.3s ease;
   cursor: pointer;
 
   &:hover {
-    color: ${({ theme }) => theme.colors.primary};
+    color: ${COLOR.PRIMARY};
   }
 `;
 
 export const BotDescription = styled.p`
   font-size: 14px;
-  color: ${({ theme }) => theme.colors.textSecondary};
+  color: ${COLOR.TEXT_SECONDARY};
   margin: 0;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -183,15 +184,15 @@ export const BotDescription = styled.p`
 
 export const BotActions = styled.div`
   display: flex;
-  gap: ${({ theme }) => theme.spacing.sm};
+  gap: 8px;
   margin-top: auto;
 `;
 
 export const IngestButton = styled(Link)`
-  padding: ${({ theme }) => theme.spacing.sm} ${({ theme }) => theme.spacing.lg};
-  background-color: ${({ theme }) => theme.colors.primary};
-  color: ${({ theme }) => theme.colors.dark};
-  border-radius: ${({ theme }) => theme.borderRadius.pill};
+  padding: 8px 24px;
+  background-color: ${COLOR.PRIMARY};
+  color: ${COLOR.DARK};
+  border-radius: 999px;
   text-decoration: none;
   text-align: center;
   font-size: 15px;
@@ -199,28 +200,28 @@ export const IngestButton = styled(Link)`
   transition: all 0.3s ease;
 
   &:hover {
-    background-color: ${({ theme }) => theme.colors.primaryHover};
+    background-color: ${COLOR.PRIMARY_HOVER};
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px ${({ theme }) => theme.colors.shadow};
+    box-shadow: 0 4px 8px ${COLOR.SHADOW};
   }
 `;
 
 export const EditBotButton = styled(Link)`
-  padding: ${({ theme }) => theme.spacing.sm} ${({ theme }) => theme.spacing.lg};
-  background-color: ${({ theme }) => theme.colors.white};
-  border-radius: ${({ theme }) => theme.borderRadius.pill};
+  padding: 8px 24px;
+  background-color: ${COLOR.WHITE};
+  border-radius: 999px;
   text-decoration: none;
   text-align: center;
-  border: 2px solid ${({ theme }) => theme.colors.primary};
+  border: 2px solid ${COLOR.PRIMARY};
   font-size: 15px;
   font-weight: 600;
-  color: ${({ theme }) => theme.colors.primary};
+  color: ${COLOR.PRIMARY};
   transition: all 0.3s ease;
 
   &:hover {
-    background-color: ${({ theme }) => theme.colors.primary};
-    color: ${({ theme }) => theme.colors.dark};
+    background-color: ${COLOR.PRIMARY};
+    color: ${COLOR.DARK};
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px ${({ theme }) => theme.colors.shadow};
+    box-shadow: 0 4px 8px ${COLOR.SHADOW};
   }
 `;

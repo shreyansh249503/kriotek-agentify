@@ -1,25 +1,26 @@
 "use client";
 
+import { BREAKPOINTS, COLOR } from "@/styles";
 import styled from "styled-components";
 
 export const LogoutBtn = styled.button`
-  padding: ${({ theme }) => theme.spacing.sm} ${({ theme }) => theme.spacing.lg};
-  background-color: ${({ theme }) => theme.colors.primary};
-  color: ${({ theme }) => theme.colors.white};
+  padding: 8px 24px;
+  background-color: ${COLOR.PRIMARY};
+  color: ${COLOR.DARK};
   border: none;
-  border-radius: ${({ theme }) => theme.borderRadius.pill};
+  border-radius: 999px;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
 
   &:hover {
-    background-color: ${({ theme }) => theme.colors.primaryHover};
+    background-color: ${COLOR.PRIMARY_HOVER};
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px ${({ theme }) => theme.colors.shadow};
+    box-shadow: 0 4px 8px ${COLOR.SHADOW};
   }
 
-  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
     width: 100%;
   }
 `;

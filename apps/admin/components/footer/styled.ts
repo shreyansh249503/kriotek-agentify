@@ -1,10 +1,12 @@
 import styled from "styled-components";
 import Link from "next/link";
+import { COLOR } from "@/styles";
+import { BREAKPOINTS } from "@/styles";
 
 export const FooterContainer = styled.footer`
-  background-color: ${({ theme }) => theme.colors.dark};
-  color: ${({ theme }) => theme.colors.white};
-  padding: ${({ theme }) => `${theme.spacing.xxl} ${theme.spacing.lg}`};
+  background-color: ${COLOR.DARK};
+  color: ${COLOR.WHITE};
+  padding: 48px 24px;
   position: relative;
   overflow: hidden;
 
@@ -18,7 +20,7 @@ export const FooterContainer = styled.footer`
     background: linear-gradient(
       90deg,
       transparent,
-      ${({ theme }) => theme.colors.primary},
+      ${COLOR.PRIMARY},
       transparent
     );
     opacity: 0.3;
@@ -34,14 +36,14 @@ export const FooterContent = styled.div`
 export const FooterGrid = styled.div`
   display: grid;
   grid-template-columns: 2fr repeat(3, 1fr);
-  gap: ${({ theme }) => theme.spacing.xl};
-  margin-bottom: ${({ theme }) => theme.spacing.xxl};
+  gap: 24px;
+  margin-bottom: 48px;
 
-  @media (max-width: ${({ theme }) => theme.breakpoints.tablet}) {
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
     grid-template-columns: repeat(2, 1fr);
   }
 
-  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
     grid-template-columns: 1fr;
   }
 `;
@@ -49,14 +51,14 @@ export const FooterGrid = styled.div`
 export const FooterBrand = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.md};
+  gap: 16px;
 `;
 
 export const FooterTitle = styled.h4`
   font-size: 18px;
   font-weight: 700;
-  color: ${({ theme }) => theme.colors.white};
-  margin-bottom: ${({ theme }) => theme.spacing.md};
+  color: ${COLOR.WHITE};
+  margin-bottom: 16px;
 `;
 
 export const BrandDescription = styled.p`
@@ -69,7 +71,7 @@ export const BrandDescription = styled.p`
 export const FooterColumn = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.sm};
+  gap: 8px;
 `;
 
 export const FooterLink = styled(Link)`
@@ -79,15 +81,15 @@ export const FooterLink = styled(Link)`
   transition: all 0.3s ease;
 
   &:hover {
-    color: ${({ theme }) => theme.colors.primary};
+    color: ${COLOR.PRIMARY};
     transform: translateX(4px);
   }
 `;
 
 export const SocialLinks = styled.div`
   display: flex;
-  gap: ${({ theme }) => theme.spacing.md};
-  margin-top: ${({ theme }) => theme.spacing.md};
+  gap: 16px;
+  margin-top: 16px;
 `;
 
 export const SocialIcon = styled.a`
@@ -96,21 +98,21 @@ export const SocialIcon = styled.a`
   transition: all 0.3s ease;
 
   &:hover {
-    color: ${({ theme }) => theme.colors.primary};
+    color: ${COLOR.PRIMARY};
     transform: translateY(-3px);
   }
 `;
 
 export const CopyrightSection = styled.div`
   border-top: 1px solid rgba(255, 255, 255, 0.1);
-  padding-top: ${({ theme }) => theme.spacing.xl};
+  padding-top: 32px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: ${({ theme }) => theme.spacing.md};
+  gap: 16px;
 
-  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
     flex-direction: column;
     text-align: center;
   }
@@ -123,5 +125,5 @@ export const CopyrightText = styled.span`
 
 export const LegalLinks = styled.div`
   display: flex;
-  gap: ${({ theme }) => theme.spacing.lg};
+  gap: 24px;
 `;

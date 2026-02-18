@@ -1,0 +1,14 @@
+export enum COLOR {
+  PRIMARY = "#A8E10C",
+  PRIMARY_HOVER = "#95CC00",
+  DARK = "#2E2E2E",
+  LIGHT = "#F5F5F5",
+  CREAM = "#E8F0E0",
+  BACKGROUND = "#9FCD6B",
+  BACKGROUND_2 = "#a8e10c2f",
+  BORDER = "#D4E8C1",
+  TEXT = "#2D2D2D",
+  TEXT_SECONDARY = "#4A4A4A",
+  WHITE = "#FFFFFF",
+  SHADOW = "rgba(0, 0, 0, 0.1)",
+}

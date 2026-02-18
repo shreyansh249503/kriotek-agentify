@@ -1,5 +1,6 @@
 "use client";
 
+import { COLOR } from "@/styles";
 import styled from "styled-components";
 
 export const Form = styled.form`
@@ -7,51 +8,51 @@ export const Form = styled.form`
   background: transparent;
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.lg};
+  gap: 24px;
 `;
 
 export const BotFormTitle = styled.h2`
   font-size: 24px;
   font-weight: 700;
-  color: ${({ theme }) => theme.colors.dark};
+  color: ${COLOR.DARK};
   margin: 0;
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing.sm};
+  gap: 8px;
 `;
 
 export const Field = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.sm};
+  gap: 8px;
 `;
 
 export const Label = styled.label`
   display: block;
   font-size: 15px;
   font-weight: 600;
-  color: ${({ theme }) => theme.colors.dark};
+  color: ${COLOR.DARK};
 `;
 
 export const Input = styled.input`
   width: 100%;
-  padding: ${({ theme }) => theme.spacing.md};
-  border: 2px solid ${({ theme }) => theme.colors.border};
-  border-radius: ${({ theme }) => theme.borderRadius.md};
+  padding: 16px;
+  border: 2px solid ${COLOR.BORDER};
+  border-radius: 12px;
   font-size: 15px;
   transition: all 0.3s ease;
-  background: ${({ theme }) => theme.colors.light};
-  color: ${({ theme }) => theme.colors.dark};
+  background: ${COLOR.LIGHT};
+  color: ${COLOR.DARK};
 
   &:focus {
     outline: none;
-    background: ${({ theme }) => theme.colors.white};
-    border-color: ${({ theme }) => theme.colors.primary};
+    background: ${COLOR.WHITE};
+    border-color: ${COLOR.PRIMARY};
     box-shadow: 0 0 0 4px rgba(168, 225, 12, 0.1);
   }
 
   &::placeholder {
-    color: ${({ theme }) => theme.colors.textSecondary};
+    color: ${COLOR.TEXT_SECONDARY};
   }
 
   &:disabled {
@@ -62,26 +63,26 @@ export const Input = styled.input`
 
 export const TextArea = styled.textarea`
   width: 100%;
-  padding: ${({ theme }) => theme.spacing.md};
-  border: 2px solid ${({ theme }) => theme.colors.border};
-  border-radius: ${({ theme }) => theme.borderRadius.md};
+  padding: 16px;
+  border: 2px solid ${COLOR.BORDER};
+  border-radius: 12px;
   font-size: 15px;
   min-height: 120px;
   transition: all 0.3s ease;
-  background: ${({ theme }) => theme.colors.light};
-  color: ${({ theme }) => theme.colors.dark};
+  background: ${COLOR.LIGHT};
+  color: ${COLOR.DARK};
   resize: vertical;
   font-family: inherit;
 
   &:focus {
     outline: none;
-    background: ${({ theme }) => theme.colors.white};
-    border-color: ${({ theme }) => theme.colors.primary};
+    background: ${COLOR.WHITE};
+    border-color: ${COLOR.PRIMARY};
     box-shadow: 0 0 0 4px rgba(168, 225, 12, 0.1);
   }
 
   &::placeholder {
-    color: ${({ theme }) => theme.colors.textSecondary};
+    color: ${COLOR.TEXT_SECONDARY};
   }
 
   &:disabled {
@@ -92,12 +93,12 @@ export const TextArea = styled.textarea`
 
 export const Select = styled.select`
   width: 100%;
-  padding: ${({ theme }) => theme.spacing.md};
-  border: 2px solid ${({ theme }) => theme.colors.border};
-  border-radius: ${({ theme }) => theme.borderRadius.md};
+  padding: 16px;
+  border: 2px solid ${COLOR.BORDER};
+  border-radius: 12px;
   font-size: 15px;
-  background-color: ${({ theme }) => theme.colors.light};
-  color: ${({ theme }) => theme.colors.dark};
+  background-color: ${COLOR.LIGHT};
+  color: ${COLOR.DARK};
   cursor: pointer;
   transition: all 0.2s;
   appearance: none;
@@ -109,13 +110,13 @@ export const Select = styled.select`
 
   &:focus {
     outline: none;
-    background-color: ${({ theme }) => theme.colors.white};
-    border-color: ${({ theme }) => theme.colors.primary};
+    background-color: ${COLOR.WHITE};
+    border-color: ${COLOR.PRIMARY};
     box-shadow: 0 0 0 4px rgba(168, 225, 12, 0.1);
   }
 
   &:hover {
-    border-color: ${({ theme }) => theme.colors.textSecondary};
+    border-color: ${COLOR.TEXT_SECONDARY};
   }
 
   option {
@@ -127,34 +128,34 @@ export const Select = styled.select`
 export const FormSection = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.lg};
-  padding: ${({ theme }) => theme.spacing.xl};
-  background-color: ${({ theme }) => theme.colors.cream};
+  gap: 24px;
+  padding: 32px;
+  background-color: ${COLOR.CREAM};
   /* background-color: #a8e10c2f; */
-  border-radius: ${({ theme }) => theme.borderRadius.lg};
-  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 16px;
+  border: 1px solid ${COLOR.BORDER};
   box-shadow: 0 20px 40px -5px rgba(0, 0, 0, 0.1);
 `;
 
 export const SectionHeader = styled.div`
-  margin-bottom: ${({ theme }) => theme.spacing.sm};
+  margin-bottom: 8px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  padding-bottom: ${({ theme }) => theme.spacing.md};
+  padding-bottom: 16px;
 `;
 
 export const SectionTitle = styled.h3`
   font-size: 18px;
   font-weight: 700;
-  color: ${({ theme }) => theme.colors.dark};
+  color: ${COLOR.DARK};
   margin: 0;
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing.sm};
+  gap: 8px;
 `;
 
 export const HelperText = styled.p`
   font-size: 13px;
-  color: ${({ theme }) => theme.colors.textSecondary};
+  color: ${COLOR.TEXT_SECONDARY};
   margin-top: 4px;
   margin-bottom: 0;
 `;
@@ -162,7 +163,7 @@ export const HelperText = styled.p`
 export const ToggleContainer = styled.label`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing.md};
+  gap: 16px;
   cursor: pointer;
   user-select: none;
 `;
@@ -171,9 +172,9 @@ export const ToggleSwitch = styled.div<{ checked: boolean }>`
   position: relative;
   width: 52px;
   height: 28px;
-  background-color: ${({ checked, theme }) =>
-    checked ? theme.colors.primary : theme.colors.border};
-  border-radius: ${({ theme }) => theme.borderRadius.pill};
+  background-color: ${({ checked }) =>
+    checked ? COLOR.PRIMARY : COLOR.BORDER};
+  border-radius: 999px;
   transition: all 0.3s ease;
 
   &::after {
@@ -183,7 +184,7 @@ export const ToggleSwitch = styled.div<{ checked: boolean }>`
     left: ${({ checked }) => (checked ? "28px" : "4px")};
     width: 20px;
     height: 20px;
-    background-color: ${({ theme }) => theme.colors.white};
+    background-color: ${COLOR.WHITE};
     border-radius: 50%;
     transition: all 0.3s ease;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
@@ -192,24 +193,24 @@ export const ToggleSwitch = styled.div<{ checked: boolean }>`
 
 export const Button = styled.button`
   width: 100%;
-  padding: ${({ theme }) => theme.spacing.md};
+  padding: 16px;
   font-size: 17px;
   font-weight: 700;
   border: none;
-  border-radius: ${({ theme }) => theme.borderRadius.pill};
+  border-radius: 999px;
   cursor: pointer;
-  background: ${({ theme }) => theme.colors.primary};
-  color: ${({ theme }) => theme.colors.dark};
+  background: ${COLOR.PRIMARY};
+  color: ${COLOR.DARK};
   transition: all 0.3s ease;
   box-shadow: 0 4px 12px rgba(168, 225, 12, 0.3);
-  margin-top: ${({ theme }) => theme.spacing.md};
+  margin-top: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: ${({ theme }) => theme.spacing.sm};
+  gap: 8px;
 
   &:hover {
-    background: ${({ theme }) => theme.colors.primaryHover};
+    background: ${COLOR.PRIMARY_HOVER};
     transform: translateY(-3px);
     box-shadow: 0 8px 20px rgba(168, 225, 12, 0.4);
   }

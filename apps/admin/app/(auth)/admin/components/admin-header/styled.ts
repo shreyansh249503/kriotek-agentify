@@ -1,5 +1,6 @@
 "use client";
 
+import { BREAKPOINTS, COLOR } from "@/styles";
 import Image from "next/image";
 import Link from "next/link";
 import styled from "styled-components";
@@ -9,8 +10,8 @@ export const HeaderContainer = styled.header`
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: ${({ theme }) => theme.colors.white};
-  box-shadow: 0 4px 12px ${({ theme }) => theme.colors.shadow};
+  background-color: ${COLOR.WHITE};
+  box-shadow: 0 4px 12px ${COLOR.SHADOW};
   position: sticky;
   top: 0;
   z-index: 9999;
@@ -18,16 +19,16 @@ export const HeaderContainer = styled.header`
 
 export const InnerHeaderwrapper = styled.div`
   width: 75%;
-  padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.xl};
+  padding: 16px 32px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing.md};
+  gap: 16px;
 
-  @media (max-width: ${({ theme }) => theme.breakpoints.tablet}) {
-    padding: ${({ theme }) => theme.spacing.md};
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    padding: 16px;
     flex-direction: column;
-    gap: ${({ theme }) => theme.spacing.md};
+    gap: 16px;
   }
 `;
 
@@ -51,18 +52,18 @@ export const Logo = styled(Image)`
 export const HeaderTitle = styled(Link)`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing.md};
+  gap: 16px;
   font-size: 28px;
   font-weight: 700;
-  color: ${({ theme }) => theme.colors.dark};
+  color: ${COLOR.DARK};
   text-decoration: none;
   transition: color 0.3s ease;
 
   &:hover {
-    color: ${({ theme }) => theme.colors.primary};
+    color: ${COLOR.PRIMARY};
   }
 
-  @media (max-width: ${({ theme }) => theme.breakpoints.tablet}) {
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
     font-size: 24px;
   }
 `;
@@ -70,34 +71,34 @@ export const HeaderTitle = styled(Link)`
 export const ButtonWrapper = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing.md};
+  gap: 16px;
 
-  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
     flex-direction: column;
     width: 100%;
-    gap: ${({ theme }) => theme.spacing.sm};
+    gap: 8px;
   }
 `;
 
 export const GoToHomeButton = styled(Link)`
-  padding: ${({ theme }) => theme.spacing.sm} ${({ theme }) => theme.spacing.lg};
-  background-color: ${({ theme }) => theme.colors.white};
-  border-radius: ${({ theme }) => theme.borderRadius.pill};
+  padding: 8px 24px;
+  background-color: ${COLOR.WHITE};
+  border-radius: 999px;
   text-decoration: none;
-  border: 2px solid ${({ theme }) => theme.colors.primary};
+  border: 2px solid ${COLOR.PRIMARY};
   font-size: 15px;
   font-weight: 600;
-  color: ${({ theme }) => theme.colors.primary};
+  color: ${COLOR.PRIMARY};
   transition: all 0.3s ease;
 
   &:hover {
-    background-color: ${({ theme }) => theme.colors.primary};
-    color: ${({ theme }) => theme.colors.white};
+    background-color: ${COLOR.PRIMARY};
+    color: ${COLOR.WHITE};
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px ${({ theme }) => theme.colors.shadow};
+    box-shadow: 0 4px 8px ${COLOR.SHADOW};
   }
 
-  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
     width: 100%;
     text-align: center;
   }

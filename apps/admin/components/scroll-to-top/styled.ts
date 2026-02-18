@@ -1,5 +1,6 @@
 "use client";
 
+import { COLOR } from "@/styles";
 import styled, { keyframes } from "styled-components";
 
 const fadeIn = keyframes`
@@ -31,7 +32,7 @@ export const ScrollButton = styled.button<{ $visible: boolean }>`
   width: 50px;
   height: 50px;
   border-radius: 50%;
-  background: ${({ theme }) => theme.colors.primary};
+  background: ${COLOR.PRIMARY};
   color: white;
   border: none;
   cursor: pointer;

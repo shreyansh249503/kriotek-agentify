@@ -1,5 +1,6 @@
 "use client";
 
+import { COLOR } from "@/styles";
 import styled from "styled-components";
 
 export const SearchBarContainer = styled.div`
@@ -10,23 +11,22 @@ export const SearchBarContainer = styled.div`
 
 export const SearchInput = styled.input`
   width: 100%;
-  padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.md}
-    ${({ theme }) => theme.spacing.md} 48px;
-  background-color: ${({ theme }) => theme.colors.white};
-  border: 2px solid ${({ theme }) => theme.colors.border};
-  border-radius: ${({ theme }) => theme.borderRadius.pill};
+  padding: 12px 12px 12px 48px;
+  background-color: ${COLOR.WHITE};
+  border: 2px solid ${COLOR.BORDER};
+  border-radius: 999px;
   font-size: 15px;
-  color: ${({ theme }) => theme.colors.dark};
+  color: ${COLOR.DARK};
   transition: all 0.3s ease;
 
   &:focus {
     outline: none;
-    border-color: ${({ theme }) => theme.colors.primary};
+    border-color: ${COLOR.PRIMARY};
     box-shadow: 0 0 0 4px rgba(168, 225, 12, 0.1);
   }
 
   &::placeholder {
-    color: ${({ theme }) => theme.colors.textSecondary};
+    color: ${COLOR.TEXT_SECONDARY};
   }
 `;
 
@@ -35,7 +35,7 @@ export const SearchIcon = styled.div`
   left: 16px;
   top: 50%;
   transform: translateY(-50%);
-  color: ${({ theme }) => theme.colors.textSecondary};
+  color: ${COLOR.TEXT_SECONDARY};
   font-size: 20px;
   pointer-events: none;
 `;
@@ -47,7 +47,7 @@ export const ClearButton = styled.button`
   transform: translateY(-50%);
   background: none;
   border: none;
-  color: ${({ theme }) => theme.colors.textSecondary};
+  color: ${COLOR.TEXT_SECONDARY};
   cursor: pointer;
   padding: 4px;
   display: flex;
@@ -57,7 +57,7 @@ export const ClearButton = styled.button`
   transition: all 0.2s ease;
 
   &:hover {
-    background-color: ${({ theme }) => theme.colors.light};
-    color: ${({ theme }) => theme.colors.dark};
+    background-color: ${COLOR.LIGHT};
+    color: ${COLOR.DARK};
   }
 `;

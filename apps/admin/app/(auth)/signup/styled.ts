@@ -1,5 +1,6 @@
 import styled, { keyframes } from "styled-components";
 import Link from "next/link";
+import { COLOR } from "@/styles";
 
 const fadeIn = keyframes`
   from { opacity: 0; transform: translateY(20px); }
@@ -9,7 +10,7 @@ const fadeIn = keyframes`
 export const AuthContainer = styled.div`
   min-height: 100vh;
   display: flex;
-  background: ${({ theme }) => theme.colors.white};
+  background: ${COLOR.WHITE};
 
   @media (max-width: 768px) {
     flex-direction: column;
@@ -18,7 +19,7 @@ export const AuthContainer = styled.div`
 
 export const BannerSection = styled.div`
   flex: 1;
-  background-color: ${({ theme }) => theme.colors.dark};
+  background-color: ${COLOR.DARK};
   background-image:
     radial-gradient(at 0% 0%, #1a1a1a 0, transparent 50%),
     radial-gradient(at 100% 0%, #333333 0, transparent 50%);
@@ -55,7 +56,7 @@ export const BannerContent = styled.div`
 export const Logo = styled.div`
   font-size: 28px;
   font-weight: 800;
-  color: ${({ theme }) => theme.colors.white};
+  color: ${COLOR.WHITE};
   display: flex;
   align-items: center;
   gap: 12px;
@@ -64,14 +65,14 @@ export const Logo = styled.div`
 export const Quote = styled.blockquote`
   font-size: 32px;
   font-weight: 600;
-  color: ${({ theme }) => theme.colors.white};
+  color: ${COLOR.WHITE};
   line-height: 1.3;
   margin: 0 0 24px 0;
 `;
 
 export const Author = styled.div`
   font-size: 16px;
-  color: ${({ theme }) => theme.colors.primary};
+  color: ${COLOR.PRIMARY};
   font-weight: 600;
 `;
 
@@ -81,7 +82,7 @@ export const FormSection = styled.div`
   align-items: center;
   justify-content: center;
   padding: 40px;
-  background: ${({ theme }) => theme.colors.white};
+  background: ${COLOR.WHITE};
 
   @media (max-width: 768px) {
     padding: 24px;
@@ -104,13 +105,13 @@ export const Header = styled.div`
 export const Title = styled.h1`
   font-size: 32px;
   font-weight: 800;
-  color: ${({ theme }) => theme.colors.dark};
+  color: ${COLOR.DARK};
   margin-bottom: 12px;
 `;
 
 export const Subtitle = styled.p`
   font-size: 16px;
-  color: ${({ theme }) => theme.colors.textSecondary};
+  color: ${COLOR.TEXT_SECONDARY};
 `;
 
 export const Form = styled.form`
@@ -128,22 +129,22 @@ export const FormGroup = styled.div`
 export const Label = styled.label`
   font-size: 14px;
   font-weight: 600;
-  color: ${({ theme }) => theme.colors.text};
+  color: ${COLOR.TEXT};
 `;
 
 export const Input = styled.input`
   width: 100%;
   padding: 12px 16px;
   border-radius: 12px;
-  border: 1px solid ${({ theme }) => theme.colors.border};
+  border: 1px solid ${COLOR.BORDER};
   font-size: 16px;
   transition: all 0.2s;
-  background: ${({ theme }) => theme.colors.light};
+  background: ${COLOR.LIGHT};
 
   &:focus {
     outline: none;
-    border-color: ${({ theme }) => theme.colors.primary};
-    background: ${({ theme }) => theme.colors.white};
+    border-color: ${COLOR.PRIMARY};
+    background: ${COLOR.WHITE};
     box-shadow: 0 0 0 3px rgba(168, 225, 12, 0.1);
   }
 
@@ -163,20 +164,20 @@ export const PasswordToggle = styled.button`
   transform: translateY(-50%);
   background: none;
   border: none;
-  color: ${({ theme }) => theme.colors.textSecondary};
+  color: ${COLOR.TEXT_SECONDARY};
   cursor: pointer;
   padding: 4px;
 
   &:hover {
-    color: ${({ theme }) => theme.colors.primary};
+    color: ${COLOR.PRIMARY};
   }
 `;
 
 export const SubmitButton = styled.button`
   width: 100%;
   padding: 14px;
-  background: ${({ theme }) => theme.colors.primary};
-  color: ${({ theme }) => theme.colors.dark};
+  background: ${COLOR.PRIMARY};
+  color: ${COLOR.DARK};
   border: none;
   border-radius: 12px;
   font-size: 16px;
@@ -184,10 +185,10 @@ export const SubmitButton = styled.button`
   cursor: pointer;
   transition: all 0.2s;
   margin-top: 8px;
-  box-shadow: 0 4px 12px ${({ theme }) => theme.colors.shadow};
+  box-shadow: 0 4px 12px ${COLOR.SHADOW};
 
   &:hover {
-    background: ${({ theme }) => theme.colors.primaryHover};
+    background: ${COLOR.PRIMARY_HOVER};
     transform: translateY(-1px);
     box-shadow: 0 6px 16px rgba(168, 225, 12, 0.3);
   }
@@ -226,17 +227,17 @@ export const Footer = styled.div`
   margin-top: 32px;
   text-align: center;
   font-size: 14px;
-  color: ${({ theme }) => theme.colors.textSecondary};
+  color: ${COLOR.TEXT_SECONDARY};
 `;
 
 export const LinkText = styled(Link)`
-  color: ${({ theme }) => theme.colors.primary};
+  color: ${COLOR.PRIMARY};
   font-weight: 600;
   text-decoration: none;
   margin-left: 4px;
 
   &:hover {
     text-decoration: underline;
-    color: ${({ theme }) => theme.colors.primaryHover};
+    color: ${COLOR.PRIMARY_HOVER};
   }
 `;

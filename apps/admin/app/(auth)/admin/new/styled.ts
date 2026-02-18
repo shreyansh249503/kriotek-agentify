@@ -1,5 +1,6 @@
 "use client";
 
+import { BREAKPOINTS, COLOR } from "@/styles";
 import styled from "styled-components";
 
 export const NewBotContainer = styled.div`
@@ -8,8 +9,8 @@ export const NewBotContainer = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: ${({ theme }) => theme.spacing.lg};
-  background-color: ${({ theme }) => theme.colors.primary};
+  padding: 24px;
+  background-color: ${COLOR.WHITE};
 `;
 
 export const NewBotWrapper = styled.div`
@@ -18,29 +19,29 @@ export const NewBotWrapper = styled.div`
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: ${({ theme }) => theme.spacing.lg};
-  padding: ${({ theme }) => theme.spacing.xxl};
-  border-radius: ${({ theme }) => theme.borderRadius.lg};
-  box-shadow: 0 8px 24px ${({ theme }) => theme.colors.shadow};
-  background-color: ${({ theme }) => theme.colors.white};
+  gap: 24px;
+  padding: 48px;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px ${COLOR.SHADOW};
+  background-color: ${COLOR.WHITE};
 
-  @media (max-width: ${({ theme }) => theme.breakpoints.tablet}) {
-    padding: ${({ theme }) => theme.spacing.xl};
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    padding: 32px;
     max-width: 100%;
   }
 
-  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
-    padding: ${({ theme }) => theme.spacing.lg};
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    padding: 24px;
   }
 `;
 
 export const NewBotTitle = styled.h2`
   font-size: 32px;
   font-weight: 700;
-  color: ${({ theme }) => theme.colors.dark};
+  color: ${COLOR.DARK};
   text-align: center;
 
-  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
     font-size: 28px;
   }
 `;

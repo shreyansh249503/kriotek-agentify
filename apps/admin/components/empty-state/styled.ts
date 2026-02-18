@@ -1,5 +1,6 @@
 "use client";
 
+import { COLOR } from "@/styles";
 import styled from "styled-components";
 
 export const EmptyStateContainer = styled.div`
@@ -7,40 +8,39 @@ export const EmptyStateContainer = styled.div`
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: ${({ theme }) => theme.spacing.xxl}
-    ${({ theme }) => theme.spacing.lg};
+  padding: 48px 24px;
   text-align: center;
   min-height: 400px;
 `;
 
 export const EmptyIcon = styled.div`
   font-size: 64px;
-  color: ${({ theme }) => theme.colors.primary};
+  color: ${COLOR.PRIMARY};
   opacity: 0.5;
-  margin-bottom: ${({ theme }) => theme.spacing.lg};
+  margin-bottom: 24px;
 `;
 
 export const EmptyTitle = styled.h3`
   font-size: 24px;
   font-weight: 700;
-  color: ${({ theme }) => theme.colors.dark};
-  margin-bottom: ${({ theme }) => theme.spacing.sm};
+  color: ${COLOR.DARK};
+  margin-bottom: 8px;
 `;
 
 export const EmptyDescription = styled.p`
   font-size: 16px;
-  color: ${({ theme }) => theme.colors.textSecondary};
+  color: ${COLOR.TEXT_SECONDARY};
   max-width: 400px;
-  margin-bottom: ${({ theme }) => theme.spacing.xl};
+  margin-bottom: 32px;
   line-height: 1.6;
 `;
 
 export const EmptyActionButton = styled.button`
-  padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.xl};
-  background-color: ${({ theme }) => theme.colors.primary};
-  color: ${({ theme }) => theme.colors.dark};
+  padding: 16px 32px;
+  background-color: ${COLOR.PRIMARY};
+  color: ${COLOR.DARK};
   border: none;
-  border-radius: ${({ theme }) => theme.borderRadius.pill};
+  border-radius: 999px;
   font-size: 17px;
   font-weight: 700;
   cursor: pointer;
@@ -48,7 +48,7 @@ export const EmptyActionButton = styled.button`
   box-shadow: 0 4px 12px rgba(168, 225, 12, 0.3);
 
   &:hover {
-    background-color: ${({ theme }) => theme.colors.primaryHover};
+    background-color: ${COLOR.PRIMARY_HOVER};
     transform: translateY(-2px);
     box-shadow: 0 6px 16px rgba(168, 225, 12, 0.4);
   }

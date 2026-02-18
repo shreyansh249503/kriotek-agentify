@@ -1,5 +1,6 @@
 import styled, { keyframes } from "styled-components";
 import Link from "next/link";
+import { COLOR } from "@/styles";
 
 const fadeIn = keyframes`
   from { opacity: 0; transform: translateY(20px); }
@@ -40,16 +41,16 @@ export const HeroSection = styled.section`
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: ${({ theme }) => theme.colors.light};
+  background-color: ${COLOR.LIGHT};
   background-image:
     radial-gradient(
       at 0% 0%,
-      ${({ theme }) => theme.colors.cream} 0,
+      ${COLOR.CREAM} 0,
       transparent 50%
     ),
     radial-gradient(
       at 100% 0%,
-      ${({ theme }) => theme.colors.background} 0,
+      ${COLOR.BACKGROUND} 0,
       transparent 50%
     );
   position: relative;
@@ -122,11 +123,11 @@ export const AICircle = styled.div<{
     left: 50%;
     width: 12px;
     height: 12px;
-    background: ${({ theme }) => theme.colors.primary};
+    background: ${COLOR.PRIMARY};
     border-radius: 50%;
     box-shadow:
-      0 0 20px ${({ theme }) => theme.colors.primary},
-      0 0 40px ${({ theme }) => theme.colors.primary};
+      0 0 20px ${COLOR.PRIMARY},
+      0 0 40px ${COLOR.PRIMARY};
   }
 `;
 
@@ -140,10 +141,10 @@ export const FloatingParticle = styled.div<{
   left: ${({ $left }) => $left || "10%"};
   width: 6px;
   height: 6px;
-  background: ${({ theme }) => theme.colors.primary};
+  background: ${COLOR.PRIMARY};
   border-radius: 50%;
   opacity: 0.6;
-  box-shadow: 0 0 15px ${({ theme }) => theme.colors.primary};
+  box-shadow: 0 0 15px ${COLOR.PRIMARY};
   animation: ${float} 10s ease-in-out infinite;
   animation-delay: ${({ $delay }) => $delay || "0s"};
   z-index: 1;
@@ -162,7 +163,7 @@ export const DataStream = styled.div<{
   background: linear-gradient(
     to bottom,
     transparent,
-    ${({ theme }) => theme.colors.primary},
+    ${COLOR.PRIMARY},
     transparent
   );
   opacity: 0;
@@ -177,9 +178,9 @@ export const DataStream = styled.div<{
     left: -2px;
     width: 7px;
     height: 7px;
-    background: ${({ theme }) => theme.colors.primary};
+    background: ${COLOR.PRIMARY};
     border-radius: 50%;
-    box-shadow: 0 0 20px ${({ theme }) => theme.colors.primary};
+    box-shadow: 0 0 20px ${COLOR.PRIMARY};
   }
 `;
 
@@ -212,7 +213,7 @@ export const NeuralLine = styled.div<{
   height: 2.5px;
   background: linear-gradient(
     90deg,
-    ${({ theme }) => theme.colors.primary} 0%,
+    ${COLOR.PRIMARY} 0%,
     transparent 70%
   );
   opacity: 0.4;
@@ -229,9 +230,9 @@ export const NeuralLine = styled.div<{
     top: -2.5px;
     width: 7px;
     height: 7px;
-    background: ${({ theme }) => theme.colors.primary};
+    background: ${COLOR.PRIMARY};
     border-radius: 50%;
-    box-shadow: 0 0 15px ${({ theme }) => theme.colors.primary};
+    box-shadow: 0 0 15px ${COLOR.PRIMARY};
   }
 `;
 
@@ -252,7 +253,7 @@ export const MainHeading = styled.h1`
   font-weight: 800;
   line-height: 1.1;
   letter-spacing: -0.02em;
-  color: ${({ theme }) => theme.colors.dark};
+  color: ${COLOR.DARK};
   margin: 0;
   animation: ${fadeIn} 0.8s ease-out;
 
@@ -263,7 +264,7 @@ export const MainHeading = styled.h1`
 
 export const SubHeading = styled.p`
   font-size: 20px;
-  color: ${({ theme }) => theme.colors.textSecondary};
+  color: ${COLOR.TEXT_SECONDARY};
   max-width: 600px;
   line-height: 1.6;
   margin: 0;
@@ -284,16 +285,16 @@ export const CTAContainer = styled.div`
 
 export const PrimaryButton = styled(Link)`
   padding: 16px 32px;
-  background: ${({ theme }) => theme.colors.primary};
-  color: ${({ theme }) => theme.colors.dark};
+  background: ${COLOR.PRIMARY};
+  color: ${COLOR.DARK};
   font-weight: 700;
   border-radius: 9999px;
   text-decoration: none;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 12px ${({ theme }) => theme.colors.shadow};
+  box-shadow: 0 4px 12px ${COLOR.SHADOW};
 
   &:hover {
-    background: ${({ theme }) => theme.colors.primaryHover};
+    background: ${COLOR.PRIMARY_HOVER};
     transform: translateY(-2px);
     box-shadow: 0 8px 20px rgba(168, 225, 12, 0.4);
   }
@@ -302,23 +303,23 @@ export const PrimaryButton = styled(Link)`
 export const SecondaryButton = styled(Link)`
   padding: 16px 32px;
   background: white;
-  color: ${({ theme }) => theme.colors.dark};
+  color: ${COLOR.DARK};
   font-weight: 700;
   border-radius: 9999px;
   text-decoration: none;
-  border: 2px solid ${({ theme }) => theme.colors.border};
+  border: 2px solid ${COLOR.BORDER};
   transition: all 0.3s ease;
 
   &:hover {
-    border-color: ${({ theme }) => theme.colors.primary};
-    background: ${({ theme }) => theme.colors.light};
+    border-color: ${COLOR.PRIMARY};
+    background: ${COLOR.LIGHT};
     transform: translateY(-2px);
   }
 `;
 
 export const FeaturesSection = styled.section`
   padding: 120px 24px;
-  background: ${({ theme }) => theme.colors.white};
+  background: ${COLOR.WHITE};
   position: relative;
 `;
 
@@ -330,7 +331,7 @@ export const SectionContainer = styled.div`
 export const SectionTitle = styled.h2`
   font-size: 42px;
   font-weight: 800;
-  color: ${({ theme }) => theme.colors.dark};
+  color: ${COLOR.DARK};
   text-align: center;
   margin-bottom: 16px;
   letter-spacing: -0.02em;
@@ -338,7 +339,7 @@ export const SectionTitle = styled.h2`
 
 export const SectionSubtitle = styled.p`
   font-size: 18px;
-  color: ${({ theme }) => theme.colors.textSecondary};
+  color: ${COLOR.TEXT_SECONDARY};
   text-align: center;
   max-width: 600px;
   margin: 0 auto 80px;
@@ -352,17 +353,17 @@ export const FeaturesGrid = styled.div`
 
 export const FeatureCard = styled.div`
   padding: 40px;
-  background: ${({ theme }) => theme.colors.white};
-  border: 1px solid ${({ theme }) => theme.colors.border};
+  background: ${COLOR.WHITE};
+  border: 1px solid ${COLOR.BORDER};
   border-radius: 24px;
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   position: relative;
   overflow: hidden;
-  box-shadow: 0 4px 6px -1px ${({ theme }) => theme.colors.shadow};
+  box-shadow: 0 4px 6px -1px ${COLOR.SHADOW};
 
   &:hover {
     transform: translateY(-8px);
-    border-color: ${({ theme }) => theme.colors.primary};
+    border-color: ${COLOR.PRIMARY};
     box-shadow: 0 20px 40px -5px rgba(0, 0, 0, 0.1);
   }
 `;
@@ -370,34 +371,33 @@ export const FeatureCard = styled.div`
 export const FeatureIcon = styled.div`
   width: 56px;
   height: 56px;
-  /* background: ${({ theme }) => theme.colors.cream}; */
-  background-color: #a8e10c2f;
+  background-color: ${COLOR.BACKGROUND_2};
   border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 28px;
-  color: ${({ theme }) => theme.colors.primary}; // Or dark green
+  color: ${COLOR.PRIMARY}; // Or dark green
   margin-bottom: 24px;
 `;
 
 export const FeatureTitle = styled.h3`
   font-size: 20px;
   font-weight: 700;
-  color: ${({ theme }) => theme.colors.dark};
+  color: ${COLOR.DARK};
   margin-bottom: 12px;
 `;
 
 export const FeatureDescription = styled.p`
   font-size: 16px;
-  color: ${({ theme }) => theme.colors.textSecondary};
+  color: ${COLOR.TEXT_SECONDARY};
   line-height: 1.6;
   margin: 0;
 `;
 
 export const BenefitsSection = styled.section`
   padding: 120px 24px;
-  background: ${({ theme }) => theme.colors.light};
+  background: ${COLOR.LIGHT};
 `;
 
 export const BenefitsList = styled.div`
@@ -421,7 +421,7 @@ export const BenefitItem = styled.div`
 export const BenefitNumber = styled.span`
   font-size: 64px;
   font-weight: 800;
-  color: ${({ theme }) => theme.colors.border}; // Subtle number
+  color: ${COLOR.BORDER}; // Subtle number
   line-height: 1;
   font-feature-settings: "tnum";
   font-variant-numeric: tabular-nums;
@@ -434,20 +434,20 @@ export const BenefitContent = styled.div`
 export const BenefitTitle = styled.h4`
   font-size: 24px;
   font-weight: 700;
-  color: ${({ theme }) => theme.colors.dark};
+  color: ${COLOR.DARK};
   margin-bottom: 12px;
 `;
 
 export const BenefitDescription = styled.p`
   font-size: 16px;
-  color: ${({ theme }) => theme.colors.textSecondary};
+  color: ${COLOR.TEXT_SECONDARY};
   line-height: 1.6;
   margin: 0;
 `;
 
 export const FinalCTA = styled.section`
   padding: 120px 24px;
-  background: ${({ theme }) => theme.colors.dark};
+  background: ${COLOR.DARK};
   text-align: center;
   position: relative;
   overflow: hidden;
@@ -472,7 +472,7 @@ export const FinalCTA = styled.section`
 export const CTATitle = styled.h2`
   font-size: 48px;
   font-weight: 800;
-  color: ${({ theme }) => theme.colors.white};
+  color: ${COLOR.WHITE};
   margin-bottom: 24px;
   letter-spacing: -0.02em;
   position: relative;
@@ -480,7 +480,7 @@ export const CTATitle = styled.h2`
 
 export const CTADescription = styled.p`
   font-size: 20px;
-  color: ${({ theme }) => theme.colors.light};
+  color: ${COLOR.LIGHT};
   max-width: 600px;
   margin: 0 auto 48px;
   position: relative;
