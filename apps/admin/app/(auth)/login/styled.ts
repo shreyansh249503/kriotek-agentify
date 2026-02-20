@@ -60,6 +60,31 @@ export const Logo = styled.div`
   display: flex;
   align-items: center;
   gap: 12px;
+  margin-bottom: 28px;
+`;
+
+export const BackHomeLink = styled(Link)`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: ${COLOR.WHITE};
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  opacity: 0.8;
+  transition: all 0.2s;
+  margin-bottom: 32px;
+  width: fit-content;
+
+  &:hover {
+    opacity: 1;
+    color: ${COLOR.PRIMARY};
+    transform: translateX(-4px);
+  }
+
+  svg {
+    transition: transform 0.2s;
+  }
 `;
 
 export const Quote = styled.blockquote`

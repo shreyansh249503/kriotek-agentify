@@ -14,7 +14,9 @@ import {
   CopyrightSection,
   CopyrightText,
   LegalLinks,
+  FooterLogo,
 } from "./styled";
+import BotLogo from "@/assets/images/Agentify logo white.png";
 import {
   FacebookLogo,
   TwitterLogo,
@@ -28,7 +30,7 @@ export const Footer = () => {
       <FooterContent>
         <FooterGrid>
           <FooterBrand>
-            <FooterTitle>Agentigy</FooterTitle>
+            <FooterLogo src={BotLogo} alt="Footer Logo" width={140} />
             <BrandDescription>
               Build and manage intelligent AI agents with ease. Automate your
               workflow and enhance user engagement.

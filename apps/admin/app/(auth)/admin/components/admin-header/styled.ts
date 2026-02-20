@@ -1,52 +1,37 @@
 "use client";
 
 import { BREAKPOINTS, COLOR } from "@/styles";
-import Image from "next/image";
 import Link from "next/link";
 import styled from "styled-components";
 
 export const HeaderContainer = styled.header`
   width: 100%;
   display: flex;
-  justify-content: center;
   align-items: center;
   background-color: ${COLOR.WHITE};
-  box-shadow: 0 4px 12px ${COLOR.SHADOW};
+  border-bottom: 1px solid ${COLOR.BORDER};
   position: sticky;
   top: 0;
-  z-index: 9999;
+  z-index: 900;
+  height: 80px;
 `;
 
 export const InnerHeaderwrapper = styled.div`
-  width: 75%;
-  padding: 16px 32px;
+  width: 100%;
+  padding: 0 40px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 16px;
 
   @media (max-width: ${BREAKPOINTS.TABLET}) {
-    padding: 16px;
-    flex-direction: column;
-    gap: 16px;
+    padding: 0 24px;
   }
 `;
 
-export const LogoContainer = styled.div`
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  transition: transform 0.3s ease;
-
-  &:hover {
-    transform: scale(1.02);
-  }
-`;
-
-export const Logo = styled(Image)`
-  width: auto;
-  height: 50px;
-  object-fit: contain;
+export const PageTitle = styled.h2`
+  font-size: 20px;
+  font-weight: 700;
+  color: ${COLOR.DARK};
 `;
 
 export const HeaderTitle = styled(Link)`

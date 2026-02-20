@@ -12,7 +12,8 @@ import {
   AuthButton,
   PersonLogo,
 } from "./styled";
-import BotLogo from "@/assets/images/agentigy-logo-black.png";
+// import BotLogo from "@/assets/images/agentigy-logo-black.png";
+import BotLogo from "@/assets/images/Agentify logo black.png";
 import PersonAvatar from "@/assets/images/person-avatar.png";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";

@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import styled from "styled-components";
 import { CheckCircleIcon } from "@phosphor-icons/react";
+import { COLOR } from "@/styles";
 
 const SelectContainer = styled.div`
   position: relative;
@@ -12,7 +13,7 @@ const SelectContainer = styled.div`
 const SelectButton = styled.button<{ $isOpen: boolean }>`
   width: 100%;
   padding: 12px 16px;
-  border: 2px solid ${(props) => (props.$isOpen ? "#667eea" : "#e5e7eb")};
+  border: 2px solid ${(props) => (props.$isOpen ? COLOR.PRIMARY : "#e5e7eb")};
   border-radius: 12px;
   font-size: 15px;
   background-color: ${(props) => (props.$isOpen ? "#ffffff" : "#f9fafb")};
@@ -27,7 +28,7 @@ const SelectButton = styled.button<{ $isOpen: boolean }>`
 
   &:hover {
     background-color: #ffffff;
-    border-color: ${(props) => (props.$isOpen ? "#667eea" : "#9ca3af")};
+    border-color: ${(props) => (props.$isOpen ? COLOR.PRIMARY : "#9ca3af")};
   }
 
   &::after {
@@ -87,11 +88,11 @@ const Option = styled.div<{ $isSelected: boolean }>`
 
 const OptionLabel = styled.span<{ $isSelected: boolean }>`
   font-weight: ${(props) => (props.$isSelected ? "600" : "400")};
-  color: ${(props) => (props.$isSelected ? "#4f46e5" : "#374151")};
+  color: ${(props) => (props.$isSelected ? COLOR.PRIMARY : "#374151")};
 `;
 
 const CheckIcon = styled.span`
-  color: #4f46e5;
+  color: ${COLOR.PRIMARY};
   font-size: 18px;
   display: flex;
   align-items: center;

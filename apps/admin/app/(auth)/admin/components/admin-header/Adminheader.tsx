@@ -1,27 +1,32 @@
 "use client";
 
-import { LogoutButton } from "@/components";
 import {
   ButtonWrapper,
   GoToHomeButton,
   HeaderContainer,
   InnerHeaderwrapper,
-  LogoContainer,
-  Logo,
+  PageTitle,
 } from "./styled";
-import BotLogo from "@/assets/images/agentigy-logo-black.png";
-import { useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 
 export const Adminheader = () => {
-  const router = useRouter();
+  const pathname = usePathname();
+
+  const getPageTitle = () => {
+    if (pathname === "/admin") return "Dashboard";
+    if (pathname === "/admin/new") return "Create New Bot";
+    if (pathname.includes("/edit-bot")) return "Edit Bot";
+    if (pathname.includes("/ingest")) return "Data Ingestion";
+    if (pathname === "/admin/profile") return "My Profile";
+    if (pathname === "/admin/settings") return "Settings";
+    return "Admin";
+  };
+
   return (
     <HeaderContainer>
       <InnerHeaderwrapper>
-        <LogoContainer  onClick={() => router.push("/admin")}>
-          <Logo src={BotLogo} alt="Agentigy Logo" width={140} />
-        </LogoContainer>
+        <PageTitle>{getPageTitle()}</PageTitle>
         <ButtonWrapper>
-          <LogoutButton />
           <GoToHomeButton href={"/"}>Go to Home</GoToHomeButton>
         </ButtonWrapper>
       </InnerHeaderwrapper>

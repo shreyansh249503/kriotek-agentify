@@ -3,42 +3,78 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   PickerWrapper,
-  Header,
-  BodyContainer,
   SaturationArea,
   Thumb,
+  MiddleRow,
   HueSliderContainer,
   HueThumb,
-  ColorPreview,
-  HexText,
+  CircularPreview,
+  InputsGrid,
+  InputGroup,
+  PillInput,
+  InputLabel,
+  Divider,
+  SwatchesGrid,
+  SwatchCircle,
+  ResetButton,
+  // HeaderActions,
+  // IconButton,
 } from "./styled";
-import { hexToHsv, hsvToHex, isValidHex } from "./utils";
+import { hexToHsv, hsvToHex, isValidHex, hsvToRgb } from "./utils";
+// import { Copy, Clipboard } from "@phosphor-icons/react";
 
 interface ColorPickerProps {
   value: string;
   onChange: (hex: string) => void;
 }
 
+const PRESET_COLORS = [
+  "#C53030",
+  "#F56565",
+  "#ECC94B",
+  "#C0CA33",
+  "#98D8AA",
+  "#90CDF4",
+  "#4299E1",
+  "#7B61FF",
+  "#B068C8",
+  "#F687B3",
+  "#2D3748",
+  "#4A5568",
+  "#A0AEC0",
+  "#CBD5E0",
+];
+
 export const ColorPicker = ({ value, onChange }: ColorPickerProps) => {
-  const [hsv, setHsv] = useState({ h: 250, s: 70, v: 90 });
+  const [hsv, setHsv] = useState(() =>
+    isValidHex(value) ? hexToHsv(value) : { h: 250, s: 70, v: 90 },
+  );
   const [isDraggingSat, setIsDraggingSat] = useState(false);
   const [isDraggingHue, setIsDraggingHue] = useState(false);
 
   const satRef = useRef<HTMLDivElement>(null);
   const hueRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+  // Sync hsv with value when it changes externally
+  const [prevValue, setPrevValue] = useState(value);
+  if (value !== prevValue) {
+    setPrevValue(value);
     if (isValidHex(value)) {
-      const currentHex = hsvToHex(hsv.h, hsv.s, hsv.v);
-      if (value.toLowerCase() !== currentHex.toLowerCase()) {
-        const newHsv = hexToHsv(value);
-        setHsv(newHsv);
-      }
+      const newHsv = hexToHsv(value);
+      setHsv(newHsv);
     }
-  }, [value, hsv]);
+  }
+
+  const updateColor = useCallback(
+    (newHsv: { h: number; s: number; v: number }) => {
+      setHsv(newHsv);
+      onChange(hsvToHex(newHsv.h, newHsv.s, newHsv.v));
+    },
+    [onChange],
+  );
 
   const handleSaturationMove = useCallback(
-    (e: MouseEvent | TouchEvent) => {
+    (e: MouseEvent | TouchEvent | React.MouseEvent | React.TouchEvent) => {
       if (!satRef.current) return;
       const rect = satRef.current.getBoundingClientRect();
       const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
@@ -50,31 +86,24 @@ export const ColorPicker = ({ value, onChange }: ColorPickerProps) => {
       x = Math.max(0, Math.min(1, x));
       y = Math.max(0, Math.min(1, y));
 
-      const s = x * 100;
-      const v = 100 - y * 100;
-
-      const newHsv = { ...hsv, s, v };
-      setHsv(newHsv);
-      onChange(hsvToHex(newHsv.h, newHsv.s, newHsv.v));
+      updateColor({ ...hsv, s: x * 100, v: 100 - y * 100 });
     },
-    [hsv, onChange],
+    [hsv, updateColor],
   );
 
   const handleHueMove = useCallback(
-    (e: MouseEvent | TouchEvent) => {
+    (e: MouseEvent | TouchEvent | React.MouseEvent | React.TouchEvent) => {
       if (!hueRef.current) return;
       const rect = hueRef.current.getBoundingClientRect();
-      const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
+      const clientX =
+        "touches" in e ? e.touches[0].clientX : (e as MouseEvent).clientX;
 
-      let y = (clientY - rect.top) / rect.height;
-      y = Math.max(0, Math.min(1, y));
+      let x = (clientX - rect.left) / rect.width;
+      x = Math.max(0, Math.min(1, x));
 
-      const h = y * 360;
-      const newHsv = { ...hsv, h };
-      setHsv(newHsv);
-      onChange(hsvToHex(newHsv.h, newHsv.s, newHsv.v));
+      updateColor({ ...hsv, h: x * 360 });
     },
-    [hsv, onChange],
+    [hsv, updateColor],
   );
 
   useEffect(() => {
@@ -104,66 +133,134 @@ export const ColorPicker = ({ value, onChange }: ColorPickerProps) => {
   }, [isDraggingSat, isDraggingHue, handleSaturationMove, handleHueMove]);
 
   const currentHex = hsvToHex(hsv.h, hsv.s, hsv.v);
-  const [inputValue, setInputValue] = useState(currentHex);
+  const rgb = hsvToRgb(hsv.h, hsv.s, hsv.v);
 
-  useEffect(() => {
-    setInputValue(currentHex);
-  }, [currentHex]);
+  const [hexInput, setHexInput] = useState(currentHex.replace("#", ""));
+  const [prevHex, setPrevHex] = useState(currentHex);
 
-  const handleHexChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setInputValue(val);
+  if (currentHex !== prevHex) {
+    setPrevHex(currentHex);
+    setHexInput(currentHex.replace("#", ""));
+  }
+
+  const handleHexInput = (val: string) => {
+    setHexInput(val);
     if (isValidHex(val)) {
-      const newHsv = hexToHsv(val);
-      setHsv(newHsv);
-      onChange(hsvToHex(newHsv.h, newHsv.s, newHsv.v));
+      updateColor(hexToHsv(val));
     }
   };
 
-  const handleBlur = () => {
-    setInputValue(currentHex);
+  const handleRgbInput = (channel: "r" | "g" | "b", val: string) => {
+    const num = parseInt(val) || 0;
+    const clamped = Math.max(0, Math.min(255, num));
+    const newRgb = { ...rgb, [channel]: clamped };
+    const hex = `#${newRgb.r.toString(16).padStart(2, "0")}${newRgb.g.toString(16).padStart(2, "0")}${newRgb.b.toString(16).padStart(2, "0")}`;
+    updateColor(hexToHsv(hex));
   };
+
+  // const copyToClipboard = async () => {
+  //   try {
+  //     await navigator.clipboard.writeText(currentHex);
+  //   } catch (err) {
+  //     console.error("Failed to copy", err);
+  //   }
+  // };
+
+  // const pasteFromClipboard = async () => {
+  //   try {
+  //     const text = await navigator.clipboard.readText();
+  //     if (isValidHex(text)) {
+  //       updateColor(hexToHsv(text));
+  //     }
+  //   } catch (err) {
+  //     console.error("Failed to paste", err);
+  //   }
+  // };
 
   return (
     <PickerWrapper>
-      <Header>
-        <ColorPreview style={{ backgroundColor: currentHex }} />
-        <HexText
-          value={inputValue}
-          onChange={handleHexChange}
-          onBlur={handleBlur}
-          spellCheck={false}
+      {/* <HeaderActions>
+        <IconButton onClick={copyToClipboard} title="Copy Color">
+          <Copy size={14} />
+        </IconButton>
+        <IconButton onClick={pasteFromClipboard} title="Paste Color">
+          <Clipboard size={14} />
+        </IconButton>
+      </HeaderActions> */}
+
+      <SaturationArea
+        ref={satRef}
+        $hue={hsv.h}
+        onMouseDown={() => setIsDraggingSat(true)}
+        onTouchStart={() => setIsDraggingSat(true)}
+      >
+        <Thumb
+          style={{
+            left: `${hsv.s}%`,
+            top: `${100 - hsv.v}%`,
+            backgroundColor: currentHex,
+          }}
         />
-      </Header>
+      </SaturationArea>
 
-      <BodyContainer>
-        <SaturationArea
-          ref={satRef}
-          $hue={hsv.h}
-          onMouseDown={() => setIsDraggingSat(true)}
-          onTouchStart={() => setIsDraggingSat(true)}
-        >
-          <Thumb
-            style={{
-              left: `${hsv.s}%`,
-              top: `${100 - hsv.v}%`,
-              backgroundColor: currentHex,
-            }}
-          />
-        </SaturationArea>
-
+      <MiddleRow>
         <HueSliderContainer
           ref={hueRef}
           onMouseDown={() => setIsDraggingHue(true)}
           onTouchStart={() => setIsDraggingHue(true)}
         >
-          <HueThumb
-            style={{
-              top: `${(hsv.h / 360) * 100}%`,
-            }}
-          />
+          <HueThumb style={{ left: `${(hsv.h / 360) * 100}%` }} />
         </HueSliderContainer>
-      </BodyContainer>
+        <CircularPreview style={{ backgroundColor: currentHex }} />
+      </MiddleRow>
+
+      <InputsGrid>
+        <InputGroup>
+          <PillInput
+            value={hexInput.toUpperCase()}
+            onChange={(e) => handleHexInput(e.target.value)}
+            spellCheck={false}
+          />
+          <InputLabel>Hex</InputLabel>
+        </InputGroup>
+        <InputGroup>
+          <PillInput
+            value={rgb.r}
+            onChange={(e) => handleRgbInput("r", e.target.value)}
+          />
+          <InputLabel>R</InputLabel>
+        </InputGroup>
+        <InputGroup>
+          <PillInput
+            value={rgb.g}
+            onChange={(e) => handleRgbInput("g", e.target.value)}
+          />
+          <InputLabel>G</InputLabel>
+        </InputGroup>
+        <InputGroup>
+          <PillInput
+            value={rgb.b}
+            onChange={(e) => handleRgbInput("b", e.target.value)}
+          />
+          <InputLabel>B</InputLabel>
+        </InputGroup>
+      </InputsGrid>
+
+      <Divider />
+
+      <SwatchesGrid>
+        {PRESET_COLORS.map((color) => (
+          <SwatchCircle
+            key={color}
+            $color={color}
+            onClick={() => updateColor(hexToHsv(color))}
+          />
+        ))}
+      </SwatchesGrid>
+
+      <ResetButton onClick={() => updateColor(hexToHsv("#4f46e5"))}>
+        Reset color
+      </ResetButton>
     </PickerWrapper>
   );
 };

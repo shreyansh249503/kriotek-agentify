@@ -2,6 +2,7 @@ import styled from "styled-components";
 import Link from "next/link";
 import { COLOR } from "@/styles";
 import { BREAKPOINTS } from "@/styles";
+import Image from "next/image";
 
 export const FooterContainer = styled.footer`
   background-color: ${COLOR.DARK};
@@ -52,6 +53,10 @@ export const FooterBrand = styled.div`
   display: flex;
   flex-direction: column;
   gap: 16px;
+`;
+export const FooterLogo = styled(Image)`
+  width: 140px;
+  object-fit: contain;
 `;
 
 export const FooterTitle = styled.h4`

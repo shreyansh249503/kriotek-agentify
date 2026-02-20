@@ -1,3 +1,4 @@
+import { COLOR } from "@/styles";
 import styled, { keyframes } from "styled-components";
 
 const spin = keyframes`
@@ -18,7 +19,7 @@ export const Spinner = styled.div`
   width: 48px;
   height: 48px;
   border: 4px solid rgba(229, 231, 235, 0.5);
-  border-top: 4px solid #4f46e5;
+  border-top: 4px solid ${COLOR.PRIMARY};
   border-radius: 50%;
   animation: ${spin} 1s linear infinite;
 `;

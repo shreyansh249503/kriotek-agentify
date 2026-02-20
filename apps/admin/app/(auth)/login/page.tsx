@@ -3,7 +3,12 @@
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
-import { CircleNotchIcon, EyeSlashIcon, EyeIcon } from "@phosphor-icons/react";
+import {
+  CircleNotchIcon,
+  EyeSlashIcon,
+  EyeIcon,
+  ArrowLeftIcon,
+} from "@phosphor-icons/react";
 import {
   AuthContainer,
   BannerSection,
@@ -26,6 +31,7 @@ import {
   ErrorMessage,
   Footer,
   LinkText,
+  BackHomeLink,
 } from "./styled";
 import { RefreshAuthGuard } from "@/components/AuthGuard";
 
@@ -60,39 +66,44 @@ export default function LoginPage() {
     <RefreshAuthGuard>
       <AuthContainer>
         <BannerSection>
-          <Logo>
-            <svg
-              width="32"
-              height="32"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M12 2L2 7L12 12L22 7L12 2Z"
-                stroke="white"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M2 17L12 22L22 17"
-                stroke="white"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M2 12L12 17L22 12"
-                stroke="white"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            Agentify
-          </Logo>
+          <BackHomeLink href="/">
+            <ArrowLeftIcon size={16} />
+            Back to Home
+          </BackHomeLink>
           <BannerContent>
+            <Logo>
+              <svg
+                width="32"
+                height="32"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M12 2L2 7L12 12L22 7L12 2Z"
+                  stroke="white"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M2 17L12 22L22 17"
+                  stroke="white"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M2 12L12 17L22 12"
+                  stroke="white"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              Agentify
+            </Logo>
+
             <Quote>
               &ldquo;The future of customer engagement is here. Build simpler,
               smarter, and faster with AI agents.&rdquo;

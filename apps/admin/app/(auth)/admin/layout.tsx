@@ -1,5 +1,6 @@
 import AuthGuard from "@/components/AuthGuard";
-import { Adminheader } from "./components";
+import { Adminheader, Sidebar } from "./components";
+import { DashboardContainer, MainArea, ContentWrapper } from "./layout.styled";
 
 export default function AdminLayout({
   children,
@@ -8,8 +9,13 @@ export default function AdminLayout({
 }) {
   return (
     <AuthGuard>
-      <Adminheader />
-      <main>{children}</main>
+      <DashboardContainer>
+        <Sidebar />
+        <MainArea>
+          <Adminheader />
+          <ContentWrapper>{children}</ContentWrapper>
+        </MainArea>
+      </DashboardContainer>
     </AuthGuard>
   );
 }

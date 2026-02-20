@@ -1,81 +1,30 @@
 import styled from "styled-components";
 
 export const PickerWrapper = styled.div`
-  background: #f9fafb;
-  border-radius: 8px;
-  box-shadow:
-    0 10px 15px -3px rgba(0, 0, 0, 0.1),
-    0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  width: 100%;
-  color: white;
-  font-family: inherit;
-  overflow: hidden;
-  border: 2px solid #e5e7eb;
-  height: 200px;
-`;
-
-export const Header = styled.div`
-  background: #f9fafb;
-  padding: 12px 16px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  border-bottom: 2px solid #e5e7eb;
-`;
-
-export const ColorPreview = styled.div`
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  border: 2px solid white;
-  box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
-`;
-
-export const HexText = styled.input`
-  color: #374151;
-  font-family: monospace;
-  font-size: 13px;
-  font-weight: 600;
-  text-transform: uppercase;
   background: #ffffff;
-  border: 1px solid #d1d5db;
-  outline: none;
-  width: 80px;
-  padding: 4px 8px;
-  border-radius: 6px;
-  transition: all 0.2s ease;
-
-  &:focus {
-    border-color: #4f46e5;
-    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
-  }
-
-  &::selection {
-    background: #e0e7ff;
-    color: #4f46e5;
-  }
-`;
-
-export const BodyContainer = styled.div`
+  border-radius: 12px;
+  width: 100%;
+  padding: 14px;
   display: flex;
-  padding: 12px;
-  gap: 12px;
-  height: 150px;
+  flex-direction: column;
+  gap: 4px;
+  border: 1px solid #e2e8f0;
+  font-family: inherit;
 `;
 
 export const SaturationArea = styled.div<{ $hue: number }>`
   position: relative;
-  flex: 1;
-  height: 100%;
-  border-radius: 4px;
+  width: 100%;
+  height: 135px;
+  border-radius: 8px;
   background-color: ${(props) => `hsl(${props.$hue}, 100%, 50%)`};
+  border: 1px solid #e2e8f0;
   background-image:
     linear-gradient(to right, #fff, transparent),
     linear-gradient(to top, #000, transparent);
   cursor: crosshair;
   touch-action: none;
   overflow: hidden;
-  border: 1px solid #b2b2b2ff;
 `;
 
 export const Thumb = styled.div`
@@ -89,13 +38,20 @@ export const Thumb = styled.div`
   pointer-events: none;
 `;
 
+export const MiddleRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 4px;
+`;
+
 export const HueSliderContainer = styled.div`
   position: relative;
-  width: 24px;
-  height: 100%;
-  border-radius: 4px;
+  flex: 1;
+  height: 12px;
+  border-radius: 6px;
   background: linear-gradient(
-    to bottom,
+    to right,
     #f00 0%,
     #ff0 17%,
     #0f0 33%,
@@ -110,17 +66,127 @@ export const HueSliderContainer = styled.div`
 
 export const HueThumb = styled.div`
   position: absolute;
-  left: 50%;
-  width: 100%;
-  height: 8px;
-  border-radius: 4px;
-  background: transparent;
-  border: 2px solid white;
-  box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: white;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
   transform: translate(-50%, -50%);
   pointer-events: none;
 `;
 
-export const HiddenInput = styled.input`
-  display: none;
+export const CircularPreview = styled.div`
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid #e2e8f0;
+  box-shadow: inset 0 0 2px rgba(0, 0, 0, 0.1);
+`;
+
+export const InputsGrid = styled.div`
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 8px;
+  padding: 0 4px;
+`;
+
+export const InputGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+`;
+
+export const PillInput = styled.input`
+  width: 100%;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #64748b;
+  text-align: center;
+  outline: none;
+
+  &:focus {
+    border-color: #4f46e5;
+    background: white;
+  }
+`;
+
+export const InputLabel = styled.span`
+  font-size: 10px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+`;
+
+export const Divider = styled.div`
+  height: 1px;
+  background: #f1f5f9;
+  margin: 4px 0;
+`;
+
+export const SwatchesGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 8px;
+  padding: 4px;
+`;
+
+export const SwatchCircle = styled.div<{ $color: string }>`
+  /* aspect-ratio: 1; */
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background-color: ${(props) => props.$color};
+  cursor: pointer;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  transition: transform 0.1s;
+
+  &:hover {
+    transform: scale(1.1);
+  }
+`;
+
+export const ResetButton = styled.button`
+  width: 100%;
+  padding: 8px;
+  background: #f1f5f9;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  transition: background 0.2s;
+
+  &:hover {
+    background: #e2e8f0;
+  }
+`;
+
+export const HeaderActions = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: -4px;
+  margin-bottom: -4px;
+`;
+
+export const IconButton = styled.button`
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+
+  &:hover {
+    color: #4f46e5;
+  }
 `;

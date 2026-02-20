@@ -4,7 +4,7 @@ import { COLOR } from "@/styles";
 import styled from "styled-components";
 
 export const Form = styled.form`
-  width: 80%;
+  width: 75%;
   background: transparent;
   display: flex;
   flex-direction: column;
@@ -128,19 +128,36 @@ export const Select = styled.select`
 export const FormSection = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 12px;
   padding: 32px;
   background-color: ${COLOR.CREAM};
   /* background-color: #a8e10c2f; */
   border-radius: 16px;
   border: 1px solid ${COLOR.BORDER};
   box-shadow: 0 20px 40px -5px rgba(0, 0, 0, 0.1);
+  height: 100%;
+`;
+
+export const FormGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+  width: 100%;
+`;
+
+export const TopRow = styled.div`
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+
+  @media (max-width: 1024px) {
+    grid-template-columns: 1fr;
+  }
 `;
 
 export const SectionHeader = styled.div`
-  margin-bottom: 8px;
+  padding-bottom: 6px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  padding-bottom: 16px;
 `;
 
 export const SectionTitle = styled.h3`

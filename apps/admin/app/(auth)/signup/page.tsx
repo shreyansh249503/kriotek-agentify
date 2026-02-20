@@ -3,7 +3,12 @@
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
-import {  CircleNotchIcon, EyeIcon, EyeSlashIcon } from "@phosphor-icons/react";
+import {
+  CircleNotchIcon,
+  EyeIcon,
+  EyeSlashIcon,
+  ArrowLeftIcon,
+} from "@phosphor-icons/react";
 import {
   AuthContainer,
   BannerSection,
@@ -27,6 +32,7 @@ import {
   SuccessMessage,
   Footer,
   LinkText,
+  BackHomeLink,
 } from "./styled";
 import { RefreshAuthGuard } from "@/components/AuthGuard";
 
@@ -68,6 +74,10 @@ export default function SignupPage() {
     <RefreshAuthGuard>
       <AuthContainer>
         <BannerSection>
+          <BackHomeLink href="/">
+            <ArrowLeftIcon size={16} />
+            Back to Home
+          </BackHomeLink>
           <Logo>
             <svg
               width="32"
@@ -197,7 +207,11 @@ export default function SignupPage() {
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                   >
-                    {showPassword ? <EyeSlashIcon size={20} /> : <EyeIcon size={20} />}
+                    {showPassword ? (
+                      <EyeSlashIcon size={20} />
+                    ) : (
+                      <EyeIcon size={20} />
+                    )}
                   </PasswordToggle>
                 </PasswordInputWrapper>
               </FormGroup>
