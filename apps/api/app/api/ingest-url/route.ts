@@ -21,7 +21,6 @@ export async function POST(req: Request) {
     );
   }
 
-  // Ownership check
   const bot = await db.query(
     "SELECT id FROM bots WHERE public_key = $1 AND user_id = $2",
     [publicKey, user.id],
@@ -31,7 +30,6 @@ export async function POST(req: Request) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  // Crawl website
   const text = await crawlWebsite(url);
   console.log("CRAWLED TEXT LENGTH:", text.length);
 
@@ -42,11 +40,9 @@ export async function POST(req: Request) {
     );
   }
 
-  // Chunk content
   const chunks = chunkText(text);
   console.log("CHUNKS COUNT:", chunks.length);
 
-  // Ingest chunks
   for (const chunk of chunks) {
     await ingestDocument(publicKey, chunk);
   }
