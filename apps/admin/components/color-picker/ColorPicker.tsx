@@ -17,12 +17,8 @@ import {
   SwatchesGrid,
   SwatchCircle,
   ResetButton,
-  // HeaderActions,
-  // IconButton,
 } from "./styled";
 import { hexToHsv, hsvToHex, isValidHex, hsvToRgb } from "./utils";
-// import { Copy, Clipboard } from "@phosphor-icons/react";
-
 interface ColorPickerProps {
   value: string;
   onChange: (hex: string) => void;
@@ -55,7 +51,6 @@ export const ColorPicker = ({ value, onChange }: ColorPickerProps) => {
   const satRef = useRef<HTMLDivElement>(null);
   const hueRef = useRef<HTMLDivElement>(null);
 
-  // Sync hsv with value when it changes externally
   const [prevValue, setPrevValue] = useState(value);
   if (value !== prevValue) {
     setPrevValue(value);
@@ -158,36 +153,8 @@ export const ColorPicker = ({ value, onChange }: ColorPickerProps) => {
     updateColor(hexToHsv(hex));
   };
 
-  // const copyToClipboard = async () => {
-  //   try {
-  //     await navigator.clipboard.writeText(currentHex);
-  //   } catch (err) {
-  //     console.error("Failed to copy", err);
-  //   }
-  // };
-
-  // const pasteFromClipboard = async () => {
-  //   try {
-  //     const text = await navigator.clipboard.readText();
-  //     if (isValidHex(text)) {
-  //       updateColor(hexToHsv(text));
-  //     }
-  //   } catch (err) {
-  //     console.error("Failed to paste", err);
-  //   }
-  // };
-
   return (
     <PickerWrapper>
-      {/* <HeaderActions>
-        <IconButton onClick={copyToClipboard} title="Copy Color">
-          <Copy size={14} />
-        </IconButton>
-        <IconButton onClick={pasteFromClipboard} title="Paste Color">
-          <Clipboard size={14} />
-        </IconButton>
-      </HeaderActions> */}
-
       <SaturationArea
         ref={satRef}
         $hue={hsv.h}

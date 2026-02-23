@@ -74,33 +74,6 @@ export const FilterSelect = styled.select`
   }
 `;
 
-export const AddNewBotButton = styled(Link)`
-  width: fit-content;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 16px 32px;
-  background-color: ${COLOR.PRIMARY};
-  color: ${COLOR.WHITE};
-  border-radius: 999px;
-  text-decoration: none;
-  font-size: 17px;
-  font-weight: 700;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 12px ${COLOR.SHADOW};
-
-  &:hover {
-    background-color: ${COLOR.PRIMARY_HOVER};
-    transform: translateY(-3px);
-    box-shadow: 0 8px 20px rgba(168, 225, 12, 0.3);
-  }
-
-  @media (max-width: ${BREAKPOINTS.MOBILE}) {
-    width: 100%;
-  }
-`;
-
 export const AdminContentWrapper = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));

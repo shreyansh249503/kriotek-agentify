@@ -32,8 +32,10 @@ import {
   Footer,
   LinkText,
   BackHomeLink,
+  LogoImage,
 } from "./styled";
 import { RefreshAuthGuard } from "@/components/AuthGuard";
+import BotLogo from "@/assets/images/Agentify logo white.png";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -71,38 +73,9 @@ export default function LoginPage() {
             Back to Home
           </BackHomeLink>
           <BannerContent>
-            <Logo>
-              <svg
-                width="32"
-                height="32"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M12 2L2 7L12 12L22 7L12 2Z"
-                  stroke="white"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M2 17L12 22L22 17"
-                  stroke="white"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M2 12L12 17L22 12"
-                  stroke="white"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              Agentify
-            </Logo>
+          <Logo>
+            <LogoImage src={BotLogo} alt="Logo" />
+          </Logo>
 
             <Quote>
               &ldquo;The future of customer engagement is here. Build simpler,
@@ -110,7 +83,7 @@ export default function LoginPage() {
             </Quote>
             <Author>Platform Vision</Author>
           </BannerContent>
-          <div /> {/* Spacer */}
+          <div />
         </BannerSection>
 
         <FormSection>

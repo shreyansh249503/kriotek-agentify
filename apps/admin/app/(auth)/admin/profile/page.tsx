@@ -5,7 +5,6 @@ export default function ProfilePage() {
     <div>
       <h1>My Profile</h1>
       <p>Manage your account settings and profile information here.</p>
-      {/* Profile implementation will go here */}
     </div>
   );
 }

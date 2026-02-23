@@ -18,10 +18,10 @@ import {
 } from "./styled";
 import BotLogo from "@/assets/images/Agentify logo white.png";
 import {
-  FacebookLogo,
-  TwitterLogo,
-  LinkedinLogo,
-  GithubLogo,
+  GithubLogoIcon,
+  TwitterLogoIcon,
+  LinkedinLogoIcon,
+  FacebookLogoIcon,
 } from "@phosphor-icons/react";
 
 export const Footer = () => {
@@ -37,16 +37,16 @@ export const Footer = () => {
             </BrandDescription>
             <SocialLinks>
               <SocialIcon href="#" target="_blank">
-                <GithubLogo size={24} />
+                <GithubLogoIcon size={24} />
               </SocialIcon>
               <SocialIcon href="#" target="_blank">
-                <TwitterLogo size={24} />
+                <TwitterLogoIcon size={24} />
               </SocialIcon>
               <SocialIcon href="#" target="_blank">
-                <LinkedinLogo size={24} />
+                <LinkedinLogoIcon size={24} />
               </SocialIcon>
               <SocialIcon href="#" target="_blank">
-                <FacebookLogo size={24} />
+                <FacebookLogoIcon size={24} />
               </SocialIcon>
             </SocialLinks>
           </FooterBrand>

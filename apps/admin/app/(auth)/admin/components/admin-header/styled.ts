@@ -18,7 +18,7 @@ export const HeaderContainer = styled.header`
 
 export const InnerHeaderwrapper = styled.div`
   width: 100%;
-  padding: 0 40px;
+  padding: 0 40px 0px 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -86,5 +86,27 @@ export const GoToHomeButton = styled(Link)`
   @media (max-width: ${BREAKPOINTS.MOBILE}) {
     width: 100%;
     text-align: center;
+  }
+`;
+
+export const ToggleButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: ${COLOR.DARK};
+  padding: 8px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background-color: ${COLOR.LIGHT};
+    color: ${COLOR.PRIMARY};
+  }
+
+  svg {
+    display: block;
   }
 `;

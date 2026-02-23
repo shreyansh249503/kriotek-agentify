@@ -1,28 +1,32 @@
 "use client";
 
-import React from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  SquaresFour,
-  PlusCircle,
-  UserCircle,
-  Gear,
-  SignOut,
+  SignOutIcon,
+  GearIcon,
+  UserCircleIcon,
+  PlusCircleIcon,
+  SquaresFourIcon,
 } from "@phosphor-icons/react";
 import {
   SidebarContainer,
   LogoSection,
-  LogoText,
   NavSection,
   NavItem,
   BottomSection,
   LogoutButtonContainer,
+  LogoutButton,
+  LogoImage,
 } from "./styled";
 import { supabase } from "@/lib/supabase";
+import { useSidebar } from "@/context/SidebarContext";
+import BotLogo from "@/assets/images/Agentify logo white.png";
+import BotLogoShort from "@/assets/images/Agentify-light-short-log.png";
 
 export const Sidebar = () => {
   const pathname = usePathname();
   const router = useRouter();
+  const { isCollapsed } = useSidebar();
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -33,66 +37,43 @@ export const Sidebar = () => {
     {
       label: "Dashboard",
       href: "/admin",
-      icon: <SquaresFour weight={pathname === "/admin" ? "fill" : "regular"} />,
+      isActive:
+        pathname === "/admin" ||
+        pathname.startsWith("/admin/bot/") ||
+        pathname.startsWith("/admin/bots/"),
+      icon: (weight: "fill" | "regular") => <SquaresFourIcon weight={weight} />,
     },
     {
       label: "Create Bot",
       href: "/admin/new",
-      icon: (
-        <PlusCircle weight={pathname === "/admin/new" ? "fill" : "regular"} />
-      ),
+      isActive: pathname === "/admin/new",
+      icon: (weight: "fill" | "regular") => <PlusCircleIcon weight={weight} />,
     },
     {
       label: "Profile",
       href: "/admin/profile",
-      icon: (
-        <UserCircle
-          weight={pathname === "/admin/profile" ? "fill" : "regular"}
-        />
-      ),
+      isActive: pathname === "/admin/profile",
+      icon: (weight: "fill" | "regular") => <UserCircleIcon weight={weight} />,
     },
     {
       label: "Settings",
       href: "/admin/settings",
-      icon: (
-        <Gear weight={pathname === "/admin/settings" ? "fill" : "regular"} />
-      ),
+      isActive: pathname === "/admin/settings",
+      icon: (weight: "fill" | "regular") => <GearIcon weight={weight} />,
     },
   ];
 
   return (
-    <SidebarContainer>
-      <LogoSection onClick={() => router.push("/admin")}>
-        <svg
-          width="32"
-          height="32"
-          viewBox="0 0 24 24"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M12 2L2 7L12 12L22 7L12 2Z"
-            stroke="#A8E10C"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M2 17L12 22L22 17"
-            stroke="#A8E10C"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M2 12L12 17L22 12"
-            stroke="#A8E10C"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-        <LogoText>Agentify</LogoText>
+    <SidebarContainer $isCollapsed={isCollapsed}>
+      <LogoSection
+        $isCollapsed={isCollapsed}
+        onClick={() => router.push("/admin")}
+      >
+        {isCollapsed ? (
+          <LogoImage $isCollapsed={isCollapsed} src={BotLogoShort} alt="Logo" />
+        ) : (
+          <LogoImage $isCollapsed={isCollapsed} src={BotLogo} alt="Logo" />
+        )}
       </LogoSection>
 
       <NavSection>
@@ -100,20 +81,22 @@ export const Sidebar = () => {
           <NavItem
             key={item.href}
             href={item.href}
-            $active={pathname === item.href}
+            $active={item.isActive}
+            title={isCollapsed ? item.label : ""}
           >
-            {item.icon}
-            <span>{item.label}</span>
+            {item.icon(item.isActive ? "fill" : "regular")}
+            {!isCollapsed && <span>{item.label}</span>}
           </NavItem>
         ))}
       </NavSection>
 
       <BottomSection>
         <LogoutButtonContainer>
-          <NavItem
+          <LogoutButton
             as="button"
             type="button"
             onClick={handleLogout}
+            title={isCollapsed ? "Logout" : ""}
             style={{
               width: "100%",
               background: "none",
@@ -121,9 +104,9 @@ export const Sidebar = () => {
               cursor: "pointer",
             }}
           >
-            <SignOut />
-            <span>Logout</span>
-          </NavItem>
+            <SignOutIcon />
+            {!isCollapsed && <span>Logout</span>}
+          </LogoutButton>
         </LogoutButtonContainer>
       </BottomSection>
     </SidebarContainer>

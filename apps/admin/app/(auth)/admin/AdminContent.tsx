@@ -5,7 +5,6 @@ import { Loader, SearchBar, EmptyState, StatusBadge } from "@/components";
 import { supabase } from "@/lib/supabase";
 import { Bot } from "@/types/bot";
 import {
-  AddNewBotButton,
   AdminContainer,
   AdminContentWrapper,
   BotCardContainer,
@@ -17,7 +16,7 @@ import {
   BotActions,
   BotName,
 } from "./styled";
-import { PlusCircle, Robot as BotIcon } from "@boxicons/react";
+import { Robot as BotIcon } from "@boxicons/react";
 
 export default function AdminContent() {
   const [bots, setBots] = useState<Bot[]>([]);
@@ -77,10 +76,6 @@ export default function AdminContent() {
     <AdminContainer>
       <ControlsContainer>
         <SearchBar placeholder="Search bots..." onSearch={setSearchTerm} />
-          <AddNewBotButton href={"/admin/new"}>
-            New Bot
-            <PlusCircle size="sm" />
-          </AddNewBotButton>
       </ControlsContainer>
 
       {filteredBots.length > 0 ? (
@@ -93,8 +88,6 @@ export default function AdminContent() {
               </BotMeta>
 
               <BotDescription>
-                {/* A helpful AI assistant ready to chat with users and answer
-                questions. */}
                 {bot.description}
               </BotDescription>
 

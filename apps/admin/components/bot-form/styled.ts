@@ -4,21 +4,18 @@ import { COLOR } from "@/styles";
 import styled from "styled-components";
 
 export const Form = styled.form`
-  width: 75%;
+  width: 100%;
   background: transparent;
   display: flex;
   flex-direction: column;
   gap: 24px;
 `;
-
-export const BotFormTitle = styled.h2`
-  font-size: 24px;
-  font-weight: 700;
-  color: ${COLOR.DARK};
-  margin: 0;
+export const FormContainer = styled.div`
+  width: 100%;
   display: flex;
-  align-items: center;
-  gap: 8px;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
 `;
 
 export const Field = styled.div`
@@ -131,10 +128,8 @@ export const FormSection = styled.div`
   gap: 12px;
   padding: 32px;
   background-color: ${COLOR.CREAM};
-  /* background-color: #a8e10c2f; */
   border-radius: 16px;
   border: 1px solid ${COLOR.BORDER};
-  box-shadow: 0 20px 40px -5px rgba(0, 0, 0, 0.1);
   height: 100%;
 `;
 
@@ -209,8 +204,8 @@ export const ToggleSwitch = styled.div<{ checked: boolean }>`
 `;
 
 export const Button = styled.button`
-  width: 100%;
-  padding: 16px;
+  width: fit-content;
+  padding: 12px 32px;
   font-size: 17px;
   font-weight: 700;
   border: none;

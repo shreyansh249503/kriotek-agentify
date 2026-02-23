@@ -21,7 +21,6 @@ export default function NewBotPage() {
   return (
     <NewBotContainer>
       <BotForm
-        title="Create New Bot"
         submitLabel="Create Bot"
         onSubmit={handleCreate}
         loading={isPending}

@@ -4,6 +4,5 @@ export interface BotFormProps {
   initialData?: Bot;
   onSubmit: (data: CreateBotInput | UpdateBotInput) => void;
   submitLabel: string;
-  title: string;
   loading?: boolean;
 }

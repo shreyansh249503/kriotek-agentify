@@ -5,7 +5,6 @@ export default function SettingsPage() {
     <div>
       <h1>Settings</h1>
       <p>Configure your workspace and bot preferences.</p>
-      {/* Settings implementation will go here */}
     </div>
   );
 }

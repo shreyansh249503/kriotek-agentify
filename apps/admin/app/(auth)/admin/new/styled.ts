@@ -7,10 +7,9 @@ export const NewBotContainer = styled.div`
   width: 100%;
   min-height: 85vh;
   display: flex;
-  justify-content: center;
   align-items: center;
   padding: 24px;
-  background-color: ${COLOR.WHITE};
+  background-color: ${COLOR.LIGHT};
 `;
 
 export const NewBotWrapper = styled.div`

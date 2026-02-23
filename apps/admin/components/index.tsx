@@ -1,5 +1,4 @@
 export * from "./header";
-export * from "./logout-btn";
 export * from "./bot-form";
 export * from "./custom-select";
 export * from "./scroll-to-top";
@@ -10,3 +9,4 @@ export * from "./search-bar";
 export * from "./status-badge";
 export * from "./embed-success";
 export * from "./footer";
+export * from "./bot-preview";

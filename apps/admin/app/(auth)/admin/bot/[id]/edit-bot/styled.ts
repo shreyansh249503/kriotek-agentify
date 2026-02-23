@@ -7,7 +7,6 @@ export const NewBotContainer = styled.div`
   width: 100%;
   min-height: 85vh;
   display: flex;
-  justify-content: center;
   align-items: center;
   padding: 24px;
 `;

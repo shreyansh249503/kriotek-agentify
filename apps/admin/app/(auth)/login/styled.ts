@@ -1,6 +1,7 @@
 import styled, { keyframes } from "styled-components";
 import Link from "next/link";
 import { COLOR } from "@/styles";
+import Image from "next/image";
 
 const fadeIn = keyframes`
   from { opacity: 0; transform: translateY(20px); }
@@ -61,6 +62,11 @@ export const Logo = styled.div`
   align-items: center;
   gap: 12px;
   margin-bottom: 28px;
+`;
+export const LogoImage = styled(Image)`
+  width: 150px;
+  height: 60px;
+  object-fit: contain;
 `;
 
 export const BackHomeLink = styled(Link)`
