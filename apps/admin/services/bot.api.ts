@@ -1,9 +1,14 @@
 import axiosInstance from "@/lib/axios";
 import { supabase } from "@/lib/supabase";
-import { CreateBotInput, UpdateBotInput } from "@/types/bot";
+import { Bot, CreateBotInput, UpdateBotInput } from "@/types/bot";
 
-export const getBotById = async (id: string) => {
-  const { data } = await axiosInstance.get(`/api/bots/${id}`);
+export const getAllBots = async (): Promise<Bot[]> => {
+  const { data } = await axiosInstance.get<Bot[]>(`/api/bots`);
+  return data;
+};
+
+export const getBotById = async (id: string): Promise<Bot> => {
+  const { data } = await axiosInstance.get<Bot>(`/api/bots/${id}`);
   return data;
 };
 

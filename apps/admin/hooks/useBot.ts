@@ -1,6 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createBot, getBotById, updateBot } from "@/services/bot.api";
+import { createBot, getAllBots, getBotById, updateBot } from "@/services/bot.api";
 import { UpdateBotInput } from "@/types/bot";
+
+export const useBots = () => {
+  return useQuery({
+    queryKey: ["bots"],
+    queryFn: getAllBots,
+  });
+};
 
 export const useBot = (id: string) => {
   return useQuery({

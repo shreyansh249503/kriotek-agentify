@@ -7,6 +7,7 @@ import {
   UserCircleIcon,
   PlusCircleIcon,
   SquaresFourIcon,
+  BrainIcon,
 } from "@phosphor-icons/react";
 import {
   SidebarContainer,
@@ -37,10 +38,7 @@ export const Sidebar = () => {
     {
       label: "Dashboard",
       href: "/admin",
-      isActive:
-        pathname === "/admin" ||
-        pathname.startsWith("/admin/bot/") ||
-        pathname.startsWith("/admin/bots/"),
+      isActive: pathname === "/admin",
       icon: (weight: "fill" | "regular") => <SquaresFourIcon weight={weight} />,
     },
     {
@@ -48,6 +46,15 @@ export const Sidebar = () => {
       href: "/admin/new",
       isActive: pathname === "/admin/new",
       icon: (weight: "fill" | "regular") => <PlusCircleIcon weight={weight} />,
+    },
+    {
+      label: "Bots",
+      href: "/admin/bots",
+      isActive:
+        pathname === "/admin/bots" ||
+        pathname.startsWith("/admin/bot/") ||
+        pathname.startsWith("/admin/bots/"),
+      icon: (weight: "fill" | "regular") => <BrainIcon weight={weight} />,
     },
     {
       label: "Profile",

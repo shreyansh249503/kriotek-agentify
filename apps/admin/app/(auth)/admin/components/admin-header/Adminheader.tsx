@@ -19,6 +19,7 @@ export const Adminheader = () => {
   const getPageTitle = () => {
     if (pathname === "/admin") return "Dashboard";
     if (pathname === "/admin/new") return "Create New Bot";
+    if (pathname === "/admin/bots") return "Bots";
     if (pathname.includes("/edit-bot")) return "Edit Bot";
     if (pathname.includes("/ingest")) return "Data Ingestion";
     if (pathname === "/admin/profile") return "My Profile";

@@ -1,0 +1,7 @@
+﻿.next/dev/types/validator.ts(135,31): error TS2344: Type 'typeof import("D:/Fanendra/projects/agentify-monorepo/apps/api/app/api/public/bot/[publicKey]/route")' does not satisfy the constraint 'RouteHandlerConfig<"/api/public/bot/[publicKey]">'.
+  Types of property 'GET' are incompatible.
+    Type '(_req: Request, { params }: { params: { publicKey: string; }; }) => Promise<Response>' is not assignable to type '(request: NextRequest, context: { params: Promise<{ publicKey: string; }>; }) => void | Response | Promise<void | Response>'.
+      Types of parameters '__1' and 'context' are incompatible.
+        Type '{ params: Promise<{ publicKey: string; }>; }' is not assignable to type '{ params: { publicKey: string; }; }'.
+          Types of property 'params' are incompatible.
+            Property 'publicKey' is missing in type 'Promise<{ publicKey: string; }>' but required in type '{ publicKey: string; }'.
