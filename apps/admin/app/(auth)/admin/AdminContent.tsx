@@ -1,6 +1,3 @@
-"use client";
-
-import { useMemo } from "react";
 import { motion } from "framer-motion";
 import {
   Users,
@@ -34,8 +31,6 @@ import {
   EmptyChart,
 } from "./styled";
 
-import { useBots } from "@/hooks/useBot";
-import { useAnalytics } from "@/hooks/useAnalytics";
 import { Loader } from "@/components";
 import {
   BarsChart,
@@ -50,104 +45,24 @@ import {
   RobotIcon,
   UsersIcon,
 } from "@phosphor-icons/react";
-// import { BotConvoStat, BotLeadStat } from "@/types/analytics";
-
-// type Totals = {
-//   total_conversations: number;
-//   total_leads: number;
-//   total_messages: number;
-// };
-
-// type AnalyticsResponse = {
-//   totals: Totals;
-//   convosPerBot: BotConvoStat[];
-//   leadsPerBot: BotLeadStat[];
-// };
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-    },
-  },
-};
-
-const itemVariants = {
-  hidden: { y: 20, opacity: 0 },
-  visible: {
-    y: 0,
-    opacity: 1,
-    transition: {
-      type: "spring",
-      stiffness: 100,
-      damping: 12,
-    },
-  },
-} as const;
-
-const formatDate = (date: string | Date) =>
-  date
-    ? new Date(date).toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      })
-    : "";
+import useAdminContent from "@/hooks/useAdminContent";
+import useMotion from "@/hooks/useMotion";
 
 export default function AdminContent() {
-  const { data: bots = [], isLoading: botsLoading } = useBots();
-  const { data: analytics, isLoading: analyticsLoading } = useAnalytics();
+  const {
+    bots,
+    isLoading,
+    totals,
+    conversionRate,
+    botBarData,
+    pieData,
+    convosPerBot,
+    leadsPerBot,
+    recentBots,
+    formatDate,
+  } = useAdminContent();
 
-  const isLoading = botsLoading || analyticsLoading;
-
-  const { totals, convosPerBot, leadsPerBot } = useMemo(() => {
-    return {
-      totals: analytics?.totals,
-      convosPerBot: analytics?.convosPerBot ?? [],
-      leadsPerBot: analytics?.leadsPerBot ?? [],
-    };
-  }, [analytics]);
-
-  const conversionRate = useMemo(
-    () =>
-      totals?.total_conversations
-        ? ((totals.total_leads / totals.total_conversations) * 100).toFixed(1)
-        : "0.0",
-    [totals],
-  );
-
-  const pieData = useMemo(
-    () =>
-      leadsPerBot
-        .filter((l) => l.total_leads > 0)
-        .map((l) => ({ name: l.bot_name, value: Number(l.total_leads) })),
-    [leadsPerBot],
-  );
-
-  const botBarData = useMemo(
-    () =>
-      convosPerBot.slice(0, 6).map((c) => ({
-        name:
-          c.bot_name.length > 10 ? c.bot_name.slice(0, 10) + "…" : c.bot_name,
-        Engagement: Number(c.total_conversations),
-        Conversion:
-          leadsPerBot.find((l) => l.bot_id === c.bot_id)?.total_leads ?? 0,
-      })),
-    [convosPerBot, leadsPerBot],
-  );
-
-  const recentBots = useMemo(
-    () =>
-      [...bots]
-        .sort(
-          (a, b) =>
-            new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-        )
-        .slice(0, 4),
-    [bots],
-  );
+  const { containerVariants, itemVariants } = useMotion();
 
   if (isLoading) {
     return (
@@ -174,14 +89,14 @@ export default function AdminContent() {
             deltaText="Live"
           />
           <StatsCard
-            title="Engagement Volume"
+            title="User Interactions"
             botsLength={totals?.total_conversations ?? 0}
             icon={<ChatIcon size={24} weight="duotone" />}
             statDelta={<Activity size={12} />}
             deltaText="Active"
           />
           <StatsCard
-            title="Qualified Leads"
+            title="Contacts Collected"
             botsLength={totals?.total_leads ?? 0}
             icon={<UsersIcon size={24} weight="duotone" />}
             statDelta={<TrendingUp size={12} />}
@@ -199,7 +114,7 @@ export default function AdminContent() {
         <PanelRow style={{ gridTemplateColumns: "1.8fr 1fr" }}>
           <Panel as={motion.div} variants={itemVariants}>
             <SectionTitle>
-              <Activity size={16} /> ROI Performance by Bot
+              <Activity size={16} /> Contact Capture Performance
             </SectionTitle>
             {botBarData.length ? (
               <BarsChart botBarData={botBarData} />

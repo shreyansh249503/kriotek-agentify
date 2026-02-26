@@ -1,18 +1,29 @@
 import { COLOR } from "@/styles";
 import {
   Badge,
+  BotEngagementChatText,
+  BotEngagementVolume,
+  BotEngagementVolumeText,
   BotInitial,
   BotListLink,
+  BotName,
+  BotROIBar,
+  BotROIContainer,
+  BotROIValue,
+  BotTableInitialContainer,
   PerformanceTableSubWrapper,
   PerformanceTableWrapper,
 } from "./styled";
 import { motion } from "framer-motion";
 import { ChevronRight } from "lucide-react";
 
+import { BotConvoStat, BotLeadStat } from "@/types/analytics";
+import { Bot } from "@/types/bot";
+
 type PerformanceTableProps = {
-  convosPerBot: any[];
-  leadsPerBot: any[];
-  bots: any[];
+  convosPerBot: BotConvoStat[];
+  leadsPerBot: BotLeadStat[];
+  bots: Bot[];
 };
 
 export const PerformanceTable = ({
@@ -26,9 +37,9 @@ export const PerformanceTable = ({
         <thead>
           <tr>
             <th>Bot Identity</th>
-            <th>Engagement Volume</th>
+            <th>User Interactions</th>
             <th>Successful Conversions</th>
-            <th>ROI Rate</th>
+            <th>Conversion Rate</th>
             <th>Temporal Activity</th>
             <th></th>
           </tr>
@@ -55,46 +66,31 @@ export const PerformanceTable = ({
               const bot = bots.find((b) => b.id === row.bot_id);
               const rate =
                 row.total_conversations > 0
-                  ? ((leads / row.total_conversations) * 100).toFixed(1)
+                  ? Math.min(
+                      (leads / row.total_conversations) * 100,
+                      100,
+                    ).toFixed(1)
                   : "0.0";
 
               return (
                 <tr key={row.bot_id}>
                   <td>
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 12,
-                      }}
-                    >
+                    <BotTableInitialContainer>
                       <BotInitial>
                         {row.bot_name.charAt(0).toUpperCase()}
                       </BotInitial>
-                      <span style={{ fontWeight: 700, color: "#1e293b" }}>
-                        {row.bot_name}
-                      </span>
-                    </div>
+                      <BotName>{row.bot_name}</BotName>
+                    </BotTableInitialContainer>
                   </td>
                   <td>
-                    <div style={{ display: "flex", flexDirection: "column" }}>
-                      <span
-                        style={{
-                          fontWeight: 700,
-                          color: COLOR.PRIMARY_HOVER,
-                        }}
-                      >
+                    <BotEngagementVolume>
+                      <BotEngagementChatText>
                         {row.total_conversations} chats
-                      </span>
-                      <span
-                        style={{
-                          fontSize: 11,
-                          color: COLOR.TEXT_SECONDARY,
-                        }}
-                      >
+                      </BotEngagementChatText>
+                      <BotEngagementVolumeText>
                         {row.total_messages} messages
-                      </span>
-                    </div>
+                      </BotEngagementVolumeText>
+                    </BotEngagementVolume>
                   </td>
                   <td>
                     <Badge $type={leads > 0 ? "success" : "primary"}>
@@ -102,26 +98,11 @@ export const PerformanceTable = ({
                     </Badge>
                   </td>
                   <td>
-                    <div style={{ width: "100px" }}>
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          marginBottom: 4,
-                          fontSize: 11,
-                        }}
-                      >
-                        <span style={{ fontWeight: 600 }}>{rate}%</span>
+                    <BotROIContainer>
+                      <div>
+                        <BotROIValue>{rate}%</BotROIValue>
                       </div>
-                      <div
-                        style={{
-                          height: 6,
-                          width: "100%",
-                          background: "#f1f5f9",
-                          borderRadius: 3,
-                          overflow: "hidden",
-                        }}
-                      >
+                      <BotROIBar>
                         <motion.div
                           initial={{ width: 0 }}
                           animate={{
@@ -133,8 +114,8 @@ export const PerformanceTable = ({
                             background: COLOR.PRIMARY,
                           }}
                         />
-                      </div>
-                    </div>
+                      </BotROIBar>
+                    </BotROIContainer>
                   </td>
                   <td>
                     <div

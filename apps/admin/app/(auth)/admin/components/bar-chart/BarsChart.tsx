@@ -12,7 +12,14 @@ import {
 import { ChartWrapper } from "./styled";
 import { COLOR } from "@/styles";
 import { ChartTooltip } from "../chart-tool-tip";
-export const BarsChart = ({ botBarData }: { botBarData: any[] }) => {
+
+export interface BotBarData {
+  name: string;
+  Interactions: number;
+  ContactsCollected: number;
+}
+
+export const BarsChart = ({ botBarData }: { botBarData: BotBarData[] }) => {
   return (
     <ChartWrapper>
       <ResponsiveContainer width="100%" height="100%">
@@ -52,13 +59,13 @@ export const BarsChart = ({ botBarData }: { botBarData: any[] }) => {
             cursor={{ fill: "rgba(0,0,0,0.02)" }}
           />
           <Bar
-            dataKey="Engagement"
+            dataKey="Interactions"
             fill={COLOR.PRIMARY}
             radius={[6, 6, 0, 0]}
             animationDuration={1500}
           />
           <Bar
-            dataKey="Conversion"
+            dataKey="ContactsCollected"
             fill={COLOR.DARK}
             radius={[6, 6, 0, 0]}
             animationDuration={1500}
