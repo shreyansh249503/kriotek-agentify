@@ -312,8 +312,7 @@
 //   });
 // })();
 
-const BOT_AVATAR =
-  "https://www.freepik.com/icon/chatbot_6231228#fromView=keyword&page=2&position=32&uuid=21746b9e-97bf-45be-8639-282ab1632c9b";
+const BOT_AVATAR = "https://cdn-icons-png.flaticon.com/128/9732/9732800.png";
 
 async function fetchBotConfig(publicKey) {
   try {
@@ -342,6 +341,7 @@ function createUserMessage(text, themeColor) {
     max-width:80%;
     margin:6px 0;
     font-size:14px;
+    line-height: 1.4;
   `;
   div.textContent = text;
   return div;
@@ -395,11 +395,14 @@ function createTypingIndicator() {
 
   const avatar = document.createElement("img");
   avatar.src = BOT_AVATAR;
+  avatar.alt = "bot";
   avatar.style.cssText = `
-    width:28px;
-    height:28px;
-    border-radius:50%;
-  `;
+  width:32px;
+  height:32px;
+  border-radius:50%;
+  object-fit:cover;
+  background:#fff;
+`;
 
   const bubble = document.createElement("div");
   bubble.style.cssText = `
@@ -458,7 +461,19 @@ function createGreetingMessage(messages, botName) {
   };
 
   const launcher = document.createElement("button");
-  launcher.innerHTML = "💬";
+  launcher.innerHTML = `
+  <img 
+    src="https://cdn-icons-png.flaticon.com/128/9732/9732800.png"
+    alt="chat"
+    style="
+      width:30px;
+      height:30px;
+      object-fit:cover;
+      pointer-events:none;
+      box-shadow: 0 20px 40px rgba(0,0,0,.2);
+    "
+  />
+`;
   launcher.style.cssText = `
     position:fixed;
     bottom:20px;
@@ -472,6 +487,9 @@ function createGreetingMessage(messages, botName) {
     font-size:24px;
     cursor:pointer;
     z-index:9999;
+    display:flex;
+    align-items:center;
+    justify-content:center;
   `;
   document.body.appendChild(launcher);
 
@@ -487,6 +505,7 @@ function createGreetingMessage(messages, botName) {
     box-shadow:0 20px 40px rgba(0,0,0,.2);
     display:none;
     flex-direction:column;
+    font-family: system-ui;
     overflow:hidden;
     opacity:0;
     transform:translateY(20px);
@@ -531,6 +550,41 @@ function createGreetingMessage(messages, botName) {
       0%,80%,100%{transform:scale(0);}
       40%{transform:scale(1);}
     }
+      #ai-messages p {
+    margin: 0;
+    padding: 0;
+    display: inline;
+  }
+
+  #ai-messages br {
+    line-height: 1.2;
+  }
+
+  #ai-messages ul,
+  #ai-messages ol {
+    margin: 2px 0;
+    padding-left: 14px;
+  }
+
+  #ai-messages li {
+    margin: 0;
+    padding: 0;
+  }
+
+  #ai-messages h1,
+  #ai-messages h2,
+  #ai-messages h3,
+  #ai-messages h4 {
+    margin: 2px 0;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  #ai-messages pre {
+    margin: 4px 0;
+    padding: 6px;
+    font-size: 12px;
+  }
   `;
   document.head.appendChild(style);
 

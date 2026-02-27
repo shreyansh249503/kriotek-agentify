@@ -19,7 +19,6 @@ export const StatCard = styled(GlassPanel)`
   flex-direction: column;
   gap: 10px;
   background-color: ${COLOR.BACKGROUND_2};
-  /* background-color: ${COLOR.PRIMARY}; */
   border: 1px solid ${COLOR.PRIMARY};
   position: relative;
   overflow: hidden;
