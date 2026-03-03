@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import { DashboardWrapper, SectionTitle } from "../styled";
 import {
   ProfileContainer,
   ProfileHeaderCard,
@@ -18,32 +17,38 @@ import {
   FormGroup,
   Label,
   Input,
-  Select,
-  SaveButtonWrap,
   SaveButton,
+  DashboardWrapper,
 } from "./styled";
+import { useCurrentUser } from "@/hooks/useAuth";
+import { Loader } from "@/components";
+import { supabase } from "@/lib/supabase";
 import {
-  User,
-  ShieldCheck,
-  Camera,
-  FloppyDisk,
-  LockKey,
+  UserIcon,
+  ShieldCheckIcon,
+  CameraIcon,
+  CircleNotchIcon,
 } from "@phosphor-icons/react";
-import { CustomSelect } from "@/components";
+import { SuccessMessage, ErrorMessage } from "./styled";
 
-export default function ProfilePage() {
+interface ProfileFormProps {
+  user: any;
+}
+
+function ProfileForm({ user }: ProfileFormProps) {
   const [formData, setFormData] = useState({
-    firstName: "Demo",
-    lastName: "User",
-    email: "demo@agentify.ai",
-    phone: "+1 (555) 123-4567",
-    company: "Agentify Inc.",
-    role: "Administrator",
-    language: "en",
-    timezone: "UTC-5",
+    name: user.user_metadata?.name || "",
+    email: user.email || "",
+    phone: user.user_metadata?.phone || "",
+    company: user.user_metadata?.company || "",
+    role: user.user_metadata?.role || "",
+    password: "",
+    confirmPassword: "",
   });
 
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [successMsg, setSuccessMsg] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -51,65 +56,101 @@ export default function ProfilePage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSave = () => {
-    setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
+  const handleSave = async () => {
+    setIsSaving(true);
+    setSuccessMsg("");
+    setErrorMsg("");
+
+    try {
+      const updates: any = {
+        data: {
+          name: formData.name,
+          phone: formData.phone,
+          company: formData.company,
+        },
+      };
+
+      if (formData.password) {
+        if (formData.password !== formData.confirmPassword) {
+          throw new Error("Passwords do not match");
+        }
+        if (formData.password.length < 6) {
+          throw new Error("Password must be at least 6 characters");
+        }
+        updates.password = formData.password;
+      }
+
+      const { error } = await supabase.auth.updateUser(updates);
+
+      if (error) throw error;
+
+      setSuccessMsg("Profile updated successfully!");
+      setFormData({ ...formData, password: "", confirmPassword: "" });
+    } catch (err: any) {
+      setErrorMsg(err.message || "An error occurred while updating profile");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const currentInitials =
-    formData.firstName.charAt(0) + formData.lastName.charAt(0);
+  const currentInitials = formData.name
+    ? formData.name
+        .split(" ")
+        .map((n: string) => n[0])
+        .join("")
+        .substring(0, 2)
+        .toUpperCase()
+    : "U";
 
   return (
-    <ProfileContainer>
+    <DashboardWrapper>
       <ProfileHeaderCard>
         <AvatarSection>
           <AvatarInitials>{currentInitials}</AvatarInitials>
           <AvatarEditButton title="Change avatar">
-            <Camera size={16} weight="bold" />
+            <CameraIcon size={16} weight="bold" />
           </AvatarEditButton>
         </AvatarSection>
 
         <ProfileInfo>
-          <ProfileName>
-            {formData.firstName} {formData.lastName}
-          </ProfileName>
+          <ProfileName>{formData.name || ""}</ProfileName>
           <ProfileEmail>{formData.email}</ProfileEmail>
           <RoleBadge>
-            <ShieldCheck size={16} weight="fill" />
+            <ShieldCheckIcon size={16} weight="fill" />
             {formData.role}
           </RoleBadge>
         </ProfileInfo>
       </ProfileHeaderCard>
 
       <FormSection>
+        {successMsg && <SuccessMessage>{successMsg}</SuccessMessage>}
+        {errorMsg && <ErrorMessage>{errorMsg}</ErrorMessage>}
+
         <FormSectionTitle>
-          <User size={20} weight="duotone" />
+          <UserIcon size={20} weight="duotone" />
           Personal Information
         </FormSectionTitle>
 
         <FormGrid>
           <FormGroup>
-            <Label>First Name</Label>
+            <Label>Full Name</Label>
             <Input
-              name="firstName"
-              value={formData.firstName}
+              name="name"
+              value={formData.name}
               onChange={handleChange}
-              placeholder="Enter first name"
+              placeholder="Enter full name"
             />
           </FormGroup>
 
-          <FormGroup>
+          {/* <FormGroup>
             <Label>Last Name</Label>
             <Input
-              name="lastName"
-              value={formData.lastName}
+              name="name"
+              value={formData.name}
               onChange={handleChange}
               placeholder="Enter last name"
             />
-          </FormGroup>
+          </FormGroup> */}
 
           <FormGroup>
             <Label>Email Address</Label>
@@ -143,72 +184,57 @@ export default function ProfilePage() {
               placeholder="Enter company name"
             />
           </FormGroup>
-        </FormGrid>
-      </FormSection>
-
-      <FormSection>
-        <FormSectionTitle>
-          <LockKey size={20} weight="duotone" />
-          Preferences & Security
-        </FormSectionTitle>
-
-        <FormGrid>
           <FormGroup>
-            <Label>Language</Label>
-
-            <CustomSelect
-              value={formData.language}
-              onChange={(value) =>
-                setFormData({ ...formData, language: value })
-              }
-              options={[
-                { value: "en", label: "English (US)" },
-                { value: "es", label: "Spanish" },
-                { value: "fr", label: "French" },
-                { value: "de", label: "German" },
-              ]}
-            />
-          </FormGroup>
-
-          <FormGroup>
-            <Label>Timezone</Label>
-
-            <CustomSelect
-              value={formData.timezone}
-              onChange={(value) =>
-                setFormData({ ...formData, timezone: value })
-              }
-              options={[
-                { value: "UTC-8", label: "Pacific Time (PT) UTC-8" },
-                { value: "UTC-5", label: "Eastern Time (ET) UTC-5" },
-                { value: "UTC+0", label: "Greenwich Mean Time (GMT) UTC+0" },
-                { value: "UTC+1", label: "Central European Time (CET) UTC+1" },
-                {
-                  value: "UTC+5.5",
-                  label: "India Standard Time (IST) UTC+5:30",
-                },
-              ]}
-            />
-          </FormGroup>
-
-          <FormGroup>
-            <Label>Password</Label>
+            <Label>New Password</Label>
             <Input
+              name="password"
               type="password"
-              value="********"
-              readOnly
-              placeholder="Password"
+              value={formData.password}
+              onChange={handleChange}
+              placeholder="Enter new password"
+            />
+          </FormGroup>
+          <FormGroup>
+            <Label>Confirm New Password</Label>
+            <Input
+              name="confirmPassword"
+              type="password"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              placeholder="Confirm new password"
             />
           </FormGroup>
         </FormGrid>
       </FormSection>
 
-      {/* <SaveButtonWrap> */}
-      <SaveButton onClick={handleSave} disabled={isLoading}>
-        <FloppyDisk size={20} weight="bold" />
-        {isLoading ? "Saving Changes..." : "Save Changes"}
+      <SaveButton onClick={handleSave} disabled={isSaving}>
+        {isSaving ? (
+          <>
+            <CircleNotchIcon size={18} className="animate-spin" />
+            Saving...
+          </>
+        ) : (
+          "Save Changes"
+        )}
       </SaveButton>
-      {/* </SaveButtonWrap> */}
+    </DashboardWrapper>
+  );
+}
+
+export default function ProfilePage() {
+  const { data: user, isLoading } = useCurrentUser();
+
+  if (isLoading) {
+    return <Loader fullScreen />;
+  }
+
+  if (!user) {
+    return null;
+  }
+
+  return (
+    <ProfileContainer>
+      <ProfileForm user={user} />
     </ProfileContainer>
   );
 }

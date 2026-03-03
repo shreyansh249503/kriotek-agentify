@@ -11,8 +11,8 @@ export const BotsContainer = styled.div`
   justify-content: flex-start;
   align-items: center;
   background: linear-gradient(135deg, ${COLOR.LIGHT} 0%, ${COLOR.CREAM} 100%);
+  min-height: 90vh;
   padding: 24px;
-  min-height: 100vh;
 
   @media (max-width: ${BREAKPOINTS.TABLET}) {
     padding: 24px 16px;
@@ -21,7 +21,7 @@ export const BotsContainer = styled.div`
 export const LoadingContainer = styled(BotsContainer)`
   justify-content: center;
   align-items: center;
-  min-height: 80vh;
+  min-height: 90vh;
 `;
 
 export const StatsGrid = styled.div`

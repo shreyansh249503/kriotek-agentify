@@ -39,6 +39,7 @@ import { RefreshAuthGuard } from "@/components/AuthGuard";
 import BotLogo from "@/assets/images/Agentify logo white.png";
 
 export default function SignupPage() {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -56,6 +57,11 @@ export default function SignupPage() {
     const { error: signupError } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        data: {
+          name,
+        },
+      },
     });
 
     if (signupError) {
@@ -81,9 +87,9 @@ export default function SignupPage() {
             Back to Home
           </BackHomeLink>
           <BannerContent>
-          <Logo>
-            <LogoImage src={BotLogo} alt="Logo" />
-          </Logo>
+            <Logo>
+              <LogoImage src={BotLogo} alt="Logo" />
+            </Logo>
             <Quote>
               &ldquo;Join the revolution of automated customer support. Create
               intelligent agents in minutes.&rdquo;
@@ -150,6 +156,19 @@ export default function SignupPage() {
             )}
 
             <Form onSubmit={handleSignup}>
+              <FormGroup>
+                <Label htmlFor="name">Full Name</Label>
+                <Input
+                  id="name"
+                  type="text"
+                  placeholder="Enter your full name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  disabled={success}
+                />
+              </FormGroup>
+
               <FormGroup>
                 <Label htmlFor="email">Email</Label>
                 <Input

@@ -16,13 +16,19 @@ const corsHeaders = {
 const YES_WORDS = ["yes", "sure", "yeah", "yep"];
 const NO_WORDS = ["no", "nope", "not now"];
 const ACK_WORDS = ["ok", "okay", "thanks", "thank you"];
+const EXIT_WORDS = ["skip", "cancel", "no thanks"];
 const CONTACT_TRIGGER_AFTER = 3;
 
+function isValidEmail(text: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(text);
+}
+
+function isValidPhone(text: string) {
+  return /^[0-9+\-\s()]{7,15}$/.test(text);
+}
+
 export async function OPTIONS() {
-  return new Response(null, {
-    status: 204,
-    headers: corsHeaders,
-  });
+  return new Response(null, { status: 204, headers: corsHeaders });
 }
 
 export async function POST(req: Request) {
@@ -31,28 +37,27 @@ export async function POST(req: Request) {
   if (!publicKey || !message) {
     return new Response(
       JSON.stringify({ error: "publicKey and message are required" }),
-      {
-        status: 400,
-        headers: corsHeaders,
-      },
+      { status: 400, headers: corsHeaders },
     );
   }
 
   const bot = await getBotByPublicKey(publicKey);
-
+  const lower = message.toLowerCase();
   const finalConversationId = conversationId || crypto.randomUUID();
 
   let convo = (
-    await db.query(`SELECT * FROM conversations WHERE id=$1`, [
+    await db.query(`SELECT * FROM conversations WHERE id=$1 AND bot_id=$2`, [
       finalConversationId,
+      bot.id,
     ])
   ).rows[0];
 
   if (!convo) {
     convo = (
       await db.query(
-        `INSERT INTO conversations (id, bot_id)
-         VALUES ($1,$2) RETURNING *`,
+        `INSERT INTO conversations (id, bot_id, state, message_count, messages)
+         VALUES ($1,$2,'idle',0,'[]')
+         RETURNING *`,
         [finalConversationId, bot.id],
       )
     ).rows[0];
@@ -64,102 +69,165 @@ export async function POST(req: Request) {
   );
   convo.message_count++;
 
-  const lower = message.toLowerCase();
-
-  if (!bot.contact_enabled) {
-    convo.declined = true;
-  }
+  const CONTACT_STATES = ["awaiting_name", "awaiting_email", "awaiting_phone"];
+  const inContactFlow = CONTACT_STATES.includes(convo.state);
 
   if (
     bot.contact_enabled &&
-    convo.state === "idle" &&
-    convo.prompted &&
-    YES_WORDS.some((w) => lower.includes(w))
+    inContactFlow &&
+    EXIT_WORDS.some((w) => lower.includes(w))
   ) {
     await db.query(
-      `UPDATE conversations SET state='awaiting_name' WHERE id=$1`,
+      `UPDATE conversations
+       SET state='idle', declined=true
+       WHERE id=$1`,
       [convo.id],
     );
-    return new Response("Great! What's your name?", { headers: corsHeaders });
-  }
 
-  if (
-    bot.contact_enabled &&
-    convo.state === "idle" &&
-    convo.prompted &&
-    NO_WORDS.some((w) => lower.includes(w))
-  ) {
-    await db.query(`UPDATE conversations SET declined=true WHERE id=$1`, [
-      convo.id,
-    ]);
-    return new Response(
-      "No problem 🙂 Let me know if you need anything else.",
-      { headers: corsHeaders },
-    );
-  }
-
-  if (convo.state === "awaiting_name") {
-    await db.query(
-      `UPDATE conversations SET name=$1, state='awaiting_email' WHERE id=$2`,
-      [message, convo.id],
-    );
-    return new Response("What's your email?", { headers: corsHeaders });
-  }
-
-  if (convo.state === "awaiting_email") {
-    await db.query(
-      `UPDATE conversations SET email=$1, state='awaiting_phone' WHERE id=$2`,
-      [message, convo.id],
-    );
-    return new Response("Your contact number?", { headers: corsHeaders });
-  }
-
-  if (convo.state === "awaiting_phone") {
-    await db.query(
-      `UPDATE conversations SET phone=$1, state='completed' WHERE id=$2`,
-      [message, convo.id],
-    );
-
-    await db.query(
-      `INSERT INTO leads (bot_id, name, email, phone)
-       VALUES ($1,$2,$3,$4)`,
-      [bot.id, convo.name, convo.email, message],
-    );
-
-    const userEmailHtml = generateUserConfirmationTemplate({
-      userName: convo.name,
-      companyName: bot.name,
-      companyDescription: bot.description,
-      customMessage: bot.contact_email_message,
-      userEmail: convo.email,
-      userPhone: message,
-    });
-
-    await sendUserEmail({
-      to: convo.email,
-      subject: `Thank you for contacting ${bot.name}`,
-      body: `Hi ${convo.name}, thank you for reaching out! Our team will contact you shortly.`,
-      html: userEmailHtml,
-    });
-
-    if (bot.contact_email) {
-      await sendOwnerNotification({
-        ownerEmail: bot.contact_email,
-        botName: bot.name,
-        leadData: {
-          name: convo.name,
-          email: convo.email,
-          phone: message,
-        },
-      });
-    }
-
-    return new Response("Thanks! Our team will contact you shortly.", {
+    return new Response("No worries 🙂 How else can I help you?", {
       headers: corsHeaders,
     });
   }
 
-  let conversationHistory = convo.messages || [];
+  if (bot.contact_enabled) {
+    if (
+      convo.state === "idle" &&
+      convo.prompted &&
+      YES_WORDS.some((w) => lower.includes(w))
+    ) {
+      await db.query(
+        `UPDATE conversations SET state='awaiting_name' WHERE id=$1`,
+        [convo.id],
+      );
+      return new Response("Great! What's your name?", { headers: corsHeaders });
+    }
+
+    if (
+      convo.state === "idle" &&
+      convo.prompted &&
+      NO_WORDS.some((w) => lower.includes(w))
+    ) {
+      await db.query(`UPDATE conversations SET declined=true WHERE id=$1`, [
+        convo.id,
+      ]);
+      return new Response(
+        "No problem 🙂 Let me know if you need anything else.",
+        { headers: corsHeaders },
+      );
+    }
+
+    if (convo.state === "awaiting_name") {
+      await db.query(
+        `UPDATE conversations
+         SET name=$1, state='awaiting_email'
+         WHERE id=$2`,
+        [message, convo.id],
+      );
+      return new Response("What's your email?", { headers: corsHeaders });
+    }
+
+    if (convo.state === "awaiting_email") {
+      if (!isValidEmail(message)) {
+        const clarification = await streamText({
+          model: google("gemini-2.5-flash-lite"),
+          system: `
+Explain briefly why email is needed.
+Be friendly and reassuring.
+Keep it short.
+`,
+          prompt: message,
+        });
+
+        let reply = "";
+        for await (const chunk of clarification.textStream) {
+          reply += chunk;
+        }
+
+        reply += "\n\nWhenever you're ready, please share your email 🙂";
+        return new Response(reply, { headers: corsHeaders });
+      }
+
+      await db.query(
+        `UPDATE conversations
+         SET email=$1, state='awaiting_phone'
+         WHERE id=$2`,
+        [message, convo.id],
+      );
+
+      return new Response("Your contact number?", {
+        headers: corsHeaders,
+      });
+    }
+
+    if (convo.state === "awaiting_phone") {
+      if (!isValidPhone(message)) {
+        return new Response(
+          "Please share a valid contact number so our team can reach you 🙂",
+          { headers: corsHeaders },
+        );
+      }
+
+      await db.query(
+        `UPDATE conversations
+         SET phone=$1, state='completed'
+         WHERE id=$2`,
+        [message, convo.id],
+      );
+
+      await db.query(
+        `INSERT INTO leads (bot_id,name,email,phone)
+         VALUES ($1,$2,$3,$4)`,
+        [bot.id, convo.name, convo.email, message],
+      );
+
+      const html = generateUserConfirmationTemplate({
+        userName: convo.name,
+        companyName: bot.name,
+        companyDescription: bot.description,
+        customMessage: bot.contact_email_message,
+        userEmail: convo.email,
+        userPhone: message,
+      });
+
+      await sendUserEmail({
+        to: convo.email,
+        subject: `Thank you for contacting ${bot.name}`,
+        body: "We'll contact you shortly.",
+        html,
+      });
+
+      if (bot.contact_email) {
+        await sendOwnerNotification({
+          ownerEmail: bot.contact_email,
+          botName: bot.name,
+          leadData: {
+            name: convo.name,
+            email: convo.email,
+            phone: message,
+          },
+        });
+      }
+
+      await db.query(
+        `UPDATE conversations
+         SET state='idle', prompted=true
+         WHERE id=$1`,
+        [convo.id],
+      );
+
+      return new Response("Thanks! Our team will contact you shortly.", {
+        headers: corsHeaders,
+      });
+    }
+  }
+
+  let conversationHistory = [];
+
+  try {
+    conversationHistory = JSON.parse(convo.messages || "[]");
+  } catch {
+    conversationHistory = [];
+  }
 
   conversationHistory.push({
     role: "user",
@@ -174,15 +242,11 @@ export async function POST(req: Request) {
       companyDescription: bot.description,
       tone: bot.tone,
     },
-    {
-      websiteContext,
-    },
+    { websiteContext },
   );
 
   const result = await streamText({
-    // model: google("gemini-3-flash-preview"),
     model: google("gemini-2.5-flash-lite"),
-    // model: google("gemini-2.5-flash"),
     system: systemPrompt,
     prompt: conversationHistory,
   });
@@ -213,7 +277,7 @@ export async function POST(req: Request) {
     content: aiText,
   });
 
-  await db.query(`UPDATE conversations SET messages = $1 WHERE id = $2`, [
+  await db.query(`UPDATE conversations SET messages=$1 WHERE id=$2`, [
     JSON.stringify(conversationHistory),
     convo.id,
   ]);

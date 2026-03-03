@@ -8,8 +8,20 @@ export const ProfileContainer = styled.div`
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  justify-content: flex-start;
+  align-items: center;
+  background-color: ${COLOR.LIGHT};
   padding: 24px;
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    padding: 20px 16px;
+  }
+`;
+export const DashboardWrapper = styled.div`
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
 `;
 
 export const ProfileHeaderCard = styled(GlassPanel)`
@@ -74,7 +86,7 @@ export const AvatarEditButton = styled.button`
 export const ProfileInfo = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0px;
   flex-grow: 1;
 `;
 
@@ -83,7 +95,7 @@ export const ProfileName = styled.h1`
   font-weight: 800;
   color: ${COLOR.DARK};
   margin: 0;
-  letter-spacing: -0.5px;
+  /* letter-spacing: -0.5px; */
 `;
 
 export const ProfileEmail = styled.p`
@@ -244,4 +256,25 @@ export const SaveButton = styled.button`
     transform: none;
     box-shadow: none;
   }
+`;
+export const SuccessMessage = styled.div`
+  background-color: #d4edda;
+  color: #155724;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid #c3e6cb;
+  font-size: 14px;
+  font-weight: 500;
+  width: 100%;
+`;
+
+export const ErrorMessage = styled.div`
+  background-color: #f8d7da;
+  color: #721c24;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid #f5c6cb;
+  font-size: 14px;
+  font-weight: 500;
+  width: 100%;
 `;
