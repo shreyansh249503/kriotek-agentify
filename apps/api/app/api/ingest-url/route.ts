@@ -9,6 +9,7 @@ export async function POST(req: Request) {
   await setupCollection();
 
   const user = await getUserFromRequest(req);
+  
   if (!user) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -31,7 +32,6 @@ export async function POST(req: Request) {
   }
 
   const text = await crawlWebsite(url);
-  console.log("CRAWLED TEXT LENGTH:", text.length);
 
   if (!text || text.length < 200) {
     return Response.json(

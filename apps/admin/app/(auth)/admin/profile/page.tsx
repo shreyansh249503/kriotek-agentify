@@ -23,6 +23,7 @@ import {
 import { useCurrentUser } from "@/hooks/useAuth";
 import { Loader } from "@/components";
 import { supabase } from "@/lib/supabase";
+import type { User, UserAttributes } from "@supabase/supabase-js";
 import {
   UserIcon,
   ShieldCheckIcon,
@@ -32,7 +33,7 @@ import {
 import { SuccessMessage, ErrorMessage } from "./styled";
 
 interface ProfileFormProps {
-  user: any;
+  user: User;
 }
 
 function ProfileForm({ user }: ProfileFormProps) {
@@ -62,7 +63,7 @@ function ProfileForm({ user }: ProfileFormProps) {
     setErrorMsg("");
 
     try {
-      const updates: any = {
+      const updates: UserAttributes = {
         data: {
           name: formData.name,
           phone: formData.phone,
@@ -86,8 +87,12 @@ function ProfileForm({ user }: ProfileFormProps) {
 
       setSuccessMsg("Profile updated successfully!");
       setFormData({ ...formData, password: "", confirmPassword: "" });
-    } catch (err: any) {
-      setErrorMsg(err.message || "An error occurred while updating profile");
+    } catch (err) {
+      const error =
+        err instanceof Error
+          ? err
+          : new Error("An error occurred while updating profile");
+      setErrorMsg(error.message);
     } finally {
       setIsSaving(false);
     }
