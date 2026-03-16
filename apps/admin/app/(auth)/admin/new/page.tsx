@@ -1,7 +1,7 @@
 "use client";
 
 import { BotForm } from "@/components";
-import { CreateBotInput } from "@/types/bot";
+import { CreateBotInput, Bot } from "@/types/bot";
 import { NewBotContainer } from "./styled";
 import { useRouter } from "next/navigation";
 import { useCreateBot } from "@/hooks/useBot";
@@ -12,8 +12,12 @@ export default function NewBotPage() {
 
   const handleCreate = (data: CreateBotInput) => {
     mutate(data, {
-      onSuccess: () => {
-        router.push("/admin");
+      onSuccess: (botData: Bot) => {
+        if (botData?.public_key) {
+          router.push(`/admin/bots/${botData.public_key}/ingest`);
+        } else {
+          router.push("/admin");
+        }
       },
     });
   };

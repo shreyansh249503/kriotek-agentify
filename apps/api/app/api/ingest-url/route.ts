@@ -9,12 +9,13 @@ export async function POST(req: Request) {
   await setupCollection();
 
   const user = await getUserFromRequest(req);
-  
+
   if (!user) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { publicKey, url } = await req.json();
+
   if (!publicKey || !url) {
     return Response.json(
       { error: "publicKey and url required" },
@@ -31,7 +32,23 @@ export async function POST(req: Request) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const text = await crawlWebsite(url);
+  // 🔹 NEW: check if root URL already crawled
+  const existing = await db.query(
+    "SELECT id FROM crawled_pages WHERE bot_public_key=$1 AND page_url=$2 LIMIT 1",
+    [publicKey, url],
+  );
+
+  if ((existing.rowCount ?? 0) > 0) {
+    return Response.json(
+      {
+        alreadyCrawled: true,
+        message: "This URL has already been crawled",
+      },
+      { status: 200 },
+    );
+  }
+
+  const text = await crawlWebsite(url, publicKey);
 
   if (!text || text.length < 200) {
     return Response.json(
@@ -41,6 +58,7 @@ export async function POST(req: Request) {
   }
 
   const chunks = chunkText(text);
+
   console.log("CHUNKS COUNT:", chunks.length);
 
   for (const chunk of chunks) {

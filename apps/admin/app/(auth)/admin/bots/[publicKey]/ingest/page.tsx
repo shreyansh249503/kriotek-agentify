@@ -76,6 +76,12 @@ export default function IngestPage() {
 
         const data = await res.json();
 
+        if (data.alreadyCrawled) {
+          setError("⚠ This URL was already crawled earlier.");
+          setLoading(false);
+          return;
+        }
+
         if (!res.ok) {
           throw new Error(data.error || "URL ingest failed");
         }

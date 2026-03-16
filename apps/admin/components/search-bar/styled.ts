@@ -15,12 +15,12 @@ export const SearchBarContainer = styled.div`
   border-radius: 99px;
   padding: 4px 16px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  /* box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); */
 
   &:focus-within {
     background: ${COLOR.WHITE};
     border-color: ${COLOR.PRIMARY};
-    box-shadow: 0 8px 24px rgba(168, 225, 12, 0.15);
+    /* box-shadow: 0 8px 24px rgba(168, 225, 12, 0.15); */
     transform: translateY(-1px);
   }
 `;

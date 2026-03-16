@@ -3,15 +3,19 @@
 import { useState, useMemo } from "react";
 import { Loader, SearchBar, EmptyState, StatusBadge } from "@/components";
 import {
-  AdminContentWrapper,
-  BotCardContainer,
+  TableContainer,
+  StyledTable,
+  TableHead,
+  TableRow,
+  TableHeader,
+  TableBody,
+  TableCell,
+  BotName,
+  BotDescription,
+  ActionCellWrapper,
   EditBotButton,
   IngestButton,
   ControlsContainer,
-  BotMeta,
-  BotDescription,
-  BotActions,
-  BotName,
   BotsContainer,
   LoadingContainer,
 } from "./styled";
@@ -46,33 +50,47 @@ export default function BotsPage() {
       </ControlsContainer>
 
       {filteredBots.length > 0 ? (
-        <AdminContentWrapper>
-          {filteredBots.map((bot) => (
-            <BotCardContainer key={bot.id}>
-              <BotMeta>
-                <BotName>{bot.name}</BotName>
-                <StatusBadge status="active" />
-              </BotMeta>
-
-              <BotDescription>{bot.description}</BotDescription>
-
-              <BotActions>
-                <EditBotButton
-                  href={`/admin/bot/${bot.id}/edit-bot`}
-                  style={{ flex: 1 }}
-                >
-                  Edit
-                </EditBotButton>
-                <IngestButton
-                  href={`/admin/bots/${bot.public_key}/ingest`}
-                  style={{ flex: 1 }}
-                >
-                  Ingest
-                </IngestButton>
-              </BotActions>
-            </BotCardContainer>
-          ))}
-        </AdminContentWrapper>
+        <TableContainer>
+          <StyledTable>
+            <TableHead>
+              <TableRow>
+                <TableHeader>Name</TableHeader>
+                <TableHeader>Description</TableHeader>
+                <TableHeader>Status</TableHeader>
+                <TableHeader style={{ textAlign: "right" }}>Actions</TableHeader>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {filteredBots.map((bot) => (
+                <TableRow key={bot.id}>
+                  <TableCell>
+                    <BotName>{bot.name}</BotName>
+                  </TableCell>
+                  <TableCell>
+                    <BotDescription>{bot.description}</BotDescription>
+                  </TableCell>
+                  <TableCell>
+                    <StatusBadge status="active" />
+                  </TableCell>
+                  <TableCell>
+                    <ActionCellWrapper>
+                      <EditBotButton
+                        href={`/admin/bot/${bot.id}/edit-bot`}
+                      >
+                        Edit
+                      </EditBotButton>
+                      <IngestButton
+                        href={`/admin/bots/${bot.public_key}/ingest`}
+                      >
+                        Ingest
+                      </IngestButton>
+                    </ActionCellWrapper>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </StyledTable>
+        </TableContainer>
       ) : (
         <EmptyState
           icon={<BotIcon />}
