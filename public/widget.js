@@ -314,10 +314,13 @@
 
 const BOT_AVATAR = "https://cdn-icons-png.flaticon.com/128/9732/9732800.png";
 
+const currentScript = document.currentScript || document.querySelector('script[bot-id]');
+const WIDGET_URL = currentScript && currentScript.src ? new URL(currentScript.src).origin : window.location.origin;
+
 async function fetchBotConfig(publicKey) {
   try {
     const res = await fetch(
-      `${process.env.NEXT_PUBLIC_WIDGET_URL}/api/public/bot/${publicKey}`,
+      `${WIDGET_URL}/api/public/bot/${publicKey}`,
     );
     if (!res.ok) throw new Error("Bot config not found");
     return await res.json();
@@ -644,7 +647,7 @@ function createGreetingMessage(messages, botName) {
     const typing = createTypingIndicator();
     messages.appendChild(typing);
 
-    const res = await fetch(`${process.env.NEXT_PUBLIC_WIDGET_URL}/api/chat`, {
+    const res = await fetch(`${WIDGET_URL}/api/chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ publicKey, message: text, conversationId }),
