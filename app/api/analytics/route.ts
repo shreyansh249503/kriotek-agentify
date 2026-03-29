@@ -22,17 +22,17 @@ export async function GET(req: Request) {
   }
 
   const db = await getDb();
-  
+
   const convoPerBot = await db.getRepository(Bot)
     .createQueryBuilder("b")
-    .leftJoin("conversations", "c", "c.bot_id = b.id")
+    .leftJoin("conversations", "c", "c.bot_id = b.id::text")
     .select([
-        "b.id AS bot_id",
-        "b.name AS bot_name",
-        "COUNT(c.id) AS total_conversations",
-        "SUM(c.message_count) AS total_messages",
-        "COUNT(c.id) FILTER (WHERE c.created_at >= NOW() - INTERVAL '7 days') AS conversations_this_week",
-        "COUNT(c.id) FILTER (WHERE c.created_at >= NOW() - INTERVAL '30 days') AS conversations_this_month"
+      "b.id AS bot_id",
+      "b.name AS bot_name",
+      "COUNT(c.id) AS total_conversations",
+      "SUM(c.message_count) AS total_messages",
+      "COUNT(c.id) FILTER (WHERE c.created_at >= NOW() - INTERVAL '7 days') AS conversations_this_week",
+      "COUNT(c.id) FILTER (WHERE c.created_at >= NOW() - INTERVAL '30 days') AS conversations_this_month"
     ])
     .where("b.user_id = :userId", { userId: user.id })
     .groupBy("b.id")
@@ -42,11 +42,11 @@ export async function GET(req: Request) {
 
   const leadsPerBot = await db.getRepository(Bot)
     .createQueryBuilder("b")
-    .leftJoin("leads", "l", "l.bot_id = b.id")
+    .leftJoin("leads", "l", "l.bot_id = b.id::text")
     .select([
-        "b.id AS bot_id",
-        "b.name AS bot_name",
-        "COUNT(l.id) AS total_leads"
+      "b.id AS bot_id",
+      "b.name AS bot_name",
+      "COUNT(l.id) AS total_leads"
     ])
     .where("b.user_id = :userId", { userId: user.id })
     .groupBy("b.id")
@@ -60,7 +60,7 @@ export async function GET(req: Request) {
          DATE_TRUNC('month', c.created_at) AS month_date,
          COUNT(c.id) AS conversations
        FROM conversations c
-       JOIN bots b ON b.id = c.bot_id
+       JOIN bots b ON b.id::text = c.bot_id
        WHERE b.user_id = $1
          AND c.created_at >= NOW() - INTERVAL '6 months'
        GROUP BY 1
@@ -70,7 +70,7 @@ export async function GET(req: Request) {
          DATE_TRUNC('month', l.created_at) AS month_date,
          COUNT(l.id) AS leads
        FROM leads l
-       JOIN bots b ON b.id = l.bot_id
+       JOIN bots b ON b.id::text = l.bot_id
        WHERE b.user_id = $1
          AND l.created_at >= NOW() - INTERVAL '6 months'
        GROUP BY 1
@@ -93,12 +93,12 @@ export async function GET(req: Request) {
 
   const totals = await db.getRepository(Bot)
     .createQueryBuilder("b")
-    .leftJoin("conversations", "c", "c.bot_id = b.id")
-    .leftJoin("leads", "l", "l.bot_id = b.id")
+    .leftJoin("conversations", "c", "c.bot_id = b.id::text")
+    .leftJoin("leads", "l", "l.bot_id = b.id::text")
     .select([
-        "COUNT(DISTINCT c.id) AS total_conversations",
-        "COALESCE(SUM(c.message_count), 0) AS total_messages",
-        "COUNT(DISTINCT l.id) AS total_leads"
+      "COUNT(DISTINCT c.id) AS total_conversations",
+      "COALESCE(SUM(c.message_count), 0) AS total_messages",
+      "COUNT(DISTINCT l.id) AS total_leads"
     ])
     .where("b.user_id = :userId", { userId: user.id })
     .getRawOne();
