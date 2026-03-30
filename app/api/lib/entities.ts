@@ -41,7 +41,7 @@ export class Conversation {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
 
-  @Column({ name: "bot_id" })
+  @Column({ name: "bot_id", type: "uuid", nullable: true })
   bot_id!: string;
 
   @Column({ default: "idle" })
@@ -77,7 +77,7 @@ export class Lead {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
 
-  @Column({ name: "bot_id" })
+  @Column({ name: "bot_id", type: "uuid", nullable: true })
   bot_id!: string;
 
   @Column()
