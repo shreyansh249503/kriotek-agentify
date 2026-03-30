@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import {
@@ -21,11 +21,13 @@ import {
 } from "./styled";
 import { CloudArrowUpIcon } from "@phosphor-icons/react";
 import { EmbedSuccess } from "@/components";
+import { useBreadcrumb } from "@/context/BreadcrumbContext";
 
 type Mode = "text" | "url" | "pdf";
 
 export default function IngestPage() {
   const { publicKey } = useParams<{ publicKey: string }>();
+  const { setBreadcrumbMeta } = useBreadcrumb();
   const [mode, setMode] = useState<Mode>("text");
   const [content, setContent] = useState("");
   const [url, setUrl] = useState("");
@@ -120,6 +122,24 @@ export default function IngestPage() {
       setLoading(false);
     }
   }
+  useEffect(() => {
+    const fetchBotName = async () => {
+      const { data } = await supabase
+        .from("bots")
+        .select("name")
+        .eq("public_key", publicKey)
+        .single();
+
+      if (data?.name) {
+        setBreadcrumbMeta({
+          customLabels: { [publicKey]: data.name },
+          nonLinkable: [publicKey],
+        });
+      }
+    };
+
+    fetchBotName();
+  }, [publicKey]);
 
   return (
     <NewBotContainer>

@@ -1,32 +1,18 @@
-import { streamText } from "ai";
-import { google } from "@ai-sdk/google";
+type Message = { role: "user" | "assistant" | "system"; content: string };
 import { getBotByPublicKey } from "../lib/bot";
 import { retrieveWebsiteContext } from "../lib/rag";
-import { buildSystemPrompt } from "../lib/agent";
 import { sendOwnerNotification, sendUserEmail } from "../lib/sendEmail";
 import { getDb } from "../lib/db";
 import { Conversation, Lead } from "../lib/entities";
 import { generateUserConfirmationTemplate } from "../lib/emailTemplates";
+import { runLeadAgent } from "../lib/agents/leadAgent";
+import { runReceptionistAgent } from "../lib/agents/receptionistAgent";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST,OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type",
 };
-
-const YES_WORDS = ["yes", "sure", "yeah", "yep"];
-const NO_WORDS = ["no", "nope", "not now"];
-const ACK_WORDS = ["ok", "okay", "thanks", "thank you"];
-const EXIT_WORDS = ["skip", "cancel", "no thanks"];
-const CONTACT_TRIGGER_AFTER = 3;
-
-function isValidEmail(text: string) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(text);
-}
-
-function isValidPhone(text: string) {
-  return /^[0-9+\-\s()]{7,15}$/.test(text);
-}
 
 export async function OPTIONS() {
   return new Response(null, { status: 204, headers: corsHeaders });
@@ -43,14 +29,14 @@ export async function POST(req: Request) {
   }
 
   const bot = await getBotByPublicKey(publicKey);
-  const lower = message.toLowerCase();
   const finalConversationId = conversationId || crypto.randomUUID();
 
-  const db = await getDb();
-  const convoRepo = db.getRepository(Conversation);
+  const dbInstance = await getDb();
+  const convoRepo = dbInstance.getRepository(Conversation);
 
+  // ── 1. Load or create conversation ─────────────────────────────────────────
   let convo = await convoRepo.findOne({
-    where: { id: finalConversationId, bot_id: bot.id }
+    where: { id: finalConversationId, bot_id: bot.id },
   });
 
   if (!convo) {
@@ -59,203 +45,178 @@ export async function POST(req: Request) {
       bot_id: bot.id,
       state: "idle",
       message_count: 0,
-      messages: "[]"
+      messages: "[]",
     });
     await convoRepo.save(convo);
   }
 
-  convo.message_count++;
-  await convoRepo.update(convo.id, { message_count: convo.message_count });
+  let history: Message[] = [];
+  try {
+    history = JSON.parse(convo.messages || "[]");
+  } catch {
+    history = [];
+  }
 
-  const CONTACT_STATES = ["awaiting_name", "awaiting_email", "awaiting_phone"];
-  const inContactFlow = CONTACT_STATES.includes(convo.state);
+  const fullConversation: Message[] = [
+    ...history,
+    { role: "user" as const, content: message },
+  ];
 
+  const alreadyComplete = convo.state === "completed";
+
+  // ── 2. Run Lead Agent + RAG in parallel ────────────────────────────────────
+  const contactEnabled = bot.contact_enabled !== false;
+
+  const knownInfo = {
+    name: convo.name ?? undefined,
+    email: convo.email ?? undefined,
+    phone: convo.phone ?? undefined,
+  };
+
+  const [leadDecision, websiteContext] = await Promise.all([
+    !contactEnabled || alreadyComplete
+      ? Promise.resolve(
+          alreadyComplete
+            ? {
+                collectedInfo: knownInfo,
+                missingFields: [] as ("name" | "email" | "phone")[],
+                isComplete: true,
+              }
+            : null,
+        )
+      : runLeadAgent(fullConversation, bot.contact_prompt, knownInfo),
+    retrieveWebsiteContext(publicKey, message),
+  ]);
+
+  // ── 3. Persist partial contact info as it is collected ─────────────────────
   if (
-    bot.contact_enabled &&
-    inContactFlow &&
-    EXIT_WORDS.some((w) => lower.includes(w))
+    contactEnabled &&
+    !alreadyComplete &&
+    leadDecision &&
+    !leadDecision.isComplete
   ) {
-    await convoRepo.update(convo.id, { state: 'idle', declined: true });
+    const partial = leadDecision.collectedInfo;
+    const updates: Partial<Conversation> = {};
 
-    return new Response("No worries 🙂 How else can I help you?", {
+    if (partial.name) updates.name = partial.name;
+    if (partial.email) updates.email = partial.email;
+    if (partial.phone) updates.phone = partial.phone;
+
+    if (Object.keys(updates).length > 0) {
+      try {
+        await convoRepo.update(convo.id, updates);
+        console.log("[route] Partial save OK:", updates);
+      } catch (err) {
+        console.error("[route] Partial save FAILED:", err);
+      }
+    }
+  }
+
+  // ── 4. Fire leads pipeline when collection completes ───────────────────────
+  if (contactEnabled && leadDecision?.isComplete && !alreadyComplete) {
+    const { name = "", email = "", phone = "" } = leadDecision.collectedInfo;
+
+    console.log("[route] LEAD COMPLETE — firing pipeline:", { name, email, phone });
+
+    // Mark conversation complete
+    await convoRepo.update(convo.id, {
+      state: "completed",
+      name,
+      email,
+      phone,
+    });
+
+    const leadRepo = dbInstance.getRepository(Lead);
+    Promise.all([
+      leadRepo.save(
+        leadRepo.create({
+          bot_id: bot.id,
+          name,
+          email,
+          phone,
+        }),
+      ),
+      email
+        ? sendUserEmail({
+            to: email,
+            subject: `Thank you for contacting ${bot.name}`,
+            body: "We'll contact you shortly.",
+            html: generateUserConfirmationTemplate({
+              userName: name,
+              companyName: bot.name,
+              companyDescription: bot.description,
+              customMessage: bot.contact_email_message,
+              userEmail: email,
+              userPhone: phone,
+            }),
+          })
+        : Promise.resolve(),
+      bot.contact_email
+        ? sendOwnerNotification({
+            ownerEmail: bot.contact_email,
+            botName: bot.name,
+            leadData: { name, email, phone },
+          })
+        : Promise.resolve(),
+    ]).catch((err) => console.error("[leads pipeline]", err));
+  }
+
+  // ── 5. Save user message to conversation history ───────────────────────────
+  await convoRepo.update(convo.id, {
+    message_count: convo.message_count + 1,
+    messages: JSON.stringify(fullConversation),
+  });
+
+  // ── 6. Stream receptionist response ────────────────────────────────────────
+  const result = runReceptionistAgent({
+    messages: fullConversation,
+    botConfig: bot,
+    leadDecision,
+    websiteContext,
+  });
+
+  const response = result.toTextStreamResponse();
+  if (!response.body) {
+    return new Response("Error streaming response", {
+      status: 500,
       headers: corsHeaders,
     });
   }
 
-  if (bot.contact_enabled) {
-    if (
-      convo.state === "idle" &&
-      convo.prompted &&
-      YES_WORDS.some((w) => lower.includes(w))
-    ) {
-      await convoRepo.update(convo.id, { state: 'awaiting_name' });
-      return new Response("Great! What's your name?", { headers: corsHeaders });
-    }
-
-    if (
-      convo.state === "idle" &&
-      convo.prompted &&
-      NO_WORDS.some((w) => lower.includes(w))
-    ) {
-      await convoRepo.update(convo.id, { declined: true });
-      return new Response(
-        "No problem 🙂 Let me know if you need anything else.",
-        { headers: corsHeaders },
-      );
-    }
-
-    if (convo.state === "awaiting_name") {
-      convo.name = message;
-      convo.state = 'awaiting_email';
-      await convoRepo.update(convo.id, { name: message, state: 'awaiting_email' });
-      return new Response("What's your email?", { headers: corsHeaders });
-    }
-
-    if (convo.state === "awaiting_email") {
-      if (!isValidEmail(message)) {
-        const clarification = await streamText({
-          model: google("gemini-2.5-flash-lite"),
-          system: `
-Explain briefly why email is needed.
-Be friendly and reassuring.
-Keep it short.
-`,
-          prompt: message,
-        });
-
-        let reply = "";
-        for await (const chunk of clarification.textStream) {
-          reply += chunk;
-        }
-
-        reply += "\n\nWhenever you're ready, please share your email 🙂";
-        return new Response(reply, { headers: corsHeaders });
-      }
-
-      convo.email = message;
-      convo.state = 'awaiting_phone';
-      await convoRepo.update(convo.id, { email: message, state: 'awaiting_phone' });
-
-      return new Response("Your contact number?", {
-        headers: corsHeaders,
-      });
-    }
-
-    if (convo.state === "awaiting_phone") {
-      if (!isValidPhone(message)) {
-        return new Response(
-          "Please share a valid contact number so our team can reach you 🙂",
-          { headers: corsHeaders },
-        );
-      }
-
-      await convoRepo.update(convo.id, { phone: message, state: 'completed' });
-
-      const leadRepo = db.getRepository(Lead);
-      const newLead = leadRepo.create({
-        bot_id: bot.id,
-        name: convo.name,
-        email: convo.email,
-        phone: message
-      });
-      await leadRepo.save(newLead);
-
-      const html = generateUserConfirmationTemplate({
-        userName: convo.name,
-        companyName: bot.name,
-        companyDescription: bot.description,
-        customMessage: bot.contact_email_message,
-        userEmail: convo.email,
-        userPhone: message,
-      });
-
-      await sendUserEmail({
-        to: convo.email,
-        subject: `Thank you for contacting ${bot.name}`,
-        body: "We'll contact you shortly.",
-        html,
-      });
-
-      if (bot.contact_email) {
-        await sendOwnerNotification({
-          ownerEmail: bot.contact_email,
-          botName: bot.name,
-          leadData: {
-            name: convo.name,
-            email: convo.email,
-            phone: message,
-          },
-        });
-      }
-
-      await convoRepo.update(convo.id, { state: 'idle', prompted: true });
-
-      return new Response("Thanks! Our team will contact you shortly.", {
-        headers: corsHeaders,
-      });
-    }
-  }
-
-  let conversationHistory = [];
-
-  try {
-    conversationHistory = JSON.parse(convo.messages || "[]");
-  } catch {
-    conversationHistory = [];
-  }
-
-  conversationHistory.push({
-    role: "user",
-    content: message,
-  });
-
-  const websiteContext = await retrieveWebsiteContext(publicKey, message);
-
-  const systemPrompt = buildSystemPrompt(
-    {
-      companyName: bot.name,
-      companyDescription: bot.description,
-      tone: bot.tone as "friendly" | "professional",
-    },
-    { websiteContext },
+  const [streamForClient, streamForSaving] = response.body.tee();
+  saveAssistantMessage(streamForSaving, convo.id, fullConversation).catch(
+    console.error,
   );
 
-  const result = await streamText({
-    model: google("gemini-2.5-flash-lite"),
-    system: systemPrompt,
-    prompt: conversationHistory,
-  });
-
-  let aiText = "";
-  for await (const chunk of result.textStream) {
-    aiText += chunk;
-  }
-
-  if (
-    bot.contact_enabled &&
-    convo.state === "idle" &&
-    convo.message_count >= CONTACT_TRIGGER_AFTER &&
-    convo.message_count % 3 === 0 &&
-    !convo.declined &&
-    bot.contact_prompt &&
-    !ACK_WORDS.includes(lower)
-  ) {
-    await convoRepo.update(convo.id, { prompted: true });
-
-    aiText += `\n\n${bot.contact_prompt}`;
-  }
-
-  conversationHistory.push({
-    role: "assistant",
-    content: aiText,
-  });
-
-  await convoRepo.update(convo.id, { messages: JSON.stringify(conversationHistory) });
-
-  return new Response(aiText, {
+  return new Response(streamForClient, {
     headers: {
+      ...Object.fromEntries(response.headers.entries()),
+      "Cache-Control": "no-cache",
       ...corsHeaders,
-      "Content-Type": "text/plain",
     },
   });
+}
+
+async function saveAssistantMessage(
+  stream: ReadableStream,
+  conversationId: string,
+  existingHistory: Message[],
+) {
+  let fullText = "";
+  const reader = stream.getReader();
+  const decoder = new TextDecoder();
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    fullText += decoder.decode(value, { stream: true });
+  }
+
+  const updated = [
+    ...existingHistory,
+    { role: "assistant" as const, content: fullText },
+  ];
+
+  const dbInstance = await getDb();
+  const convoRepo = dbInstance.getRepository(Conversation);
+  await convoRepo.update(conversationId, { messages: JSON.stringify(updated) });
 }

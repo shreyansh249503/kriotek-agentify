@@ -17,12 +17,14 @@ import {
   FormGrid,
   TopRow,
   FormContainer,
+  SideContainer,
 } from "./styled";
 import { CreateBotInput } from "@/types/bot";
 import { CustomSelect } from "../custom-select";
 import { ColorPicker } from "../color-picker";
 import { BotFormProps } from "./type";
 import { BotPreview } from "../bot-preview";
+import { EmbedSuccess } from "../embed-success";
 
 export const BotForm = ({
   initialData,
@@ -137,8 +139,6 @@ export const BotForm = ({
                     options={[
                       { value: "friendly", label: "Friendly & Casual" },
                       { value: "professional", label: "Professional & Formal" },
-                      { value: "empathetic", label: "Empathetic & Supportive" },
-                      { value: "concise", label: "Concise & Direct" },
                     ]}
                   />
                 </Field>
@@ -248,14 +248,18 @@ export const BotForm = ({
             {loading ? "Saving..." : submitLabel}
           </Button>
         </div>
-
-        <BotPreview
-          name={form.name || ""}
-          color={form.primaryColor || "#4f46e5"}
-          tone={form.tone || "friendly"}
-          contactEnabled={form.contactEnabled || false}
-          contactPrompt={form.contactPrompt || ""}
-        />
+        <SideContainer>
+          <BotPreview
+            name={form.name || ""}
+            color={form.primaryColor || "#4f46e5"}
+            tone={form.tone || "friendly"}
+            contactEnabled={form.contactEnabled || false}
+            contactPrompt={form.contactPrompt || ""}
+          />
+          {initialData?.id && (
+            <EmbedSuccess publicKey={initialData?.public_key || ""} />
+          )}
+        </SideContainer>
       </FormContainer>
     </Form>
   );

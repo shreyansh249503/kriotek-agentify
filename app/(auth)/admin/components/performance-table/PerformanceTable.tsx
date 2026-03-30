@@ -1,3 +1,5 @@
+"use client";
+
 import { COLOR } from "@/styles";
 import {
   Badge,
@@ -13,12 +15,16 @@ import {
   BotTableInitialContainer,
   PerformanceTableSubWrapper,
   PerformanceTableWrapper,
+  PaginationWrapper,
+  PaginationButton,
+  PaginationText,
 } from "./styled";
 import { motion } from "framer-motion";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, ChevronLeft } from "lucide-react";
 
 import { BotConvoStat, BotLeadStat } from "@/types/analytics";
 import { Bot } from "@/types/bot";
+import { useState } from "react";
 
 type PerformanceTableProps = {
   convosPerBot: BotConvoStat[];
@@ -31,6 +37,18 @@ export const PerformanceTable = ({
   leadsPerBot,
   bots,
 }: PerformanceTableProps) => {
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+
+  const totalPages = Math.ceil(convosPerBot.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentItems = convosPerBot.slice(startIndex, endIndex);
+
+  const goToPage = (page: number) => {
+    setCurrentPage(page);
+  };
+
   return (
     <PerformanceTableWrapper>
       <PerformanceTableSubWrapper>
@@ -59,7 +77,7 @@ export const PerformanceTable = ({
               </td>
             </tr>
           ) : (
-            convosPerBot.map((row) => {
+            currentItems.map((row) => {
               const leads =
                 leadsPerBot.find((l) => l.bot_id === row.bot_id)?.total_leads ??
                 0;
@@ -146,6 +164,37 @@ export const PerformanceTable = ({
           )}
         </tbody>
       </PerformanceTableSubWrapper>
+
+      {convosPerBot.length > itemsPerPage && (
+        <PaginationWrapper>
+          <PaginationText>
+            Showing {startIndex + 1} to{" "}
+            {Math.min(endIndex, convosPerBot.length)} of{" "}
+            {convosPerBot.length} results
+          </PaginationText>
+          <PaginationButton
+            onClick={() => goToPage(currentPage - 1)}
+            disabled={currentPage === 1}
+          >
+            <ChevronLeft size={16} />
+          </PaginationButton>
+          {[...Array(totalPages)].map((_, i) => (
+            <PaginationButton
+              key={i + 1}
+              $active={currentPage === i + 1}
+              onClick={() => goToPage(i + 1)}
+            >
+              {i + 1}
+            </PaginationButton>
+          ))}
+          <PaginationButton
+            onClick={() => goToPage(currentPage + 1)}
+            disabled={currentPage === totalPages}
+          >
+            <ChevronRight size={16} />
+          </PaginationButton>
+        </PaginationWrapper>
+      )}
     </PerformanceTableWrapper>
   );
 };

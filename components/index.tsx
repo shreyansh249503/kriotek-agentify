@@ -10,3 +10,4 @@ export * from "./status-badge";
 export * from "./embed-success";
 export * from "./footer";
 export * from "./bot-preview";
+export * from "./pagination";
