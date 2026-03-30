@@ -60,7 +60,7 @@ export async function GET(req: Request) {
          DATE_TRUNC('month', c.created_at) AS month_date,
          COUNT(c.id) AS conversations
        FROM conversations c
-       JOIN bots b ON b.id = c.bot_id
+       JOIN bots b ON b.id = c.bot_id::uuid
        WHERE b.user_id = $1::uuid
          AND c.created_at >= NOW() - INTERVAL '6 months'
        GROUP BY 1
@@ -70,7 +70,7 @@ export async function GET(req: Request) {
          DATE_TRUNC('month', l.created_at) AS month_date,
          COUNT(l.id) AS leads
        FROM leads l
-       JOIN bots b ON b.id = l.bot_id
+       JOIN bots b ON b.id = l.bot_id::uuid
        WHERE b.user_id = $1::uuid
          AND l.created_at >= NOW() - INTERVAL '6 months'
        GROUP BY 1
