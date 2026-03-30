@@ -54,15 +54,23 @@ export async function GET(req: Request) {
     .orderBy("total_leads", "DESC")
     .getRawMany();
 
+  // FIXED: Using generate_series guarantees no missing gaps if a month has 0 activity.
   const monthlyTrend = await db.query(
-    `WITH convo_trend AS (
+    `WITH months AS (
+       SELECT generate_series(
+         DATE_TRUNC('month', NOW() - INTERVAL '5 months'),
+         DATE_TRUNC('month', NOW()),
+         '1 month'::interval
+       ) AS month_date
+     ),
+     convo_trend AS (
        SELECT
          DATE_TRUNC('month', c.created_at) AS month_date,
          COUNT(c.id) AS conversations
        FROM conversations c
        JOIN bots b ON b.id = c.bot_id::uuid
-       WHERE b.user_id = $1::uuid
-         AND c.created_at >= NOW() - INTERVAL '6 months'
+       WHERE b.user_id = $1
+         AND c.created_at >= DATE_TRUNC('month', NOW() - INTERVAL '5 months')
        GROUP BY 1
      ),
      lead_trend AS (
@@ -71,37 +79,27 @@ export async function GET(req: Request) {
          COUNT(l.id) AS leads
        FROM leads l
        JOIN bots b ON b.id = l.bot_id::uuid
-       WHERE b.user_id = $1::uuid
-         AND l.created_at >= NOW() - INTERVAL '6 months'
+       WHERE b.user_id = $1
+         AND l.created_at >= DATE_TRUNC('month', NOW() - INTERVAL '5 months')
        GROUP BY 1
-     ),
-     all_months AS (
-       SELECT month_date FROM convo_trend
-       UNION
-       SELECT month_date FROM lead_trend
      )
      SELECT 
        TO_CHAR(m.month_date, 'Mon YY') AS month,
        COALESCE(ct.conversations, 0)::int AS conversations,
        COALESCE(lt.leads, 0)::int AS leads
-     FROM all_months m
+     FROM months m
      LEFT JOIN convo_trend ct ON ct.month_date = m.month_date
      LEFT JOIN lead_trend lt ON lt.month_date = m.month_date
      ORDER BY m.month_date`,
     [user.id],
   );
 
-  const totals = await db.getRepository(Bot)
-    .createQueryBuilder("b")
-    .leftJoin("b.conversations", "c")
-    .leftJoin("b.leads", "l")
-    .select([
-      "COUNT(DISTINCT c.id) AS total_conversations",
-      "COALESCE(SUM(c.message_count), 0) AS total_messages",
-      "COUNT(DISTINCT l.id) AS total_leads"
-    ])
-    .where("b.user_id = :userId", { userId: user.id })
-    .getRawOne();
+  // FIXED: Avoided a Cartesian Product database call entirely by summing existing arrays
+  const totals = {
+    total_conversations: convoPerBot.reduce((sum, bot) => sum + Number(bot.total_conversations || 0), 0),
+    total_messages: convoPerBot.reduce((sum, bot) => sum + Number(bot.total_messages || 0), 0),
+    total_leads: leadsPerBot.reduce((sum, bot) => sum + Number(bot.total_leads || 0), 0)
+  };
 
   return new Response(
     JSON.stringify({
