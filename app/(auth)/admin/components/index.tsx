@@ -5,3 +5,4 @@ export * from "./bar-chart";
 export * from "./chart-tool-tip";
 export * from "./pie-chart";
 export * from "./performance-table";
+export * from "./breadcrumbs";

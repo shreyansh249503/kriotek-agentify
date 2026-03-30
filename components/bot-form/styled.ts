@@ -238,3 +238,83 @@ export const Button = styled.button`
     box-shadow: none;
   }
 `;
+
+export const EmbedSection = styled.div`
+  padding: 20px;
+  background-color: ${COLOR.CREAM};
+  border-radius: 16px;
+  border: 1px solid ${COLOR.BORDER};
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+`;
+
+export const CodeBlock = styled.div`
+  position: relative;
+  background: ${COLOR.DARK};
+  padding: 14px;
+  border-radius: 12px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  overflow: hidden;
+  box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.2);
+`;
+
+export const CodeText = styled.code`
+  font-family: "Fira Code", monospace;
+  font-size: 14px;
+  color: #a8e10c;
+  word-break: break-all;
+  line-height: 1.5;
+`;
+
+export const IconButton = styled.button`
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: white;
+  width: 25px;
+  height: 25px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.05);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+`;
+
+export const CopyStatus = styled.span`
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: ${COLOR.PRIMARY};
+  letter-spacing: 0.05em;
+  pointer-events: none;
+`;
+export const SideContainer = styled.div`
+  position: sticky;
+  top: 105px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  height: fit-content;
+`;
