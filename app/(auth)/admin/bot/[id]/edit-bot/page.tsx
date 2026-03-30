@@ -4,10 +4,13 @@ import { UpdateBotInput } from "@/types/bot";
 import { useParams, useRouter } from "next/navigation";
 import { NewBotContainer } from "./styled";
 import { useBot, useUpdateBot } from "@/hooks/useBot";
+import { useEffect } from "react";
+import { useBreadcrumb } from "@/context/BreadcrumbContext";
 
 export default function EditBotPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const { setBreadcrumbMeta } = useBreadcrumb();
 
   const { data: bot, isLoading } = useBot(id);
   const { mutate, isPending } = useUpdateBot();
@@ -23,6 +26,14 @@ export default function EditBotPage() {
     );
   };
 
+  useEffect(() => {
+    if (bot) {
+      setBreadcrumbMeta({
+        customLabels: { [id]: bot.name },
+        nonLinkable: [id],
+      });
+    }
+  }, [bot]);
   if (isLoading) return <Loader fullScreen />;
 
   return (

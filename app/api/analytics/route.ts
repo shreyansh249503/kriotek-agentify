@@ -25,15 +25,15 @@ export async function GET(req: Request) {
 
   const convoPerBot = await db.getRepository(Bot)
     .createQueryBuilder("b")
-    .leftJoin("conversations", "c", "c.bot_id = b.id::text")
+    .leftJoin("b.conversations", "c")
     .select([
       "b.id AS bot_id",
       "b.name AS bot_name",
       "COUNT(c.id) AS total_conversations",
-      "SUM(c.message_count) AS total_messages",
-      "COUNT(c.id) FILTER (WHERE c.created_at >= NOW() - INTERVAL '7 days') AS conversations_this_week",
-      "COUNT(c.id) FILTER (WHERE c.created_at >= NOW() - INTERVAL '30 days') AS conversations_this_month"
+      "COALESCE(SUM(c.message_count), 0) AS total_messages"
     ])
+    .addSelect("COUNT(c.id) FILTER (WHERE c.created_at >= NOW() - INTERVAL '7 days')", "conversations_this_week")
+    .addSelect("COUNT(c.id) FILTER (WHERE c.created_at >= NOW() - INTERVAL '30 days')", "conversations_this_month")
     .where("b.user_id = :userId", { userId: user.id })
     .groupBy("b.id")
     .addGroupBy("b.name")
@@ -42,7 +42,7 @@ export async function GET(req: Request) {
 
   const leadsPerBot = await db.getRepository(Bot)
     .createQueryBuilder("b")
-    .leftJoin("leads", "l", "l.bot_id = b.id::text")
+    .leftJoin("b.leads", "l")
     .select([
       "b.id AS bot_id",
       "b.name AS bot_name",
@@ -61,7 +61,7 @@ export async function GET(req: Request) {
          COUNT(c.id) AS conversations
        FROM conversations c
        JOIN bots b ON b.id::text = c.bot_id
-       WHERE b.user_id = $1
+       WHERE b.user_id = $1::uuid
          AND c.created_at >= NOW() - INTERVAL '6 months'
        GROUP BY 1
      ),
@@ -71,7 +71,7 @@ export async function GET(req: Request) {
          COUNT(l.id) AS leads
        FROM leads l
        JOIN bots b ON b.id::text = l.bot_id
-       WHERE b.user_id = $1
+       WHERE b.user_id = $1::uuid
          AND l.created_at >= NOW() - INTERVAL '6 months'
        GROUP BY 1
      ),
@@ -93,8 +93,8 @@ export async function GET(req: Request) {
 
   const totals = await db.getRepository(Bot)
     .createQueryBuilder("b")
-    .leftJoin("conversations", "c", "c.bot_id = b.id::text")
-    .leftJoin("leads", "l", "l.bot_id = b.id::text")
+    .leftJoin("b.conversations", "c")
+    .leftJoin("b.leads", "l")
     .select([
       "COUNT(DISTINCT c.id) AS total_conversations",
       "COALESCE(SUM(c.message_count), 0) AS total_messages",

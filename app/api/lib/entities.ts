@@ -1,12 +1,12 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, OneToMany, ManyToOne, JoinColumn } from "typeorm";
 
 @Entity("bots")
 export class Bot {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
 
-  @Column({ name: "public_key", unique: true })
-  public_key!: string;
+  @Column({ name: "public_key", unique: true, nullable: true })
+  public_key?: string;
 
   @Column()
   name!: string;
@@ -34,6 +34,12 @@ export class Bot {
 
   @Column({ name: "user_id" })
   user_id!: string;
+
+  @OneToMany(() => Lead, (lead) => lead.bot)
+  leads!: Lead[];
+
+  @OneToMany(() => Conversation, (convo) => convo.bot)
+  conversations!: Conversation[];
 }
 
 @Entity("conversations")
@@ -43,6 +49,10 @@ export class Conversation {
 
   @Column({ name: "bot_id", type: "uuid", nullable: true })
   bot_id!: string;
+
+  @ManyToOne(() => Bot, (bot) => bot.conversations)
+  @JoinColumn({ name: "bot_id" })
+  bot!: Bot;
 
   @Column({ default: "idle" })
   state!: string;
@@ -79,6 +89,10 @@ export class Lead {
 
   @Column({ name: "bot_id", type: "uuid", nullable: true })
   bot_id!: string;
+
+  @ManyToOne(() => Bot, (bot) => bot.leads)
+  @JoinColumn({ name: "bot_id" })
+  bot!: Bot;
 
   @Column()
   name!: string;

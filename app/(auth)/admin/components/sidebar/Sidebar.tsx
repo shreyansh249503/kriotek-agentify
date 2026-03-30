@@ -4,10 +4,10 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   SignOutIcon,
   GearIcon,
-  UserCircleIcon,
   PlusCircleIcon,
   SquaresFourIcon,
   BrainIcon,
+  AddressBookIcon,
 } from "@phosphor-icons/react";
 import {
   SidebarContainer,
@@ -51,16 +51,14 @@ export const Sidebar = () => {
       label: "Bots",
       href: "/admin/bots",
       isActive:
-        pathname === "/admin/bots" ||
-        pathname.startsWith("/admin/bot/") ||
-        pathname.startsWith("/admin/bots/"),
+        pathname === "/admin/bots" || pathname.startsWith("/admin/bots/") || pathname.startsWith("/admin/bot/"),
       icon: (weight: "fill" | "regular") => <BrainIcon weight={weight} />,
     },
     {
-      label: "Profile",
-      href: "/admin/profile",
-      isActive: pathname === "/admin/profile",
-      icon: (weight: "fill" | "regular") => <UserCircleIcon weight={weight} />,
+      label: "Leads",
+      href: "/admin/leads",
+      isActive: pathname === "/admin/leads",
+      icon: (weight: "fill" | "regular") => <AddressBookIcon weight={weight} />,
     },
     {
       label: "Settings",

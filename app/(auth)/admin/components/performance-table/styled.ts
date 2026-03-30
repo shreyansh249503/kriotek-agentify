@@ -152,3 +152,46 @@ export const BotListLink = styled(Link)`
     color: ${COLOR.PRIMARY_HOVER};
   }
 `;
+
+export const PaginationWrapper = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 16px;
+  border-top: 1px solid ${COLOR.BORDER}33;
+`;
+
+export const PaginationButton = styled.button<{ $active?: boolean }>`
+  min-width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: ${({ $active }) => ($active ? COLOR.PRIMARY : "transparent")};
+  color: ${({ $active }) => ($active ? "white" : COLOR.TEXT)};
+  border: 1px solid ${({ $active }) => ($active ? COLOR.PRIMARY : COLOR.BORDER + "66")};
+
+  &:hover:not(:disabled) {
+    border-color: ${COLOR.PRIMARY};
+    color: ${({ $active }) => ($active ? "white" : COLOR.PRIMARY_HOVER)};
+    background: ${({ $active }) => ($active ? COLOR.PRIMARY : COLOR.BACKGROUND_2 + "44")};
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`;
+
+export const PaginationText = styled.span`
+  font-size: 13px;
+  color: ${COLOR.TEXT_SECONDARY};
+  margin-right: auto;
+`;
