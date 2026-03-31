@@ -12,7 +12,7 @@ export async function retrieveWebsiteContext(
   try {
     const db = await getDb();
 
-    const result = await db.getRepository(BotDocument)
+    const resultEmbedding = await db.getRepository(BotDocument)
       .createQueryBuilder("doc")
       .select(["doc.content"])
       .where("doc.public_key = :publicKey", { publicKey })
@@ -21,14 +21,18 @@ export async function retrieveWebsiteContext(
       .limit(3)
       .getMany();
 
-    if (!result || result.length === 0) {
-      return "No relevant website information found.";
-    }
+    const resultContent = await db.getRepository(BotDocument)
+      .createQueryBuilder("doc")
+      .select(["doc.content"])
+      .where("doc.public_key = :publicKey", { publicKey })
+      .getMany();
 
-    return result
+    return resultEmbedding
       .map((p: any) => p.content)
       .filter(Boolean)
-      .join("\n");
+      .join("\n") + resultContent.map((p: any) => p.content)
+        .filter(Boolean)
+        .join("\n");
   } catch (error: any) {
     console.error("Vector search error:", error);
     throw error;
