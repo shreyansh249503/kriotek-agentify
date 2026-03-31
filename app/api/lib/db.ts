@@ -23,17 +23,6 @@ if (process.env.NODE_ENV !== "production") globalForTypeorm.AppDataSource = AppD
 export const getDb = async () => {
   if (!AppDataSource.isInitialized) {
     await AppDataSource.initialize();
-    
-    // One-time migration for existing bots that don't have a public_key
-    const botRepo = AppDataSource.getRepository(Bot);
-    const botsWithoutKeys = await botRepo.find({ where: { public_key: null as any } });
-    if (botsWithoutKeys.length > 0) {
-      console.log(`[DB] Generating public keys for ${botsWithoutKeys.length} bots...`);
-      for (const bot of botsWithoutKeys) {
-        bot.public_key = nanoid(16);
-      }
-      await botRepo.save(botsWithoutKeys);
-    }
   }
   return AppDataSource;
 };
