@@ -2,8 +2,6 @@ import { COLOR } from "@/styles";
 import styled from "styled-components";
 
 export const BotPreviewContainer = styled.div`
-  position: sticky;
-  top: 105px;
   display: flex;
   flex-direction: column;
   gap: 12px;

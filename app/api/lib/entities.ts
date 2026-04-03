@@ -35,6 +35,9 @@ export class Bot {
   @Column({ name: "user_id" })
   user_id!: string;
 
+  @Column({ name: "logo_url", nullable: true })
+  logo_url!: string;
+
   @OneToMany(() => Lead, (lead) => lead.bot)
   leads!: Lead[];
 
