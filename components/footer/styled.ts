@@ -5,6 +5,10 @@ import { BREAKPOINTS } from "@/styles";
 import Image from "next/image";
 
 export const FooterContainer = styled.footer`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   background-color: ${COLOR.DARK};
   color: ${COLOR.WHITE};
   padding: 48px 24px;
@@ -29,16 +33,20 @@ export const FooterContainer = styled.footer`
 `;
 
 export const FooterContent = styled.div`
-  /* max-width: 1200px; */
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
   width: 75%;
-  margin: 0 auto;
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    width: 100%;
+  }
 `;
 
 export const FooterGrid = styled.div`
   display: grid;
   grid-template-columns: 2fr repeat(3, 1fr);
   gap: 24px;
-  margin-bottom: 48px;
 
   @media (max-width: ${BREAKPOINTS.TABLET}) {
     grid-template-columns: repeat(2, 1fr);
@@ -52,7 +60,7 @@ export const FooterGrid = styled.div`
 export const FooterBrand = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 22px;
 `;
 export const FooterLogo = styled(Image)`
   width: 140px;
@@ -60,10 +68,10 @@ export const FooterLogo = styled(Image)`
 `;
 
 export const FooterTitle = styled.h4`
+  margin-top: 10px;
   font-size: 18px;
   font-weight: 700;
   color: ${COLOR.WHITE};
-  margin-bottom: 16px;
 `;
 
 export const BrandDescription = styled.p`
@@ -94,7 +102,6 @@ export const FooterLink = styled(Link)`
 export const SocialLinks = styled.div`
   display: flex;
   gap: 16px;
-  margin-top: 16px;
 `;
 
 export const SocialIcon = styled.a`
@@ -112,23 +119,23 @@ export const CopyrightSection = styled.div`
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   padding-top: 32px;
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
   flex-wrap: wrap;
   gap: 16px;
 
   @media (max-width: ${BREAKPOINTS.MOBILE}) {
     flex-direction: column;
-    text-align: center;
+    justify-content: flex-start;
+    align-items: flex-start;
   }
 `;
 
 export const CopyrightText = styled.span`
   font-size: 14px;
   color: #666;
-`;
 
-export const LegalLinks = styled.div`
-  display: flex;
-  gap: 24px;
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    text-align: start;
+  }
 `;

@@ -36,6 +36,7 @@ export const Description = styled.p`
   color: #666;
 `;
 export const CodeContainer = styled.div`
+  min-width: 326px;
   position: relative;
   background: #111;
   border-radius: 8px;

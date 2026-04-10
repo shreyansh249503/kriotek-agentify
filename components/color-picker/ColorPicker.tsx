@@ -225,7 +225,7 @@ export const ColorPicker = ({ value, onChange }: ColorPickerProps) => {
         ))}
       </SwatchesGrid>
 
-      <ResetButton onClick={() => updateColor(hexToHsv("#4f46e5"))}>
+      <ResetButton type="button" onClick={() => updateColor(hexToHsv("#4f46e5"))}>
         Reset color
       </ResetButton>
     </PickerWrapper>
