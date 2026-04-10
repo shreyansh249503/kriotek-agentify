@@ -321,8 +321,7 @@
   const scriptSrc = scriptTag.src;
   const ASSET_BASE_URL = scriptSrc.substring(0, scriptSrc.lastIndexOf("/"));
   const API_BASE_URL = ASSET_BASE_URL.replace("/public", "");
-  const BOT_AVATAR = `${ASSET_BASE_URL}/Chatbot.png`;
-  const BOT_ICON = `${ASSET_BASE_URL}/2-bot-icon.png`;
+  const DEFAULT_BOT_ICON = `${ASSET_BASE_URL}/2-bot-icon.png`;
 
   async function fetchBotConfig(publicKey) {
     try {
@@ -357,7 +356,7 @@
     return div;
   }
 
-  function createBotMessage(messages) {
+  function createBotMessage(messages, logoUrl) {
     const wrapper = document.createElement("div");
     wrapper.style.cssText = `
       display: flex;
@@ -367,12 +366,13 @@
     `;
 
     const avatar = document.createElement("img");
-    avatar.src = BOT_ICON;
+    avatar.src = logoUrl;
     avatar.style.cssText = `
       width: 40px;
       height: 40px;
       border-radius: 50%;
       object-fit: cover;
+      flex-shrink: 0;
     `;
 
     const bubble = document.createElement("div");
@@ -386,13 +386,13 @@
       line-height: 1.4;
     `;
 
-    // wrapper.appendChild(avatar);
+    wrapper.appendChild(avatar);
     wrapper.appendChild(bubble);
     messages.appendChild(wrapper);
     return bubble;
   }
 
-  function createTypingIndicator() {
+  function createTypingIndicator(logoUrl) {
     const wrapper = document.createElement("div");
     wrapper.style.cssText = `
       display: flex;
@@ -402,14 +402,15 @@
     `;
 
     const avatar = document.createElement("img");
-    avatar.src = BOT_ICON;
+    avatar.src = logoUrl;
     avatar.alt = "bot";
     avatar.style.cssText = `
-      width: 32px;
-      height: 32px;
+      width: 28px;
+      height: 28px;
       border-radius: 50%;
       object-fit: cover;
       background: #fff;
+      flex-shrink: 0;
     `;
 
     const bubble = document.createElement("div");
@@ -426,13 +427,13 @@
       <span class="typing-dot"></span>
     `;
 
-    // wrapper.appendChild(avatar);
+    wrapper.appendChild(avatar);
     wrapper.appendChild(bubble);
     return wrapper;
   }
 
-  function createGreetingMessage(messages, botName) {
-    const bubble = createBotMessage(messages);
+  function createGreetingMessage(messages, botName, logoUrl) {
+    const bubble = createBotMessage(messages, logoUrl);
     bubble.innerHTML = `Hi 👋 I'm <strong>${botName}</strong>.<br/>How can I help you today?`;
   }
 
@@ -453,17 +454,22 @@
   const THEME = {
     color: bot.primary_color,
     botName: bot.name,
+    logoUrl: bot.logo_url
+      ? bot.logo_url.trim().startsWith("http")
+        ? bot.logo_url.trim()
+        : `${API_BASE_URL}${bot.logo_url.trim()}`
+      : DEFAULT_BOT_ICON,
   };
 
   const launcher = document.createElement("button");
   launcher.innerHTML = `
     <img 
-      src="${BOT_ICON}"
+      src="${THEME.logoUrl}"
       alt="chat"
       style="
-        width: 150%;
-        height: 150%;
-        object-fit: contain;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
         pointer-events: none;
         border-radius: 50%;
       "
@@ -573,11 +579,11 @@
 
     if (!greetingShown) {
       greetingShown = true;
-      const typing = createTypingIndicator();
+      const typing = createTypingIndicator(THEME.logoUrl);
       messages.appendChild(typing);
       setTimeout(() => {
         typing.remove();
-        createGreetingMessage(messages, THEME.botName);
+        createGreetingMessage(messages, THEME.botName, THEME.logoUrl);
       }, 1000);
     }
   }
@@ -603,7 +609,7 @@
     input.value = "";
     messages.scrollTop = messages.scrollHeight;
 
-    const typing = createTypingIndicator();
+    const typing = createTypingIndicator(THEME.logoUrl);
     messages.appendChild(typing);
     messages.scrollTop = messages.scrollHeight;
 
@@ -615,7 +621,7 @@
       });
 
       typing.remove();
-      const bubble = createBotMessage(messages);
+      const bubble = createBotMessage(messages, THEME.logoUrl);
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -639,4 +645,8 @@
       bubble.textContent = "Sorry, I encountered an error. Please try again.";
     }
   });
+
+  setTimeout(() => {
+    openWidget();
+  }, 1000);
 })();

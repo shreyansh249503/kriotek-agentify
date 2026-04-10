@@ -311,10 +311,54 @@ export const CopyStatus = styled.span`
   pointer-events: none;
 `;
 export const SideContainer = styled.div`
-  position: sticky;
-  top: 105px;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
+position: sticky;
+top: 105px;
   height: fit-content;
+`;
+
+export const UploadContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 10px;
+`;
+
+export const UploadButton = styled.label`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: ${COLOR.WHITE};
+  border: 2px dashed ${COLOR.BORDER};
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: ${COLOR.DARK};
+  transition: all 0.3s ease;
+
+  &:hover {
+    border-color: ${COLOR.PRIMARY};
+    background: ${COLOR.LIGHT};
+  }
+
+  input {
+    display: none;
+  }
+`;
+
+export const RemoveButton = styled.button`
+  background: #a8e10b6b;
+  border: 1px solid #a8e10b;
+  color: #2E2E2E;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 8px 16px;
+  border-radius: 50px;
+  transition: all 0.2s;
+
+  &:hover {
+    background: rgba(168, 225, 11, 0.75);
+  }
 `;

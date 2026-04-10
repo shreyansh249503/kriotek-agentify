@@ -10,6 +10,7 @@ export interface Bot {
   contact_email: string;
   contact_prompt: string;
   contact_email_message: string;
+  logo_url?: string | null;
 }
 
 export interface CreateBotInput {
@@ -21,6 +22,7 @@ export interface CreateBotInput {
   contactEmail?: string;
   contactPrompt?: string;
   contactEmailMessage?: string;
+  logoUrl?: string;
 }
 
 export interface UpdateBotInput extends CreateBotInput {

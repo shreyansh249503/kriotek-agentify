@@ -37,6 +37,7 @@ export async function PUT(
     contactEmail,
     contactPrompt,
     contactEmailMessage,
+    logoUrl,
   } = body;
 
   const db = await getDb();
@@ -49,6 +50,7 @@ export async function PUT(
     contact_email: contactEmail,
     contact_prompt: contactPrompt,
     contact_email_message: contactEmailMessage,
+    logo_url: logoUrl,
   });
 
   return Response.json({ status: "ok" });

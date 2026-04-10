@@ -61,6 +61,7 @@ export async function POST(req: Request) {
     contactEmail = "",
     contactPrompt = "Would you like us to contact you for more details?",
     contactEmailMessage = "Thanks for reaching out! Our team will contact you shortly.",
+    logoUrl,
   } = body;
 
   const publicKey = nanoid(16);
@@ -78,6 +79,7 @@ export async function POST(req: Request) {
     contact_email: contactEmail,
     contact_prompt: contactPrompt,
     contact_email_message: contactEmailMessage,
+    logo_url: logoUrl,
     user_id: user.id
   });
 
