@@ -28,6 +28,7 @@
     "react-dom": "19.2.3",
     "recharts": "^3.7.0",
     "reflect-metadata": "^0.2.2",
+    "stripe": "^22.0.1",
     "styled-components": "^6.3.8",
     "typeorm": "^0.3.28"
   },

@@ -7,6 +7,7 @@ import { Conversation, Lead } from "../lib/entities";
 import { generateUserConfirmationTemplate } from "../lib/emailTemplates";
 import { runLeadAgent } from "../lib/agents/leadAgent";
 import { runReceptionistAgent } from "../lib/agents/receptionistAgent";
+import { canSendMessage, incrementMessages } from "../lib/subscription";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -29,6 +30,18 @@ export async function POST(req: Request) {
   }
 
   const bot = await getBotByPublicKey(publicKey);
+
+  const allowed = await canSendMessage(bot.user_id);
+  if (!allowed) {
+    return new Response(
+      JSON.stringify({ error: "Monthly message limit reached. Please upgrade your plan." }),
+      { status: 429, headers: corsHeaders },
+    );
+  }
+
+  // Increment usage counter (fire-and-forget — don't block the response)
+  incrementMessages(bot.user_id).catch(console.error);
+
   const finalConversationId = conversationId || crypto.randomUUID();
 
   const dbInstance = await getDb();

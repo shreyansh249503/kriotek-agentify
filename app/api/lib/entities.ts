@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, OneToMany, ManyToOne, JoinColumn } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany, ManyToOne, JoinColumn } from "typeorm";
 
 @Entity("bots")
 export class Bot {
@@ -132,4 +132,44 @@ export class BotDocument {
 
   @Column({ type: "vector" as any, length: 768, nullable: true, select: false })
   embedding!: string | number[];
+}
+
+@Entity("subscriptions")
+export class Subscription {
+  @PrimaryGeneratedColumn("uuid")
+  id!: string;
+
+  @Column({ name: "user_id", unique: true })
+  user_id!: string;
+
+  @Column({ name: "stripe_customer_id", nullable: true })
+  stripe_customer_id?: string;
+
+  @Column({ name: "stripe_subscription_id", nullable: true })
+  stripe_subscription_id?: string;
+
+  /** 'free' | 'growth' | 'business' | 'agency' */
+  @Column({ default: "free" })
+  plan!: string;
+
+  /** 'active' | 'canceled' | 'past_due' | 'trialing' */
+  @Column({ default: "active" })
+  status!: string;
+
+  @Column({ name: "messages_this_period", default: 0 })
+  messages_this_period!: number;
+
+  /** Daily counter for free-tier enforcement */
+  @Column({ name: "messages_today", default: 0 })
+  messages_today!: number;
+
+  /** ISO date string (YYYY-MM-DD) of the last day messages_today was incremented */
+  @Column({ name: "messages_today_date", nullable: true })
+  messages_today_date?: string;
+
+  @Column({ name: "period_end", type: "timestamptz", nullable: true })
+  period_end?: Date;
+
+  @UpdateDateColumn({ name: "updated_at" })
+  updated_at!: Date;
 }

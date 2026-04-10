@@ -2,6 +2,7 @@ import { nanoid } from "nanoid";
 import { getDb } from "../lib/db";
 import { Bot } from "../lib/entities";
 import { getUserFromRequest } from "../lib/auth";
+import { canCreateBot } from "../lib/subscription";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -40,6 +41,14 @@ export async function POST(req: Request) {
       status: 401,
       headers: corsHeaders,
     });
+  }
+
+  const allowed = await canCreateBot(user.id);
+  if (!allowed) {
+    return new Response(
+      JSON.stringify({ error: "Bot limit reached. Upgrade your plan to create more bots." }),
+      { status: 403, headers: corsHeaders },
+    );
   }
 
   const body = await req.json();

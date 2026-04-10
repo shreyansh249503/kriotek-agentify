@@ -4,6 +4,7 @@ import { UpdateBotInput } from "@/types/bot";
 import { useParams, useRouter } from "next/navigation";
 import { NewBotContainer } from "./styled";
 import { useBot, useUpdateBot } from "@/hooks/useBot";
+import { useBilling } from "@/hooks/useBilling";
 import { useEffect } from "react";
 import { useBreadcrumb } from "@/context/BreadcrumbContext";
 
@@ -14,6 +15,7 @@ export default function EditBotPage() {
 
   const { data: bot, isLoading } = useBot(id);
   const { mutate, isPending } = useUpdateBot();
+  const { data: billing } = useBilling();
 
   const handleSubmit = async (data: UpdateBotInput) => {
     mutate(
@@ -43,6 +45,7 @@ export default function EditBotPage() {
         initialData={bot}
         submitLabel="Update Bot"
         loading={isPending}
+        disableLeadCapture={billing?.plan === "free"}
         onSubmit={async (data) => {
           if (bot?.id) {
             await handleSubmit({ ...data, id: bot.id });

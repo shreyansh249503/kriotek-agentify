@@ -31,6 +31,7 @@ export const BotForm = ({
   onSubmit,
   submitLabel,
   loading = false,
+  disableLeadCapture = false,
 }: BotFormProps) => {
   const defaultValues: CreateBotInput = {
     name: "",
@@ -167,19 +168,28 @@ export const BotForm = ({
               </SectionHeader>
 
               <Field>
-                <ToggleContainer>
+                <ToggleContainer style={{ opacity: disableLeadCapture ? 0.5 : 1 }}>
                   <ToggleSwitch
-                    checked={form.contactEnabled || false}
-                    onClick={() =>
-                      update("contactEnabled", !form.contactEnabled)
-                    }
+                    checked={!disableLeadCapture && (form.contactEnabled || false)}
+                    onClick={() => {
+                      if (!disableLeadCapture) update("contactEnabled", !form.contactEnabled);
+                    }}
                   />
                   <span style={{ fontWeight: 600 }}>
                     Enable Lead Collection
                   </span>
                 </ToggleContainer>
                 <HelperText>
-                  Allow the bot to collect user contact information.
+                  {disableLeadCapture ? (
+                    <>
+                      Lead capture is not available on the Starter plan.{" "}
+                      <a href="/admin/billing" style={{ color: "inherit", fontWeight: 700, textDecoration: "underline" }}>
+                        Upgrade to unlock
+                      </a>
+                    </>
+                  ) : (
+                    "Allow the bot to collect user contact information."
+                  )}
                 </HelperText>
               </Field>
 

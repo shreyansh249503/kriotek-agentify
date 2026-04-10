@@ -5,6 +5,7 @@ import { getDb } from "../lib/db";
 import { Bot, CrawledPage } from "../lib/entities";
 import { ingestDocument } from "../lib/ingest";
 import { setupCollection } from "../lib/vector-db-setup";
+import { canIngestPage } from "../lib/subscription";
 
 export async function POST(req: Request) {
   await setupCollection();
@@ -31,6 +32,14 @@ export async function POST(req: Request) {
 
   if (!botExists) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const allowed = await canIngestPage(user.id);
+  if (!allowed) {
+    return Response.json(
+      { error: "Knowledge base page limit reached. Upgrade your plan to ingest more pages." },
+      { status: 403 },
+    );
   }
 
   // 🔹 NEW: check if root URL already crawled

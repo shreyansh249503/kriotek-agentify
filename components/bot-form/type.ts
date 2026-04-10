@@ -5,4 +5,5 @@ export interface BotFormProps {
   onSubmit: (data: CreateBotInput | UpdateBotInput) => void;
   submitLabel: string;
   loading?: boolean;
+  disableLeadCapture?: boolean;
 }
