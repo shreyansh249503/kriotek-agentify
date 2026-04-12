@@ -137,6 +137,27 @@ export class BotDocument {
   embedding!: string | number[];
 }
 
+@Entity("saved_avatars")
+export class SavedAvatar {
+  @PrimaryGeneratedColumn("uuid")
+  id!: string;
+
+  @Column({ name: "user_id" })
+  user_id!: string;
+
+  @Column({ nullable: true })
+  name!: string;
+
+  @Column({ name: "avatar_prompt", type: "text", nullable: true })
+  avatar_prompt!: string;
+
+  @Column({ name: "image_data", type: "text" })
+  image_data!: string;
+
+  @CreateDateColumn({ name: "created_at" })
+  created_at!: Date;
+}
+
 @Entity("subscriptions")
 export class Subscription {
   @PrimaryGeneratedColumn("uuid")

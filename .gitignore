@@ -1,37 +1,82 @@
-# dependencies
+# ── Node / Next.js ─────────────────────────────────────────────────────────
 node_modules/
 /.pnp
 .pnp.js
-
-# testing
-/coverage
-
-# next.js
 /.next/
 /out/
-
-# production
 /build
+*.tsbuildinfo
 
-# misc
-.DS_Store
-*.pem
-
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-
-# env files
+# ── Environment ─────────────────────────────────────────────────────────────
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
 
-# vercel
-.vercel
+# ── Testing / coverage ──────────────────────────────────────────────────────
+/coverage
 
-# typescript
-*.tsbuildinfo
+# ── Misc ────────────────────────────────────────────────────────────────────
+.DS_Store
+*.pem
+.vercel
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# ── Python ──────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.mypy_cache/
+.pytest_cache/
+.hypothesis/
+.ruff_cache/
+
+# Python virtual environments
+models/.venv/
+models/venv/
+models/env/
+
+
+
+# ── AI model weights & checkpoints ─────────────────────────────────────────
+# Generic weight file extensions (wherever they land inside the repo)
+*.safetensors
+*.ckpt
+*.pth
+*.pt
+*.bin
+*.onnx
+*.pkl
+
+# Hugging Face hub cache (if redirected inside the repo)
+models/.cache/
+models/huggingface/
+
+# SDXL-Turbo / diffusers local cache
+models/sdxl-turbo/
+models/diffusers_cache/
+
+# Kokoro TTS downloaded model assets
+models/kokoro-v*/
+
+# SadTalker checkpoints & GFPGAN weights
+models/SadTalker/checkpoints/
+models/SadTalker/gfpgan/
+models/SadTalker/results/
+models/SadTalker/examples/results/
+models/SadTalker/assets/
+
+# ── Runtime output ──────────────────────────────────────────────────────────
+# Lipsync job outputs (generated at runtime, can be large)
+models/lipsync_results/
+
+# ── IDE / editor ────────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo

@@ -9,6 +9,7 @@ import {
   BrainIcon,
   AddressBookIcon,
   CreditCardIcon,
+  UserCircleIcon,
 } from "@phosphor-icons/react";
 import {
   SidebarContainer,
@@ -60,6 +61,12 @@ export const Sidebar = () => {
       href: "/admin/leads",
       isActive: pathname === "/admin/leads",
       icon: (weight: "fill" | "regular") => <AddressBookIcon weight={weight} />,
+    },
+    {
+      label: "Avatar Studio",
+      href: "/admin/avatar",
+      isActive: pathname === "/admin/avatar",
+      icon: (weight: "fill" | "regular") => <UserCircleIcon weight={weight} />,
     },
     {
       label: "Billing",
