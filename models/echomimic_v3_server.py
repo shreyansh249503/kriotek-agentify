@@ -278,10 +278,13 @@ def _load_models():
     # ── Text encoder + tokenizer ──────────────────────────────────────────
     print("[EchoMimic] Loading text encoder…")
     te_path = str(_BASE_MODEL / config["text_encoder_kwargs"].get("text_encoder_subpath", "text_encoder"))
+    # low_cpu_mem_usage=True silently hangs when the load_model_dict_into_meta
+    # shim cannot resolve custom attributes on WanT5EncoderModel.  Use False so
+    # weights load directly into CPU tensors (same RAM cost, no deadlock).
     text_encoder = WanT5EncoderModel.from_pretrained(
         te_path,
         additional_kwargs=OmegaConf.to_container(config["text_encoder_kwargs"]),
-        low_cpu_mem_usage=True,
+        low_cpu_mem_usage=False,
         torch_dtype=DTYPE,
     ).eval()
     gc.collect()
@@ -331,8 +334,10 @@ def _load_models():
         scheduler=scheduler,
         clip_image_encoder=clip_image_encoder,
     )
+    print("[EchoMimic] Pipeline assembled.")
 
-    # Enable TeaCache for faster inference
+    # ── TeaCache ──────────────────────────────────────────────────────────
+    print("[EchoMimic] Enabling TeaCache…")
     coefficients = get_teacache_coefficients("Wan2.1-Fun-V1.1-1.3B-InP")
     if coefficients is not None:
         _pipeline.transformer.enable_teacache(
@@ -342,22 +347,39 @@ def _load_models():
             num_skip_start_steps=5,
             offload=False,
         )
+        print("[EchoMimic] TeaCache enabled.")
+    else:
+        print("[EchoMimic] TeaCache coefficients not found — skipping.")
 
-    # Device placement strategy:
-    # • CUDA ≥20 GB  → move everything to GPU up front
-    # • CUDA  <20 GB → sequential_cpu_offload (layers moved one-at-a-time during inference)
-    # • MPS          → model_cpu_offload (models kept on CPU, moved to MPS one-at-a-time
-    #                  during inference and immediately offloaded back; avoids the 20 GB
-    #                  MPS watermark that would be hit by a full pipeline.to("mps"))
+    # ── Device placement ──────────────────────────────────────────────────
+    # Check available CPU RAM before deciding strategy.
+    # _pipeline.to("cuda") bulk-transfers all models at once — if CPU RAM is
+    # close to the total model size (~20 GB), the OS starts swapping and the
+    # transfer can stall for 10-30 minutes.
+    # model_cpu_offload moves each model to GPU individually, releasing CPU RAM
+    # as it goes, which avoids the swap spiral and is safe on any RAM size.
     if _CUDA:
-        total_vram_gb = torch.cuda.get_device_properties(0).total_memory / 1e9
-        if total_vram_gb < 20:
+        import psutil
+        total_vram_gb    = torch.cuda.get_device_properties(0).total_memory / 1e9
+        available_ram_gb = psutil.virtual_memory().available / 1e9
+        total_ram_gb     = psutil.virtual_memory().total / 1e9
+        print(f"[EchoMimic] VRAM={total_vram_gb:.0f} GB | CPU RAM total={total_ram_gb:.0f} GB available={available_ram_gb:.1f} GB")
+
+        if total_vram_gb >= 20 and available_ram_gb >= 10:
+            # Enough headroom — bulk transfer is safe and fastest for inference
+            print("[EchoMimic] Moving pipeline to GPU (bulk transfer)…")
+            _pipeline.to(DEVICE)
+            print("[EchoMimic] Pipeline on GPU.")
+        elif total_vram_gb >= 20:
+            # VRAM fits everything but CPU RAM is tight — use model_cpu_offload
+            # to move models one-at-a-time and free CPU RAM as we go.
+            print(f"[EchoMimic] Low CPU RAM ({available_ram_gb:.1f} GB free) — using model_cpu_offload to avoid swap.")
+            _pipeline.enable_model_cpu_offload()
+        else:
             print(f"[EchoMimic] VRAM={total_vram_gb:.0f} GB — enabling sequential_cpu_offload")
             _pipeline.enable_sequential_cpu_offload()
-        else:
-            _pipeline.to(DEVICE)
     else:
-        print("[EchoMimic] MPS — enabling model_cpu_offload (models stay on CPU, move to MPS per-op)")
+        print("[EchoMimic] MPS — enabling model_cpu_offload")
         _pipeline.enable_model_cpu_offload()
 
     _models_ready = True
