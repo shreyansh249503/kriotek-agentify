@@ -64,6 +64,15 @@ models/diffusers_cache/
 # Kokoro TTS downloaded model assets
 models/kokoro-v*/
 
+# EchoMimic V3 weights (~20 GB, downloaded via download_echomimic_weights.py)
+models/echomimic_weights/
+
+# EchoMimic V3 virtual environment (separate from SadTalker env due to TF conflict)
+models/echomimic_venv/
+
+# EchoMimic V3 job output
+models/echomimic_results/
+
 # SadTalker checkpoints & GFPGAN weights
 models/SadTalker/checkpoints/
 models/SadTalker/gfpgan/

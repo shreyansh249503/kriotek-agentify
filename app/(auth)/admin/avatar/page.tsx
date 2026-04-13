@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   ImageSquareIcon,
   SpeakerHighIcon,
@@ -11,8 +11,18 @@ import {
   FloppyDiskIcon,
   ImagesIcon,
   TrashIcon,
+  Clock,
+  Warning,
 } from "@phosphor-icons/react";
-import { generateImage, generateSpeech, generateLipsync } from "@/services/avatar.api";
+import { generateImage, generateSpeech } from "@/services/avatar.api";
+import {
+  startLipsyncJob,
+  pollLipsyncJob,
+  getActiveJob,
+  getVideoHistory,
+  addToVideoHistory,
+} from "@/services/avatar.api";
+import type { VideoHistoryItem } from "@/services/avatar.api";
 import { getSavedAvatars, saveAvatar, deleteSavedAvatar } from "@/services/avatar.api";
 import type { SavedAvatar } from "@/services/avatar.api";
 import {
@@ -79,7 +89,17 @@ interface StepStatus {
 }
 
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+  return new Date(iso).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function formatElapsed(totalSeconds: number): string {
+  const m = Math.floor(totalSeconds / 60);
+  const s = totalSeconds % 60;
+  return `${m}m ${String(s).padStart(2, "0")}s`;
 }
 
 export default function AvatarStudioPage() {
@@ -110,21 +130,92 @@ export default function AvatarStudioPage() {
   const [videoError, setVideoError] = useState<string | null>(null);
   const [videoResult, setVideoResult] = useState<string | null>(null);
 
+  // Active job — persisted across refreshes
+  const [activeJobId, setActiveJobId] = useState<string | null>(null);
+  const [activeJobStartedAt, setActiveJobStartedAt] = useState<number | null>(null);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  // Guard against double-polling on strict-mode double-mount
+  const pollingRef = useRef(false);
+
+  // ── Previous video history ─────────────────────────────────────────────────
+  const [videoHistory, setVideoHistory] = useState<VideoHistoryItem[]>([]);
+
   // ── Saved avatars ──────────────────────────────────────────────────────────
   const [savedAvatars, setSavedAvatars] = useState<SavedAvatar[]>([]);
   const [saveLoading, setSaveLoading] = useState(false);
-  const [savedId, setSavedId] = useState<string | null>(null); // id of currently-loaded saved avatar
+  const [savedId, setSavedId] = useState<string | null>(null);
 
+  // ── Load saved avatars on mount ────────────────────────────────────────────
   const loadSaved = useCallback(async () => {
     try {
       const data = await getSavedAvatars();
       setSavedAvatars(data);
     } catch {
-      // silently ignore — gallery is non-critical
+      // non-critical — silently ignore
     }
   }, []);
 
   useEffect(() => { loadSaved(); }, [loadSaved]);
+
+  // ── Restore active job + load history on mount ─────────────────────────────
+  useEffect(() => {
+    // Load previous video history from localStorage
+    setVideoHistory(getVideoHistory());
+
+    // Check for an in-progress job that survived a page refresh
+    const stored = getActiveJob();
+    if (!stored || pollingRef.current) return;
+    pollingRef.current = true;
+
+    // Restore UI state so the user can see what was being processed
+    if (stored.imageDataUrl) setAvatarImage(stored.imageDataUrl);
+    if (stored.audioDataUrl) setVoiceAudio(stored.audioDataUrl);
+    setLipsyncPrompt(stored.prompt);
+    setSteps({ avatar: "done", voice: "done", video: "active" });
+    setActiveJobId(stored.jobId);
+    setActiveJobStartedAt(stored.startedAt);
+    setElapsedSeconds(Math.floor((Date.now() - stored.startedAt) / 1000));
+    setVideoLoading(true);
+    setVideoError(null);
+
+    // Resume polling where we left off
+    pollLipsyncJob(stored.jobId)
+      .then((result) => {
+        setVideoResult(result.video);
+        setSteps((prev) => ({ ...prev, video: "done" }));
+        setActiveJobId(null);
+        setActiveJobStartedAt(null);
+
+        const historyItem: VideoHistoryItem = {
+          jobId: stored.jobId,
+          prompt: stored.prompt,
+          completedAt: Date.now(),
+          videoDataUrl: result.video,
+          thumbnailDataUrl: stored.imageDataUrl,
+        };
+        addToVideoHistory(historyItem);
+        setVideoHistory(getVideoHistory());
+      })
+      .catch((err: unknown) => {
+        setVideoError(err instanceof Error ? err.message : "Video generation failed");
+        setActiveJobId(null);
+        setActiveJobStartedAt(null);
+      })
+      .finally(() => {
+        setVideoLoading(false);
+        pollingRef.current = false;
+      });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── Elapsed-time ticker ────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!videoLoading || activeJobStartedAt === null) return;
+    const id = setInterval(() => {
+      setElapsedSeconds(Math.floor((Date.now() - activeJobStartedAt) / 1000));
+    }, 1000);
+    return () => clearInterval(id);
+  }, [videoLoading, activeJobStartedAt]);
 
   // ── Helpers ────────────────────────────────────────────────────────────────
   function setStep(key: keyof StepStatus, state: StepState) {
@@ -172,18 +263,38 @@ export default function AvatarStudioPage() {
 
   async function handleGenerateVideo() {
     if (!avatarImage || !voiceAudio || !lipsyncPrompt.trim()) return;
+
     setVideoLoading(true);
     setVideoError(null);
+    setVideoResult(null);
+    setElapsedSeconds(0);
+
+    const startedAt = Date.now();
+
     try {
-      const result = await generateLipsync(avatarImage, voiceAudio, lipsyncPrompt, {
-        seconds: 5,
-        width: 448,
-        height: 256,
-      });
+      const jobId = await startLipsyncJob(avatarImage, voiceAudio, lipsyncPrompt);
+      setActiveJobId(jobId);
+      setActiveJobStartedAt(startedAt);
+
+      const result = await pollLipsyncJob(jobId);
       setVideoResult(result.video);
       setStep("video", "done");
+      setActiveJobId(null);
+      setActiveJobStartedAt(null);
+
+      const historyItem: VideoHistoryItem = {
+        jobId,
+        prompt: lipsyncPrompt,
+        completedAt: Date.now(),
+        videoDataUrl: result.video,
+        thumbnailDataUrl: avatarImage,
+      };
+      addToVideoHistory(historyItem);
+      setVideoHistory(getVideoHistory());
     } catch (err) {
       setVideoError(err instanceof Error ? err.message : "Video generation failed");
+      setActiveJobId(null);
+      setActiveJobStartedAt(null);
     } finally {
       setVideoLoading(false);
     }
@@ -292,6 +403,86 @@ export default function AvatarStudioPage() {
               </SavedAvatarCard>
             ))}
           </SavedGrid>
+        </SavedSection>
+      )}
+
+      {/* ── Previous Videos ────────────────────────────────────────────────── */}
+      {videoHistory.length > 0 && (
+        <SavedSection>
+          <SavedSectionHeader>
+            <SavedSectionTitle>
+              <VideoIcon size={18} weight="duotone" />
+              Previous Videos
+            </SavedSectionTitle>
+          </SavedSectionHeader>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {videoHistory.map((item) => (
+              <div
+                key={item.jobId}
+                style={{
+                  border: "1px solid #e5e7eb",
+                  borderRadius: 10,
+                  overflow: "hidden",
+                  background: "#fff",
+                }}
+              >
+                {/* Card header row */}
+                <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px" }}>
+                  {item.thumbnailDataUrl && (
+                    <img
+                      src={item.thumbnailDataUrl}
+                      alt="Avatar"
+                      style={{ width: 44, height: 44, borderRadius: 6, objectFit: "cover", flexShrink: 0 }}
+                    />
+                  )}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "#111827", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {item.prompt.slice(0, 60)}{item.prompt.length > 60 ? "…" : ""}
+                    </div>
+                    <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
+                      {formatDate(new Date(item.completedAt).toISOString())}
+                    </div>
+                    {!item.videoDataUrl && (
+                      <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "#ef4444", marginTop: 2 }}>
+                        <Warning size={11} />
+                        Video data unavailable (storage was full)
+                      </div>
+                    )}
+                  </div>
+                  {item.videoDataUrl && (
+                    <button
+                      onClick={() => setVideoResult((prev) => prev === item.videoDataUrl ? null : item.videoDataUrl)}
+                      style={{
+                        flexShrink: 0,
+                        fontSize: 12,
+                        fontWeight: 500,
+                        color: "#2563eb",
+                        background: "#eff6ff",
+                        border: "1px solid #bfdbfe",
+                        borderRadius: 6,
+                        padding: "4px 10px",
+                        cursor: "pointer",
+                      }}
+                    >
+                      {videoResult === item.videoDataUrl ? "Hide" : "View"}
+                    </button>
+                  )}
+                </div>
+
+                {/* Expandable video player */}
+                {item.videoDataUrl && videoResult === item.videoDataUrl && (
+                  <div style={{ borderTop: "1px solid #f3f4f6", padding: 12 }}>
+                    <video
+                      controls
+                      src={item.videoDataUrl}
+                      style={{ width: "100%", borderRadius: 8, display: "block" }}
+                    />
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         </SavedSection>
       )}
 
@@ -468,14 +659,57 @@ export default function AvatarStudioPage() {
             <VideoIcon size={20} weight="duotone" />
             Generate Video
           </StepTitle>
-          {stepState("video") === "done" && (
+          {stepState("video") === "done" && !videoLoading && (
             <SuccessBadge>
               <CheckCircleIcon size={14} weight="fill" />
               Done
             </SuccessBadge>
           )}
-          {stepState("video") === "active" && <StepBadge>Current step</StepBadge>}
+          {stepState("video") === "active" && !videoLoading && <StepBadge>Current step</StepBadge>}
+          {videoLoading && (
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              fontSize: 12,
+              fontWeight: 500,
+              color: "#2563eb",
+              background: "#eff6ff",
+              border: "1px solid #bfdbfe",
+              borderRadius: 6,
+              padding: "3px 10px",
+            }}>
+              <CircleNotchIcon size={12} className="spin" />
+              Processing
+            </div>
+          )}
         </StepCardHeader>
+
+        {/* Active job info banner — shown when a job is running (including restored from refresh) */}
+        {videoLoading && activeJobId && (
+          <div style={{
+            padding: "10px 14px",
+            background: "#f0fdf4",
+            border: "1px solid #bbf7d0",
+            borderRadius: 8,
+            marginBottom: 12,
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+              <Clock size={14} weight="fill" style={{ color: "#16a34a" }} />
+              <span style={{ fontSize: 13, fontWeight: 600, color: "#15803d" }}>
+                Job in progress — your video is being generated
+              </span>
+            </div>
+            <div style={{ fontSize: 12, color: "#166534" }}>
+              Job ID: <code style={{ fontFamily: "monospace", fontSize: 11 }}>{activeJobId.slice(0, 8)}…</code>
+              &nbsp;·&nbsp;
+              Elapsed: <strong>{formatElapsed(elapsedSeconds)}</strong>
+            </div>
+            <div style={{ fontSize: 11, color: "#16a34a", marginTop: 4 }}>
+              Refreshing the page is safe — this job will resume automatically when you return.
+            </div>
+          </div>
+        )}
 
         <FieldGroup>
           <Label>Scene Prompt</Label>
@@ -484,6 +718,7 @@ export default function AvatarStudioPage() {
             onChange={(e) => setLipsyncPrompt(e.target.value)}
             placeholder="A professional woman in her 30s, neutral expression, soft studio lighting, looking directly at camera. Static shot, no background movement..."
             rows={4}
+            disabled={videoLoading}
           />
           <HelperText>
             Describe the scene in detail (150–200 words). Keep camera static, character stationary.
@@ -508,7 +743,7 @@ export default function AvatarStudioPage() {
           {videoLoading ? (
             <>
               <CircleNotchIcon size={16} className="spin" />
-              Generating video…
+              {activeJobId ? `Generating… ${formatElapsed(elapsedSeconds)}` : "Starting job…"}
             </>
           ) : videoResult ? (
             "Regenerate Video"

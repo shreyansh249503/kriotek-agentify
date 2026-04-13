@@ -1,6 +1,6 @@
 # Agentify
 
-AI-powered chatbot platform with an avatar studio. Create talking-head video avatars using SDXL-Turbo (image), Kokoro TTS (voice), and SadTalker (lip-sync), then embed them in your chatbot widget.
+AI-powered chatbot platform with an avatar studio. Create talking-head video avatars using SDXL-Turbo (image), Kokoro TTS (voice), and EchoMimic V3 (lip-sync), then embed them in your chatbot widget.
 
 ---
 
@@ -11,7 +11,7 @@ AI-powered chatbot platform with an avatar studio. Create talking-head video ava
 | Node.js | 20 or later |
 | Python | 3.10 – 3.11 |
 | Git | any recent version |
-| ffmpeg | required by SadTalker |
+| ffmpeg | required by both lip-sync engines |
 
 > **macOS:** `brew install ffmpeg`
 > **Ubuntu/Debian:** `sudo apt install ffmpeg`
@@ -23,9 +23,6 @@ AI-powered chatbot platform with an avatar studio. Create talking-head video ava
 ```bash
 git clone <repo-url> agentify-monorepo
 cd agentify-monorepo
-
-# SadTalker is a git submodule
-git submodule update --init --recursive
 ```
 
 ---
@@ -57,28 +54,29 @@ STRIPE_SECRET_KEY=sk_test_...
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
 STRIPE_WEBHOOK_SECRET=whsec_...
 
-# Python models backend (default is fine for local dev)
+# SadTalker server (default fine for local dev)
 MODELS_API_URL=http://localhost:8000
+
+# EchoMimic V3 server — only needed if using the EchoMimic engine
+ECHOMIMIC_API_URL=http://localhost:8001
 ```
 
 ---
 
-## 3. Python models backend setup
+## 3. Image + TTS backend setup
 
-All AI models run in a separate Python process inside `models/`.
+SDXL-Turbo (image) and Kokoro TTS run in a lightweight server on port 8000. Supports CPU, MPS (Apple Silicon), and CUDA.
 
 ```bash
 cd models
 
-# Create and activate a virtual environment
 python3 -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
 
-# Install dependencies
 pip install --upgrade pip
 pip install -r requirements.txt
 
-# Install PyTorch — pick the command for your hardware:
+# PyTorch — pick the command for your hardware:
 # CUDA (NVIDIA GPU):
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
 # MPS (Apple Silicon):
@@ -87,50 +85,84 @@ pip install torch torchvision torchaudio
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 ```
 
-### 3a. Download SadTalker checkpoints
-
-SadTalker requires pre-trained weights (~1 GB). Run the official download script:
-
-```bash
-cd SadTalker
-bash scripts/download_models.sh
-cd ..
-```
-
-If the script is unavailable, download manually from the [SadTalker releases](https://github.com/OpenTalker/SadTalker/releases) and place them in `SadTalker/checkpoints/`.
-
-### 3b. SDXL-Turbo & Kokoro weights
-
-These are downloaded automatically from Hugging Face the first time the server starts (requires an internet connection). Subsequent starts use the local cache (`~/.cache/huggingface`).
-
-> First startup will take several minutes while models download (~8 GB total).
+SDXL-Turbo and Kokoro weights are downloaded automatically from Hugging Face on first start (~8 GB).
 
 ---
 
-## 4. Database setup (Supabase)
+## 4. EchoMimic V3 backend setup *(CUDA or MPS)*
 
-The app uses TypeORM with `synchronize: true`, so all tables are created automatically on first run. You only need:
+EchoMimic V3 handles lip-sync and produces 768 px output. It runs as a separate server on port 8001 and supports:
+- **CUDA** — NVIDIA GPU with ≥12 GB VRAM (recommended)
+- **MPS** — Apple Silicon (M1/M2/M3/M4) using unified memory
+
+> EchoMimic V3 uses `tensorflow==2.15.0` which conflicts with the image/TTS environment — it runs in its own isolated venv.
+
+### 4a. Clone the EchoMimicV3 repo
+
+```bash
+cd models
+git clone https://github.com/antgroup/echomimic_v3 EchoMimicV3
+```
+
+### 4b. Create a dedicated virtual environment
+
+```bash
+cd models
+
+python3 -m venv echomimic_venv
+source echomimic_venv/bin/activate
+
+pip install --upgrade pip
+
+# PyTorch with CUDA (required — no MPS/CPU support)
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+
+pip install -r echomimic_v3_requirements.txt
+```
+
+### 4c. Download model weights (~20 GB)
+
+```bash
+cd models
+source echomimic_venv/bin/activate
+python download_echomimic_weights.py
+```
+
+This downloads into `models/echomimic_weights/`:
+
+| Folder | Source | Size |
+|--------|--------|------|
+| `base/` | `alibaba-pai/Wan2.1-Fun-V1.1-1.3B-InP` | ~12 GB |
+| `wav2vec2/` | `TencentGameMate/chinese-wav2vec2-base` | ~400 MB |
+| `transformer/` | `BadToBest/EchoMimicV3` | ~7 GB |
+
+---
+
+## 5. Database setup (Supabase)
+
+
+TypeORM `synchronize: true` creates all tables automatically on first run. You only need:
 
 1. Create a project at [supabase.com](https://supabase.com)
 2. Enable the **pgvector** extension: *Database → Extensions → vector*
-3. Set the `SUPABASE_DATABASE_URL` in `.env.local` to your project's connection string
+3. Set `SUPABASE_DATABASE_URL` in `.env.local`
 
 ---
 
-## 5. Running locally
+## 6. Running locally
 
-Open **two terminals**:
+Open **3 terminals**:
 
-**Terminal 1 — Python models API:**
 ```bash
-cd models
-source .venv/bin/activate
+# Terminal 1 — Image + TTS server (port 8000)
+cd models && source .venv/bin/activate
 uvicorn app:app --host 0.0.0.0 --port 8000 --reload
-```
 
-**Terminal 2 — Next.js frontend:**
-```bash
-# from the repo root
+# Terminal 2 — EchoMimic V3 lip-sync server (port 8001)
+cd models && source echomimic_venv/bin/activate
+uvicorn echomimic_v3_server:app --host 0.0.0.0 --port 8001
+
+# Terminal 3 — Next.js frontend
 npm run dev
 ```
 
@@ -138,35 +170,39 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ---
 
-## 6. Project structure
+## 7. Project structure
 
 ```
 agentify-monorepo/
-├── app/                    # Next.js App Router
-│   ├── (auth)/admin/       # Protected admin pages
-│   │   ├── avatar/         # Avatar studio (image → voice → video)
-│   │   ├── bots/           # Bot management
-│   │   └── settings/       # Account settings
-│   └── api/                # API routes (proxies + CRUD)
-├── components/             # Shared React components
-├── models/                 # Python FastAPI AI backend
-│   ├── app.py              # Main server (SDXL-Turbo, Kokoro, SadTalker)
-│   ├── SadTalker/          # Git submodule
-│   ├── lipsync_results/    # Runtime job output (gitignored)
-│   └── requirements.txt
-├── services/               # API client functions
-├── types/                  # TypeScript types
-└── lib/                    # Supabase client, axios instance
+├── app/
+│   ├── (auth)/admin/
+│   │   └── avatar/              # Avatar studio (image → voice → video)
+│   └── api/models/
+│       ├── image/generate/      # → port 8000
+│       ├── tts/generate/        # → port 8000
+│       └── lipsync/             # → port 8001 (EchoMimic V3)
+│           ├── generate/
+│           ├── status/[jobId]/
+│           └── result/[jobId]/
+├── models/
+│   ├── app.py                   # SDXL-Turbo + Kokoro TTS (port 8000)
+│   ├── echomimic_v3_server.py   # EchoMimic V3 lip-sync (port 8001)
+│   ├── download_echomimic_weights.py
+│   ├── EchoMimicV3/             # Cloned repo (see step 4a)
+│   ├── echomimic_weights/       # Downloaded weights — gitignored (~20 GB)
+│   └── echomimic_results/       # Runtime job output — gitignored
+├── services/
+│   └── avatar.api.ts
+├── types/
+└── lib/
 ```
 
 ---
 
-## 7. Hardware recommendations
+## 8. Hardware requirements
 
-| Feature | Minimum | Recommended |
+| Service | Minimum | Recommended |
 |---------|---------|-------------|
 | Image generation (SDXL-Turbo) | 8 GB RAM / CPU | Apple M-series or NVIDIA GPU |
-| Voice synthesis (Kokoro) | 4 GB RAM / CPU | any modern CPU |
-| Lip-sync video (SadTalker) | 8 GB RAM / CPU | NVIDIA GPU with 8 GB VRAM |
-
-On Apple Silicon, MPS acceleration is used automatically. On CPU, expect 2–5 min per lip-sync video.
+| Voice synthesis (Kokoro TTS) | 4 GB RAM / CPU | any modern CPU |
+| Lip-sync video (EchoMimic V3) | Apple M-series (MPS) | NVIDIA GPU ≥12 GB VRAM |
