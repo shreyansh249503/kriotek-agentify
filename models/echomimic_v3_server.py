@@ -88,11 +88,16 @@ _orig_torch_load = torch.load
 @functools.wraps(_orig_torch_load)
 def _mmap_torch_load(f, *args, **kwargs):
     # Only apply mmap to file paths (not file objects / URLs)
-    if isinstance(f, (str, os.PathLike)) and "mmap" not in kwargs:
-        try:
+    if isinstance(f, (str, os.PathLike)):
+        if "mmap" not in kwargs:
             kwargs["mmap"] = True
-        except Exception:
-            pass
+        # PyTorch 2.6+ requires weights_only to be set explicitly.
+        # EchoMimicV3's internal torch.load calls don't pass it, which triggers
+        # a FutureWarning that becomes an error in newer transformers.
+        # Use weights_only=False to preserve the original behaviour for .pth files;
+        # safetensors files never go through torch.load so this is safe.
+        if "weights_only" not in kwargs:
+            kwargs["weights_only"] = False
     return _orig_torch_load(f, *args, **kwargs)
 
 torch.load = _mmap_torch_load
