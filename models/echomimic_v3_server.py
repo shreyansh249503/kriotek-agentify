@@ -364,22 +364,23 @@ def _load_models():
         print("[EchoMimic] TeaCache coefficients not found — skipping.")
 
     # ── Device placement ──────────────────────────────────────────────────
-    # VAE, CLIP, transformer are already on GPU from eager loading above.
-    # Text encoder stays on CPU (it is ~20 GB and only needed once per job).
-    # We call _pipeline.to(DEVICE) to register device metadata on the pipeline,
-    # then immediately move the text encoder back to CPU so it doesn't OOM.
+    # Devices after eager loading:
+    #   GPU : VAE, CLIP, transformer  (~10 GB total — fits in 24 GB VRAM)
+    #   CPU : text_encoder            (~20 GB UMT5-XXL — too large for GPU)
+    #   CPU : wav2vec2, tokenizer     (small, only needed for pre-processing)
+    #
+    # Do NOT call _pipeline.to(DEVICE) — it iterates every component and
+    # would OOM trying to move the 20 GB text encoder before we could stop it.
+    # The pipeline discovers its execution device from the transformer's device,
+    # so inference will route correctly to GPU automatically.
     if _CUDA:
         total_vram_gb = torch.cuda.get_device_properties(0).total_memory / 1e9
-        if total_vram_gb >= 20:
-            _pipeline.to(DEVICE)
-            # Re-pin text encoder to CPU — _pipeline.to() pulled it to GPU
-            _pipeline.text_encoder.to("cpu")
-            torch.cuda.empty_cache()
-        else:
-            print(f"[EchoMimic] VRAM={total_vram_gb:.0f} GB — enabling sequential_cpu_offload")
+        vram_used_gb  = torch.cuda.memory_allocated() / 1e9
+        print(f"[EchoMimic] VRAM: {vram_used_gb:.1f} GB used / {total_vram_gb:.0f} GB total")
+        if total_vram_gb < 20:
+            # Not enough VRAM even for transformer alone — fall back to offload
+            print(f"[EchoMimic] Low VRAM — enabling sequential_cpu_offload")
             _pipeline.enable_sequential_cpu_offload()
-        vram_used_gb = torch.cuda.memory_allocated() / 1e9
-        print(f"[EchoMimic] VRAM after placement: {vram_used_gb:.1f} GB / {total_vram_gb:.0f} GB")
     else:
         print("[EchoMimic] MPS — enabling model_cpu_offload")
         _pipeline.enable_model_cpu_offload()
