@@ -266,8 +266,8 @@ def _load_models():
     gc.collect()
 
     def _to_gpu(model, name: str):
-        """Move a model to GPU immediately and free CPU RAM — avoids accumulating
-        all models in CPU RAM at once (which OOMs a 16 GB VM before any transfer)."""
+        """Move a model to GPU immediately after loading so CPU RAM is freed
+        before the next (possibly larger) model is loaded."""
         if _CUDA:
             print(f"[EchoMimic]   → moving {name} to GPU…")
             model = model.to(DEVICE)
@@ -287,7 +287,12 @@ def _load_models():
     gc.collect()
 
     # ── Text encoder + tokenizer ──────────────────────────────────────────
-    print("[EchoMimic] Loading text encoder…")
+    # IMPORTANT: kept on CPU intentionally.
+    # UMT5-XXL is ~20 GB in bfloat16 — it alone fills a 24 GB GPU.
+    # It only runs ONCE per job to encode the text prompt; the transformer
+    # runs 8 denoising steps on GPU.  Keeping it on CPU means VAE + CLIP +
+    # transformer (~10 GB) fit comfortably in VRAM.
+    print("[EchoMimic] Loading text encoder (CPU)…")
     te_path = str(_BASE_MODEL / config["text_encoder_kwargs"].get("text_encoder_subpath", "text_encoder"))
     text_encoder = WanT5EncoderModel.from_pretrained(
         te_path,
@@ -295,7 +300,7 @@ def _load_models():
         low_cpu_mem_usage=False,
         torch_dtype=DTYPE,
     ).eval()
-    text_encoder = _to_gpu(text_encoder, "text encoder")
+    # do NOT move to GPU — stays on CPU throughout
     gc.collect()
 
     tok_subpath = config["text_encoder_kwargs"].get("tokenizer_subpath", "tokenizer")
@@ -359,19 +364,22 @@ def _load_models():
         print("[EchoMimic] TeaCache coefficients not found — skipping.")
 
     # ── Device placement ──────────────────────────────────────────────────
-    # All models were moved to GPU eagerly above (_to_gpu), so CPU RAM is free.
-    # _pipeline.to(DEVICE) is now essentially a no-op tensor-wise — it just
-    # registers the device on the pipeline object so internal hooks route
-    # new tensors to the right device during inference.
+    # VAE, CLIP, transformer are already on GPU from eager loading above.
+    # Text encoder stays on CPU (it is ~20 GB and only needed once per job).
+    # We call _pipeline.to(DEVICE) to register device metadata on the pipeline,
+    # then immediately move the text encoder back to CPU so it doesn't OOM.
     if _CUDA:
         total_vram_gb = torch.cuda.get_device_properties(0).total_memory / 1e9
-        vram_used_gb  = torch.cuda.memory_allocated() / 1e9
-        print(f"[EchoMimic] VRAM: {vram_used_gb:.1f} GB used / {total_vram_gb:.0f} GB total")
         if total_vram_gb >= 20:
             _pipeline.to(DEVICE)
+            # Re-pin text encoder to CPU — _pipeline.to() pulled it to GPU
+            _pipeline.text_encoder.to("cpu")
+            torch.cuda.empty_cache()
         else:
             print(f"[EchoMimic] VRAM={total_vram_gb:.0f} GB — enabling sequential_cpu_offload")
             _pipeline.enable_sequential_cpu_offload()
+        vram_used_gb = torch.cuda.memory_allocated() / 1e9
+        print(f"[EchoMimic] VRAM after placement: {vram_used_gb:.1f} GB / {total_vram_gb:.0f} GB")
     else:
         print("[EchoMimic] MPS — enabling model_cpu_offload")
         _pipeline.enable_model_cpu_offload()
