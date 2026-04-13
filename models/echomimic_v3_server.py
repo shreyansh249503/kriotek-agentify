@@ -265,6 +265,16 @@ def _load_models():
     _wav2vec_model.feature_extractor._freeze_parameters()
     gc.collect()
 
+    def _to_gpu(model, name: str):
+        """Move a model to GPU immediately and free CPU RAM — avoids accumulating
+        all models in CPU RAM at once (which OOMs a 16 GB VM before any transfer)."""
+        if _CUDA:
+            print(f"[EchoMimic]   → moving {name} to GPU…")
+            model = model.to(DEVICE)
+            gc.collect()
+            torch.cuda.empty_cache()
+        return model
+
     # ── VAE ───────────────────────────────────────────────────────────────
     print("[EchoMimic] Loading VAE…")
     vae_path = str(_BASE_MODEL / config["vae_kwargs"].get("vae_subpath", "vae"))
@@ -273,24 +283,22 @@ def _load_models():
         additional_kwargs=OmegaConf.to_container(config["vae_kwargs"]),
     ).to(DTYPE)
     _vae_temporal_ratio = config["vae_kwargs"].get("temporal_compression_ratio", 4)
+    vae = _to_gpu(vae, "VAE")
     gc.collect()
 
     # ── Text encoder + tokenizer ──────────────────────────────────────────
     print("[EchoMimic] Loading text encoder…")
     te_path = str(_BASE_MODEL / config["text_encoder_kwargs"].get("text_encoder_subpath", "text_encoder"))
-    # low_cpu_mem_usage=True silently hangs when the load_model_dict_into_meta
-    # shim cannot resolve custom attributes on WanT5EncoderModel.  Use False so
-    # weights load directly into CPU tensors (same RAM cost, no deadlock).
     text_encoder = WanT5EncoderModel.from_pretrained(
         te_path,
         additional_kwargs=OmegaConf.to_container(config["text_encoder_kwargs"]),
         low_cpu_mem_usage=False,
         torch_dtype=DTYPE,
     ).eval()
+    text_encoder = _to_gpu(text_encoder, "text encoder")
     gc.collect()
 
     tok_subpath = config["text_encoder_kwargs"].get("tokenizer_subpath", "tokenizer")
-    # tokenizer_subpath may be a HuggingFace id (e.g. "google/umt5-xxl") or local path
     tok_path = str(_BASE_MODEL / tok_subpath) if ((_BASE_MODEL / tok_subpath).exists()) else tok_subpath
     tokenizer = AutoTokenizer.from_pretrained(tok_path)
 
@@ -301,20 +309,19 @@ def _load_models():
         ie_path,
         transformer_additional_kwargs={},
     ).to(DTYPE).eval()
+    clip_image_encoder = _to_gpu(clip_image_encoder, "CLIP")
     gc.collect()
 
     # ── Transformer ───────────────────────────────────────────────────────
     print("[EchoMimic] Loading EchoMimic V3 transformer…")
     transformer_additional_kwargs = OmegaConf.to_container(config["transformer_additional_kwargs"])
-    # low_cpu_mem_usage=True fails for WanTransformerAudioMask3DModel because
-    # audio2token is added after __init__ (not present during meta-tensor phase).
-    # Use False so the weights load directly into normal CPU tensors.
     transformer = WanTransformerAudioMask3DModel.from_pretrained(
         str(_TRANSFORMER),
         transformer_additional_kwargs=transformer_additional_kwargs,
         low_cpu_mem_usage=False,
         torch_dtype=DTYPE,
     )
+    transformer = _to_gpu(transformer, "transformer")
     gc.collect()
 
     # ── Scheduler ─────────────────────────────────────────────────────────
@@ -352,29 +359,16 @@ def _load_models():
         print("[EchoMimic] TeaCache coefficients not found — skipping.")
 
     # ── Device placement ──────────────────────────────────────────────────
-    # Check available CPU RAM before deciding strategy.
-    # _pipeline.to("cuda") bulk-transfers all models at once — if CPU RAM is
-    # close to the total model size (~20 GB), the OS starts swapping and the
-    # transfer can stall for 10-30 minutes.
-    # model_cpu_offload moves each model to GPU individually, releasing CPU RAM
-    # as it goes, which avoids the swap spiral and is safe on any RAM size.
+    # All models were moved to GPU eagerly above (_to_gpu), so CPU RAM is free.
+    # _pipeline.to(DEVICE) is now essentially a no-op tensor-wise — it just
+    # registers the device on the pipeline object so internal hooks route
+    # new tensors to the right device during inference.
     if _CUDA:
-        import psutil
-        total_vram_gb    = torch.cuda.get_device_properties(0).total_memory / 1e9
-        available_ram_gb = psutil.virtual_memory().available / 1e9
-        total_ram_gb     = psutil.virtual_memory().total / 1e9
-        print(f"[EchoMimic] VRAM={total_vram_gb:.0f} GB | CPU RAM total={total_ram_gb:.0f} GB available={available_ram_gb:.1f} GB")
-
-        if total_vram_gb >= 20 and available_ram_gb >= 10:
-            # Enough headroom — bulk transfer is safe and fastest for inference
-            print("[EchoMimic] Moving pipeline to GPU (bulk transfer)…")
+        total_vram_gb = torch.cuda.get_device_properties(0).total_memory / 1e9
+        vram_used_gb  = torch.cuda.memory_allocated() / 1e9
+        print(f"[EchoMimic] VRAM: {vram_used_gb:.1f} GB used / {total_vram_gb:.0f} GB total")
+        if total_vram_gb >= 20:
             _pipeline.to(DEVICE)
-            print("[EchoMimic] Pipeline on GPU.")
-        elif total_vram_gb >= 20:
-            # VRAM fits everything but CPU RAM is tight — use model_cpu_offload
-            # to move models one-at-a-time and free CPU RAM as we go.
-            print(f"[EchoMimic] Low CPU RAM ({available_ram_gb:.1f} GB free) — using model_cpu_offload to avoid swap.")
-            _pipeline.enable_model_cpu_offload()
         else:
             print(f"[EchoMimic] VRAM={total_vram_gb:.0f} GB — enabling sequential_cpu_offload")
             _pipeline.enable_sequential_cpu_offload()
