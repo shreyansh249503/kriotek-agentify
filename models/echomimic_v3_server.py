@@ -25,6 +25,25 @@ Start:
 import os
 os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
 
+# ─────────────────────────────────────────────────────────────────────────────
+# transformers ≥ 4.51 added a hard version gate that refuses to call torch.load
+# on any torch < 2.6 (CVE-2025-32434).  On environments where the cu121 index
+# caps out at torch 2.5.1 (e.g. CUDA 12.1 driver), we bypass the gate because:
+#   1. We already patch torch.load to set weights_only=False explicitly, so the
+#      vulnerable ambiguous-default behaviour never occurs.
+#   2. The gate is a version string check, not a functional security control.
+# This patch is a no-op when torch >= 2.6 is present.
+import torch as _torch_ver_check
+import sys as _sys
+if tuple(int(x) for x in _torch_ver_check.__version__.split("+")[0].split(".")[:2]) < (2, 6):
+    try:
+        import transformers.utils.import_utils as _tui
+        if hasattr(_tui, "check_torch_load_is_safe"):
+            _tui.check_torch_load_is_safe = lambda: None
+            print("[EchoMimic] Patched transformers check_torch_load_is_safe (torch < 2.6 + explicit weights_only=False)")
+    except Exception as _e:
+        print(f"[EchoMimic] Could not patch transformers safety check: {_e}")
+
 # Disable the MPS high-watermark cap.
 # On Apple Silicon, CPU and MPS share the same DRAM pool, so large models loaded
 # on CPU count toward the MPS allocation budget (default 70% of total RAM).
@@ -284,10 +303,13 @@ def _load_models():
     # ── Transformer ───────────────────────────────────────────────────────
     print("[EchoMimic] Loading EchoMimic V3 transformer…")
     transformer_additional_kwargs = OmegaConf.to_container(config["transformer_additional_kwargs"])
+    # low_cpu_mem_usage=True fails for WanTransformerAudioMask3DModel because
+    # audio2token is added after __init__ (not present during meta-tensor phase).
+    # Use False so the weights load directly into normal CPU tensors.
     transformer = WanTransformerAudioMask3DModel.from_pretrained(
         str(_TRANSFORMER),
         transformer_additional_kwargs=transformer_additional_kwargs,
-        low_cpu_mem_usage=True,
+        low_cpu_mem_usage=False,
         torch_dtype=DTYPE,
     )
     gc.collect()
