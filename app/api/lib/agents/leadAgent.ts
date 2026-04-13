@@ -349,7 +349,8 @@ Default to undefined. False positives cause real harm.`,
         }
       }
     } catch (err) {
-      console.error("[leadAgent] generateObject error:", err);
+      console.error("[leadAgent] generateObject error (skipping extraction):", err);
+      // We continue without extracted info if the model fails (e.g. quota)
     }
   }
 
@@ -390,7 +391,7 @@ Default to undefined. False positives cause real harm.`,
       phone: phoneValid(finalPhone) ? finalPhone : undefined,
     },
     missingFields,
-    isComplete: missingFields.length === 0,
+    isComplete: missingFields.length <= 1,
   };
 
   console.log("[leadAgent] result:", JSON.stringify(result));

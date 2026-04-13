@@ -1,6 +1,6 @@
 "use client";
 
-import { COLOR } from "@/styles";
+import { COLOR, BREAKPOINTS } from "@/styles";
 import styled from "styled-components";
 
 export const Form = styled.form`
@@ -16,6 +16,16 @@ export const FormContainer = styled.div`
   justify-content: space-between;
   align-items: flex-start;
   gap: 24px;
+
+  @media (max-width: ${BREAKPOINTS.DESKTOP}) {
+    flex-direction: column;
+  }
+`;
+
+export const LeftContainer = styled.div`
+  flex: 1;
+  width: 100%;
+  max-width: 100%;
 `;
 
 export const Field = styled.div`
@@ -131,6 +141,10 @@ export const FormSection = styled.div`
   border-radius: 16px;
   border: 1px solid ${COLOR.BORDER};
   height: 100%;
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    padding: 20px;
+  }
 `;
 
 export const FormGrid = styled.div`
@@ -145,7 +159,7 @@ export const TopRow = styled.div`
   grid-template-columns: 2fr 1fr;
   gap: 24px;
 
-  @media (max-width: 1024px) {
+  @media (max-width: ${BREAKPOINTS.DESKTOP}) {
     grid-template-columns: 1fr;
   }
 `;
@@ -311,9 +325,28 @@ export const CopyStatus = styled.span`
   pointer-events: none;
 `;
 export const SideContainer = styled.div`
-position: sticky;
-top: 105px;
+  position: sticky;
+  top: 105px;
   height: fit-content;
+  width: 100%;
+  max-width: 420px;
+  flex-shrink: 0;
+
+  @media (max-width: ${BREAKPOINTS.DESKTOP}) {
+    position: static;
+    max-width: 100%;
+  }
+`;
+
+export const ContactGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-top: 10px;
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    grid-template-columns: 1fr;
+  }
 `;
 
 export const UploadContainer = styled.div`

@@ -1,6 +1,6 @@
-// components/breadcrumbs/index.tsx
 "use client";
 
+import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { CaretRightIcon } from "@phosphor-icons/react";
 import {
@@ -15,7 +15,7 @@ const LABEL_MAP: Record<string, string> = {
   admin: "Dashboard",
   new: "Create New Bot",
   bots: "Bots",
-  bot: "Bots", // /bot/[id] parent shows as "Bots"
+  bot: "Bots",
   leads: "Leads",
   settings: "Settings",
   ingest: "Data Ingestion",
@@ -29,39 +29,63 @@ const HREF_MAP: Record<string, string> = {
 export const Breadcrumbs = () => {
   const pathname = usePathname();
   const { meta } = useBreadcrumb();
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth <= 768);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
   const segments = pathname.split("/").filter(Boolean);
 
   if (segments.length <= 1) return null;
 
   const crumbs = segments.map((seg, index) => {
     const defaultHref = "/" + segments.slice(0, index + 1).join("/");
-    const href = HREF_MAP[seg] ?? defaultHref; // ✅ use override if exists
+    const href = HREF_MAP[seg] ?? defaultHref;
     const isLast = index === segments.length - 1;
 
-    // Use custom label (e.g. bot name) or fall back to LABEL_MAP or capitalize
     const label =
       meta.customLabels[seg] ??
       LABEL_MAP[seg] ??
       seg.charAt(0).toUpperCase() + seg.slice(1);
 
-    // Non-linkable: last segment OR explicitly marked (e.g. bot ID with no detail page)
     const isLinkable = !isLast && !meta.nonLinkable.includes(seg);
 
     return { label, href, isLast, isLinkable };
   });
 
+  const getVisibleCrumbs = () => {
+    if (!isMobile || crumbs.length <= 3) return crumbs;
+
+    const first = crumbs[0];
+    const last = crumbs[crumbs.length - 1];
+    
+    return [
+      { ...first, isLast: false },
+      { label: "...", href: "#", isLast: false, isLinkable: false, isSeparator: true },
+      { ...last, isLast: true },
+    ];
+  };
+
+  const visibleCrumbs = getVisibleCrumbs();
+
   return (
     <BreadcrumbContainer>
-      {crumbs.map((crumb) => (
-        <BreadcrumbItem key={crumb.href}>
+      {visibleCrumbs.map((crumb, index) => (
+        <BreadcrumbItem key={`${crumb.href}-${index}`}>
           {crumb.isLinkable ? (
-            <BreadcrumbLink href={crumb.href}>{crumb.label}</BreadcrumbLink>
+            <BreadcrumbLink href={crumb.href} title={crumb.label}>
+              {crumb.label}
+            </BreadcrumbLink>
           ) : (
-            <span>{crumb.label}</span>
+            <span title={crumb.label}>{crumb.label}</span>
           )}
           {!crumb.isLast && (
             <BreadcrumbSeparator>
-              <CaretRightIcon size={18} weight="bold" />
+              <CaretRightIcon size={14} weight="bold" />
             </BreadcrumbSeparator>
           )}
         </BreadcrumbItem>

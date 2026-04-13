@@ -1,6 +1,6 @@
 "use client";
 
-import { COLOR } from "@/styles";
+import { BREAKPOINTS, COLOR } from "@/styles";
 import styled from "styled-components";
 
 export const NewBotContainer = styled.div`
@@ -21,6 +21,7 @@ export const NewBotWrapper = styled.div`
   border-radius: 16px;
   box-shadow: 0 8px 24px ${COLOR.SHADOW};
   background: ${COLOR.WHITE};
+  gap: 30px;
 
   /* Animation */
   animation: slideIn 0.4s ease-out;
@@ -35,22 +36,28 @@ export const NewBotWrapper = styled.div`
       transform: translateY(0);
     }
   }
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+      padding: 20px;
+      gap: 20px;
+  }
 `;
 
 export const NewBotTitle = styled.h2`
   font-size: 28px;
   font-weight: 700;
   color: ${COLOR.DARK};
-  margin-bottom: 32px;
   text-align: center;
+
+    @media (max-width: ${BREAKPOINTS.MOBILE}) {
+      font-size: 20px;
+  }
 `;
 
 export const TabContainer = styled.div`
   display: flex;
   gap: 16px;
-  margin-bottom: 24px;
   border-bottom: 2px solid ${COLOR.BORDER};
-  padding-bottom: 4px;
 `;
 
 export const TabButton = styled.button<{ $isActive: boolean }>`
@@ -73,13 +80,17 @@ export const TabButton = styled.button<{ $isActive: boolean }>`
     width: 100%;
     height: 3px;
     background-color: ${({ $isActive }) =>
-      $isActive ? COLOR.PRIMARY : "transparent"};
+    $isActive ? COLOR.PRIMARY : "transparent"};
     border-radius: 3px 3px 0 0;
     transition: all 0.3s ease;
   }
 
   &:hover {
     color: ${COLOR.PRIMARY};
+  }
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+      font-size: 14px;
   }
 `;
 

@@ -4,7 +4,7 @@ import { BREAKPOINTS, COLOR } from "@/styles";
 import Link from "next/link";
 import styled from "styled-components";
 
-export const HeaderContainer = styled.header`
+export const HeaderWrapper = styled.header`
   width: 100%;
   display: flex;
   align-items: center;
@@ -14,6 +14,18 @@ export const HeaderContainer = styled.header`
   top: 0;
   z-index: 900;
   height: 80px;
+  padding: 20px 0;
+`;
+export const HeaderContainer = styled.div`
+  display: flex;
+  align-items: center;
+   gap: 2px;
+`;
+
+export const HeaderTitleWrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+   gap: 1px;
 `;
 
 export const InnerHeaderwrapper = styled.div`
@@ -24,7 +36,12 @@ export const InnerHeaderwrapper = styled.div`
   align-items: center;
 
   @media (max-width: ${BREAKPOINTS.TABLET}) {
-    padding: 0 24px;
+    padding: 0 20px;
+  }
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    padding: 0 12px;
+    gap: 8px;
   }
 `;
 
@@ -32,6 +49,14 @@ export const PageTitle = styled.h2`
   font-size: 20px;
   font-weight: 700;
   color: ${COLOR.DARK};
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    font-size: 17px;
+  }
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    font-size: 15px;
+  }
 `;
 
 export const HeaderTitle = styled(Link)`
@@ -57,15 +82,22 @@ export const ButtonWrapper = styled.div`
   display: flex;
   align-items: center;
   gap: 16px;
+  flex-shrink: 0;
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    gap: 10px;
+  }
 
   @media (max-width: ${BREAKPOINTS.MOBILE}) {
-    flex-direction: column;
-    width: 100%;
-    gap: 8px;
+    gap: 6px;
   }
 `;
 
 export const GoToHomeButton = styled(Link)`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   padding: 8px 24px;
   background-color: ${COLOR.WHITE};
   border-radius: 999px;
@@ -75,6 +107,7 @@ export const GoToHomeButton = styled(Link)`
   font-weight: 600;
   color: ${COLOR.PRIMARY};
   transition: all 0.3s ease;
+  white-space: nowrap;
 
   &:hover {
     background-color: ${COLOR.PRIMARY};
@@ -83,9 +116,14 @@ export const GoToHomeButton = styled(Link)`
     box-shadow: 0 4px 8px ${COLOR.SHADOW};
   }
 
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    padding: 6px 18px;
+    font-size: 13px;
+  }
+
   @media (max-width: ${BREAKPOINTS.MOBILE}) {
-    width: 100%;
-    text-align: center;
+    padding: 6px 14px;
+    font-size: 12px;
   }
 `;
 
@@ -108,5 +146,51 @@ export const ToggleButton = styled.button`
 
   svg {
     display: block;
+  }
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    display: none;
+  }
+`;
+
+export const HamburgerButton = styled.button`
+  display: none;
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: ${COLOR.DARK};
+    padding: 8px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background-color: ${COLOR.LIGHT};
+      color: ${COLOR.PRIMARY};
+    }
+
+    svg {
+      display: block;
+    }
+  }
+`;
+
+export const HomeButtonText = styled.span`
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    display: none;
+  }
+`;
+
+export const HomeButtonIcon = styled.span`
+  display: none;
+  align-items: center;
+  justify-content: center;
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    display: flex;
   }
 `;

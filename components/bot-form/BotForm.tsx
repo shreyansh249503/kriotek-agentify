@@ -21,6 +21,8 @@ import {
   UploadContainer,
   UploadButton,
   RemoveButton,
+  LeftContainer,
+  ContactGrid,
 } from "./styled";
 import { CreateBotInput } from "@/types/bot";
 import { CustomSelect } from "../custom-select";
@@ -140,7 +142,7 @@ export const BotForm = ({
   return (
     <Form onSubmit={handleSubmit}>
       <FormContainer>
-        <div>
+        <LeftContainer>
           <FormGrid>
             <TopRow>
               <FormSection>
@@ -290,14 +292,7 @@ export const BotForm = ({
               </Field>
 
               {form.contactEnabled && (
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: "24px",
-                    marginTop: "10px",
-                  }}
-                >
+                <ContactGrid>
                   <div style={{ gridColumn: "1 / -1" }}>
                     <Field>
                       <Label>Notification Email</Label>
@@ -345,7 +340,7 @@ export const BotForm = ({
                       Sent to the user after they provide their email.
                     </HelperText>
                   </Field>
-                </div>
+                </ContactGrid>
               )}
             </FormSection>
           </FormGrid>
@@ -353,7 +348,7 @@ export const BotForm = ({
           <Button type="submit" disabled={loading}>
             {loading ? "Saving..." : submitLabel}
           </Button>
-        </div>
+        </LeftContainer>
         <SideContainer>
           <BotPreview
             name={form.name || ""}
