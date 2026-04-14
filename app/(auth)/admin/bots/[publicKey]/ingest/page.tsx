@@ -18,10 +18,19 @@ import {
   SuccessContainer,
   ChunksText,
   FileUploadZone,
+  ProgressWrapper,
+  CircularProgressBox,
+  SvgCircle,
+  ProgressCircleBg,
+  ProgressCircleFill,
+  PercentageText,
+  StatusLabel,
+  ProgressSubText,
 } from "./styled";
 import { CloudArrowUpIcon } from "@phosphor-icons/react";
 import { EmbedSuccess } from "@/components";
 import { useBreadcrumb } from "@/context/BreadcrumbContext";
+import { motion, AnimatePresence } from "framer-motion";
 
 type Mode = "text" | "url" | "pdf";
 
@@ -36,15 +45,29 @@ export default function IngestPage() {
   const [success, setSuccess] = useState(false);
   const [chunks, setChunks] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [progress, setProgress] = useState(0);
+  const [status, setStatus] = useState("");
 
   async function ingest() {
     setLoading(true);
     setError(null);
+    setProgress(0);
+    setStatus("Initializing...");
+
+    const progressInterval = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 95) return prev;
+        const remaining = 95 - prev;
+        const jump = Math.max(1, Math.floor(remaining / 10)); // Slows down as it gets closer
+        return prev + jump;
+      });
+    }, 800);
 
     try {
       const session = await supabase.auth.getSession();
 
       if (mode === "text") {
+        setStatus("Processing content...");
         await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/ingest`, {
           method: "POST",
           headers: {
@@ -56,11 +79,13 @@ export default function IngestPage() {
             content,
           }),
         });
-
+        setProgress(100);
+        setStatus("Finalized!");
         setSuccess(true);
       }
 
       if (mode === "url") {
+        setStatus("Crawling website...");
         const res = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL}/api/ingest-url`,
           {
@@ -81,6 +106,7 @@ export default function IngestPage() {
         if (data.alreadyCrawled) {
           setError("⚠ This URL was already crawled earlier.");
           setLoading(false);
+          clearInterval(progressInterval);
           return;
         }
 
@@ -88,11 +114,14 @@ export default function IngestPage() {
           throw new Error(data.error || "URL ingest failed");
         }
 
+        setStatus("Saving knowledge...");
+        setProgress(100);
         setChunks(data.chunksIngested);
         setSuccess(true);
       }
       if (mode === "pdf") {
         if (!pdfFile) throw new Error("Please select a PDF");
+        setStatus("Uploading PDF...");
 
         const form = new FormData();
         form.append("file", pdfFile);
@@ -109,6 +138,8 @@ export default function IngestPage() {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "PDF ingest failed");
 
+        setStatus("Extracting data...");
+        setProgress(100);
         setChunks(data.chunks);
         setSuccess(true);
       }
@@ -119,9 +150,21 @@ export default function IngestPage() {
         setError("Something went wrong");
       }
     } finally {
+      clearInterval(progressInterval);
       setLoading(false);
     }
   }
+
+  const getEngagementMessage = (pct: number) => {
+    if (pct === 0) return "Waking up the engine...";
+    if (pct < 15) return "Starting the ingestion process...";
+    if (pct < 35) return "Scanning and analyzing content...";
+    if (pct < 55) return "Stay with us, we're halfway there!";
+    if (pct < 75) return "Processing knowledge chunks...";
+    if (pct < 90) return "Almost done, finalizing everything...";
+    if (pct < 100) return "Wrapping up for a perfect finish...";
+    return "Success! Knowledge ingested successfully.";
+  };
   useEffect(() => {
     const fetchBotName = async () => {
       const { data } = await supabase
@@ -221,7 +264,36 @@ export default function IngestPage() {
           </FormSection>
         )}
 
-        {loading && <LoadingText> Processing your content...</LoadingText>}
+        {loading && (
+          <ProgressWrapper>
+            <CircularProgressBox>
+              <SvgCircle>
+                <ProgressCircleBg cx="60" cy="60" r="54" />
+                <ProgressCircleFill cx="60" cy="60" r="54" $percent={progress} />
+              </SvgCircle>
+              <PercentageText>
+                {progress}
+                <span>%</span>
+              </PercentageText>
+            </CircularProgressBox>
+
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={getEngagementMessage(progress)}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.4 }}
+              >
+                <StatusLabel>{getEngagementMessage(progress)}</StatusLabel>
+              </motion.div>
+            </AnimatePresence>
+
+            <ProgressSubText>
+              Please wait, we are building your bot&apos;s brain...
+            </ProgressSubText>
+          </ProgressWrapper>
+        )}
 
         {error && <ErrorText>{error}</ErrorText>}
 

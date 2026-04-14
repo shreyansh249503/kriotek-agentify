@@ -277,3 +277,76 @@ export const ChunksText = styled.p`
     font-size: 20px;
   }
 `;
+
+export const ProgressWrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 40px 0;
+  width: 100%;
+  animation: fadeIn 0.5s ease-out;
+`;
+
+export const CircularProgressBox = styled.div`
+  position: relative;
+  width: 120px;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+export const SvgCircle = styled.svg`
+  width: 120px;
+  height: 120px;
+  transform: rotate(-90deg);
+`;
+
+export const ProgressCircleBg = styled.circle`
+  fill: none;
+  stroke: ${COLOR.LIGHT};
+  stroke-width: 8;
+`;
+
+export const ProgressCircleFill = styled.circle<{ $percent: number }>`
+  fill: none;
+  stroke: ${COLOR.PRIMARY};
+  stroke-width: 8;
+  stroke-linecap: round;
+  stroke-dasharray: 339.292; /* 2 * PI * R (54) */
+  stroke-dashoffset: ${({ $percent }) => 339.292 - (339.292 * $percent) / 100};
+  transition: stroke-dashoffset 0.4s ease-out;
+`;
+
+export const PercentageText = styled.div`
+  position: absolute;
+  font-size: 24px;
+  font-weight: 800;
+  color: ${COLOR.DARK};
+  display: flex;
+  align-items: baseline;
+
+  span {
+    font-size: 14px;
+    font-weight: 600;
+    margin-left: 2px;
+  }
+`;
+
+export const StatusLabel = styled.p`
+  font-size: 20px;
+  font-weight: 700;
+  color: ${COLOR.DARK};
+  margin: 10px 0;
+  text-align: center;
+  min-height: 30px;
+`;
+
+export const ProgressSubText = styled.p`
+  font-size: 14px;
+  color: ${COLOR.TEXT_SECONDARY};
+  margin-top: 5px;
+  font-weight: 500;
+`;
