@@ -214,3 +214,36 @@ export const PersonLogo = styled(Image)`
     transform: scale(1.05);
   }
 `;
+
+export const DashboardButton = styled.p`
+  width: fit-content;
+  text-decoration: none;
+  color: ${COLOR.TEXT_SECONDARY};
+  font-weight: 500;
+  font-size: 15px;
+  transition: all 0.2s ease;
+  position: relative;
+  cursor: pointer ;
+
+  &::after {
+    content: "";
+    position: absolute;
+    bottom: -4px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: ${COLOR.PRIMARY};
+    transition: width 0.3s ease;
+  }
+
+  &:hover {
+    color: ${COLOR.DARK};
+    &::after {
+      width: 100%;
+    }
+  }
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    padding-right: 20px ;
+  }
+`;

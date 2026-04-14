@@ -2,7 +2,8 @@ import styled from "styled-components";
 import { BREAKPOINTS, COLOR } from "@/styles";
 
 export const EmbedSuccessContainer = styled.div`
-  margin-top: 32px;
+  width: 100%;
+  min-height: 500px;
   padding: 24px;
   border: 1px solid ${COLOR.BORDER};
   border-radius: 16px;
@@ -10,7 +11,6 @@ export const EmbedSuccessContainer = styled.div`
 
   @media (max-width: ${BREAKPOINTS.MOBILE}) {
     padding: 16px;
-    margin-top: 24px;
     border-radius: 12px;
   }
 `;

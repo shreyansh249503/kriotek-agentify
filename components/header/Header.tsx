@@ -16,9 +16,9 @@ import {
   DrawerContent,
   DrawerLinks,
   DrawerAuth,
+  DashboardButton,
 } from "./styled";
 import BotLogo from "@/assets/images/Agentify logo black.png";
-import PersonAvatar from "@/assets/images/person-avatar.png";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import { List, X } from "@phosphor-icons/react";
@@ -53,13 +53,9 @@ export const Header = () => {
 
         <LoginSignupContainer>
           {user ? (
-            <PersonLogo
-              src={PersonAvatar}
-              alt="User Avatar"
-              width={40}
-              height={40}
-              onClick={() => router.push("/admin")}
-            />
+
+            <DashboardButton onClick={() => router.push("/admin")}>Dashboard</DashboardButton>
+            
           ) : (
             <>
               <AuthButton href="/login">Login</AuthButton>
