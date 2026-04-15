@@ -443,8 +443,8 @@ def _valid_video_length(raw: int, temporal_ratio: int = 4) -> int:
 _jobs: dict = {}
 _thread_pool = concurrent.futures.ThreadPoolExecutor(max_workers=1)
 
-OUTPUT_HEIGHT = 768
-OUTPUT_WIDTH  = 768
+OUTPUT_HEIGHT = 512
+OUTPUT_WIDTH  = 512
 
 
 def _run_echomimic(job_id: str, image_path: str, audio_path: str, prompt: str):
@@ -507,6 +507,7 @@ def _run_echomimic(job_id: str, image_path: str, audio_path: str, prompt: str):
                 use_dynamic_acfg=False,
                 shift=5.0,
                 cfg_skip_ratio=0.0,
+                return_dict=False,
             )
 
         # ── Extract video tensor from pipeline output ─────────────────────
