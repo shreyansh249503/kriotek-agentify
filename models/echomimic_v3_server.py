@@ -509,13 +509,25 @@ def _run_echomimic(job_id: str, image_path: str, audio_path: str, prompt: str):
                 cfg_skip_ratio=0.0,
             )
 
+        # ── Extract video tensor from pipeline output ─────────────────────
+        # WanFunInpaintAudioPipeline returns a tuple or PipelineOutput object.
+        # Extract the raw video tensor before indexing with [:, :, :num_frames].
+        if isinstance(output, tuple):
+            videos = output[0]
+        elif hasattr(output, "frames"):
+            videos = output.frames
+        elif hasattr(output, "videos"):
+            videos = output.videos
+        else:
+            videos = output
+
         # ── Save video ────────────────────────────────────────────────────
         result_dir = _OUTPUT_DIR / job_id
         result_dir.mkdir(exist_ok=True)
         tmp_path   = str(result_dir / "silent.mp4")
         final_path = str(result_dir / "result.mp4")
 
-        save_videos_grid(output[:, :, :num_frames], tmp_path, fps=fps)
+        save_videos_grid(videos[:, :, :num_frames], tmp_path, fps=fps)
 
         from moviepy import AudioFileClip, VideoFileClip
         video_clip = VideoFileClip(tmp_path)
