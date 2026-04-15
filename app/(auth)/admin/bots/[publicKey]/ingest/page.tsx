@@ -178,14 +178,17 @@ export default function IngestPage() {
       }
 
       await Promise.all(tasks);
+      clearInterval(progressInterval);
       setProgress(100);
+      await new Promise((resolve) => setTimeout(resolve, 800));
       setSuccess(true);
+      setLoading(false);
+
     } catch (err: unknown) {
-      if (err instanceof Error) setError(err.message);
-      else setError("Something went wrong");
-    } finally {
       clearInterval(progressInterval);
       setLoading(false);
+      if (err instanceof Error) setError(err.message);
+      else setError("Something went wrong");
     }
   }
 

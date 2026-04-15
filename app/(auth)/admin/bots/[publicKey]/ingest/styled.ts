@@ -1,5 +1,20 @@
 import { BREAKPOINTS, COLOR } from "@/styles";
-import styled from "styled-components";
+import styled, { keyframes } from "styled-components";
+
+const pulse = keyframes`
+  0% {
+    opacity: 0.8;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+  100% {
+    opacity: 0.8;
+    transform: translateY(0);
+  }
+`;
 
 export const NewBotContainer = styled.div`
   width: 100%;
@@ -318,6 +333,7 @@ export const StatusLabel = styled.p`
   margin: 10px 0;
   text-align: center;
   min-height: 30px;
+  animation: ${pulse} 2s ease-in-out infinite;
 `;
 
 export const ProgressSubText = styled.p`
