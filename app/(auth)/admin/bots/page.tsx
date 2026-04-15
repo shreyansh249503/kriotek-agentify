@@ -26,6 +26,7 @@ import {
   LoadingContainer,
   BotIconWrapper,
   GlobalBotsStyle,
+  TableWrapper,
 } from "./styled";
 import { RobotIcon, SpinnerIcon } from "@phosphor-icons/react";
 import { useBots } from "@/hooks/useBot";
@@ -87,6 +88,7 @@ export default function BotsPage() {
 
       {filteredBots.length > 0 ? (
         <TableContainer>
+          <TableWrapper>
           <StyledTable>
             <TableHead>
               <TableRow>
@@ -171,7 +173,8 @@ export default function BotsPage() {
                 );
               })}
             </TableBody>
-          </StyledTable>
+            </StyledTable>
+            </TableWrapper>
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}
