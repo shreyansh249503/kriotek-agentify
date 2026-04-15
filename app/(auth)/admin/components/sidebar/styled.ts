@@ -38,10 +38,23 @@ export const LogoSection = styled.div<{ $isCollapsed?: boolean }>`
   min-height: 48px;
 `;
 
-export const LogoImage = styled(Image)<{ $isCollapsed?: boolean }>`
+export const LogoImage = styled(Image)<{ $isCollapsed?: boolean; $type?: "full" | "short" }>`
   width: ${(props) => (props.$isCollapsed ? "40px" : "160px")};
-  height: ${(props) => (props.$isCollapsed ? "40px" : "50px ")};
+  height: ${(props) => (props.$isCollapsed ? "40px" : "50px")};
   object-fit: contain;
+  transition: all 0.3s ease;
+  display: ${(props) => {
+    if (props.$type === "short") return props.$isCollapsed ? "block" : "none";
+    return props.$isCollapsed ? "none" : "block";
+  }};
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    ${LogoSection} & {
+      width: 40px;
+      height: 40px;
+      display: ${(props) => (props.$type === "short" ? "block" : "none")};
+    }
+  }
 `;
 
 export const LogoText = styled.span`

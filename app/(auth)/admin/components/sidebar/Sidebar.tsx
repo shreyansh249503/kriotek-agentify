@@ -83,11 +83,18 @@ export const Sidebar = () => {
           $isCollapsed={isCollapsed}
           onClick={() => router.push("/admin")}
         >
-          {isCollapsed ? (
-            <LogoImage $isCollapsed={isCollapsed} src={BotLogoShort} alt="Logo" />
-          ) : (
-            <LogoImage $isCollapsed={isCollapsed} src={BotLogo} alt="Logo" />
-          )}
+          <LogoImage
+            $isCollapsed={isCollapsed}
+            src={BotLogo}
+            alt="Logo"
+            $type="full"
+          />
+          <LogoImage
+            $isCollapsed={isCollapsed}
+            src={BotLogoShort}
+            alt="Logo"
+            $type="short"
+          />
         </LogoSection>
 
         <NavSection>
