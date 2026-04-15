@@ -38,6 +38,8 @@ export async function PUT(
     contactPrompt,
     contactEmailMessage,
     logoUrl,
+    ecommerceEnabled,
+    ecommercePrompt,
   } = body;
 
   const db = await getDb();
@@ -51,6 +53,8 @@ export async function PUT(
     contact_prompt: contactPrompt,
     contact_email_message: contactEmailMessage,
     logo_url: logoUrl,
+    ecommerce_enabled: ecommerceEnabled,
+    ecommerce_prompt: ecommercePrompt,
   });
 
   return Response.json({ status: "ok" });

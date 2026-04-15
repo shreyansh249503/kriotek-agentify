@@ -38,6 +38,12 @@ export class Bot {
   @Column({ name: "logo_url", nullable: true })
   logo_url!: string;
 
+  @Column({ name: "ecommerce_enabled", default: false })
+  ecommerce_enabled!: boolean;
+
+  @Column({ name: "ecommerce_prompt", nullable: true })
+  ecommerce_prompt!: string;
+
   @OneToMany(() => Lead, (lead) => lead.bot)
   leads!: Lead[];
 

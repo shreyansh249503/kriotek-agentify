@@ -48,6 +48,8 @@ export const BotForm = ({
     contactEmailMessage:
       "Thanks for reaching out! Our team will contact you shortly.",
     logoUrl: "",
+    ecommerceEnabled: false,
+    ecommercePrompt: "",
   };
 
   const [form, setForm] = useState<CreateBotInput>(
@@ -65,6 +67,8 @@ export const BotForm = ({
           initialData.contact_email_message ??
           defaultValues.contactEmailMessage,
         logoUrl: initialData.logo_url ?? "",
+        ecommerceEnabled: initialData.ecommerce_enabled ?? false,
+        ecommercePrompt: initialData.ecommerce_prompt ?? "",
       }
       : defaultValues,
   );
@@ -87,6 +91,8 @@ export const BotForm = ({
           initialData.contact_email_message ??
           "Thanks for reaching out! Our team will contact you shortly.",
         logoUrl: initialData.logo_url ?? "",
+        ecommerceEnabled: initialData.ecommerce_enabled ?? false,
+        ecommercePrompt: initialData.ecommerce_prompt ?? "",
       });
     } else {
       setForm(defaultValues);
@@ -340,6 +346,48 @@ export const BotForm = ({
                       Sent to the user after they provide their email.
                     </HelperText>
                   </Field>
+                </ContactGrid>
+              )}
+            </FormSection>
+
+            <FormSection>
+              <SectionHeader>
+                <SectionTitle>E-Commerce / Sales Settings</SectionTitle>
+              </SectionHeader>
+
+              <Field>
+                <ToggleContainer>
+                  <ToggleSwitch
+                    checked={form.ecommerceEnabled || false}
+                    onClick={() =>
+                      update("ecommerceEnabled", !form.ecommerceEnabled)
+                    }
+                  />
+                  <span style={{ fontWeight: 600 }}>Enable E-Commerce Mode</span>
+                </ToggleContainer>
+                <HelperText>
+                  Allow the bot to pitch products and share checkout links based on the conversation.
+                </HelperText>
+              </Field>
+
+              {form.ecommerceEnabled && (
+                <ContactGrid>
+                  <div style={{ gridColumn: "1 / -1" }}>
+                    <Field>
+                      <Label>Product Catalog & Sales Instructions</Label>
+                      <TextArea
+                        disabled={!form.ecommerceEnabled}
+                        placeholder="Provide details about your products, pricing, and the exact links the bot should share as a 'pitchman'..."
+                        value={form.ecommercePrompt || ""}
+                        onChange={(e) => update("ecommercePrompt", e.target.value)}
+                        rows={6}
+                        style={{ minHeight: "120px" }}
+                      />
+                      <HelperText>
+                        List out your products, the links to buy them, and any specific convincing strategies the bot should use.
+                      </HelperText>
+                    </Field>
+                  </div>
                 </ContactGrid>
               )}
             </FormSection>

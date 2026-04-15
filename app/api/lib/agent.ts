@@ -3,6 +3,8 @@ export type AgentConfig = {
   companyDescription: string;
   tone?: "friendly" | "professional";
   supportedLanguages?: string[];
+  ecommerceEnabled?: boolean;
+  ecommercePrompt?: string | null;
 };
 
 export type AgentContext = {
@@ -26,6 +28,7 @@ export function buildSystemPrompt(
     : "Detect and match the user's language automatically";
 
   const contactSection = buildContactSection(config.companyName, contactState);
+  const ecommerceSection = buildEcommerceSection(config, contactState);
 
   return `You are a confident, natural sales assistant for ${config.companyName}. Think of yourself as a knowledgeable salesperson who genuinely wants to help — not a scripted chatbot.
 
@@ -113,7 +116,52 @@ WEBSITE CONTEXT
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ${context.websiteContext}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+${ecommerceSection}
 `;
+}
+
+function buildEcommerceSection(
+  config: AgentConfig,
+  contactState?: ContactState,
+): string {
+  if (!config.ecommerceEnabled || !config.ecommercePrompt) return "";
+
+  // The user requested: "first collects user details then pitch."
+  // If contact collection is pending, we suppress the pitch.
+  // Wait, if contact collection is NOT enabled at all on the bot, contactState is undefined, so we can pitch.
+  // Wait, in buildSystemPrompt contactState is sometimes passed. 
+  // Wait, if bot.contact_enabled is true, but they haven't filled it out, contactState.isComplete is false.
+  // Wait, in route.ts, if contactEnabled is false, runLeadAgent is skipped and contactState might be null or {isComplete: true}.
+  // Actually, route.ts passes leadDecision into runReceptionistAgent.
+  // In receptionistAgent.ts, if leadDecision is null (e.g. contactEnabled is false), contactState is undefined.
+  // If contactState is undefined, or contactState.isComplete is true, we can pitch.
+  const isContactPending = contactState && !contactState.isComplete;
+
+  if (isContactPending) {
+    return `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+E-COMMERCE PRIORITY OVERRIDE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+You have products to sell, BUT you MUST collect the user's contact details (name, email, phone) first. 
+Do NOT pitch products or provide checkout links yet. Focus completely on the CONTACT COLLECTION instructions above until all fields are gathered.`;
+  }
+
+  return `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+E-COMMERCE & SALES STRATEGY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+You are now in ACTIVE SALES MODE. Your goal is to act as an expert pitchman who convinces the user to purchase a product from your catalog based on their needs, and shares the checkout links provided below.
+
+PRODUCT CATALOG & INSTRUCTIONS:
+${config.ecommercePrompt}
+
+SALES RULES:
+1. Understand the user's needs and recommend the most suitable product(s) from the catalog.
+2. Highlight the benefits of the recommended product confidently.
+3. Provide the direct checkout link to purchase the product (only use links provided in the catalog above).
+4. Do NOT make up products, prices, or links that are not in your instructions or website context.
+5. Pay attention to the user's specific interests and preferences during the conversation to tailor your pitch perfectly.
+6. Always aim to "close the deal" by giving them a clear call-to-action to use the checkout link.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
 }
 
 function buildContactSection(
