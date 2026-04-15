@@ -246,6 +246,81 @@ _wav2vec_extractor: Optional[Wav2Vec2FeatureExtractor] = None
 _vae_temporal_ratio: int = 4   # populated from config at load time
 _models_ready = False
 
+# Cache for text embeddings so multi-chunk jobs (same prompt) only encode once
+_EMBED_CACHE: dict = {}
+
+
+def _patch_encode_prompt_gpu_swap(pipeline: "WanFunInpaintAudioPipeline") -> None:
+    """Monkey-patch pipeline.encode_prompt to run the UMT5-XXL text encoder on GPU.
+
+    Strategy (CUDA only):
+      1. Move transformer → CPU  (frees ~6 GB VRAM)
+      2. Move text_encoder → GPU (needs ~20 GB — now fits in the freed space)
+      3. Encode prompt on GPU    (seconds instead of minutes)
+      4. Move text_encoder → CPU (restore)
+      5. Move transformer → GPU  (restore for denoising)
+
+    Also caches embeddings by (prompt, negative_prompt) hash so that the second
+    and subsequent chunks of a multi-chunk job skip encoding entirely.
+    """
+    if not _CUDA:
+        return  # MPS already uses model_cpu_offload — no manual swap needed
+
+    import hashlib
+    import types
+
+    _orig_encode = pipeline.encode_prompt  # bound method
+
+    def _encode_with_gpu_swap(*args, **kwargs):
+        # ── Build cache key ───────────────────────────────────────────────
+        prompt      = kwargs.get("prompt")      or (args[0] if args else "")
+        neg_prompt  = kwargs.get("negative_prompt") or (args[1] if len(args) > 1 else "")
+        cache_key   = hashlib.md5(f"{prompt}||{neg_prompt}".encode()).hexdigest()
+
+        if cache_key in _EMBED_CACHE:
+            print("[EchoMimic] encode_prompt → cache hit, skipping GPU swap")
+            # Move cached CPU tensors to current execution device
+            cached = _EMBED_CACHE[cache_key]
+            return tuple(
+                t.to(DEVICE) if isinstance(t, torch.Tensor) else t
+                for t in cached
+            )
+
+        print("[EchoMimic] encode_prompt → swapping transformer to CPU, text_encoder to GPU…")
+        # ── Step 1: free VRAM by moving transformer to CPU ────────────────
+        pipeline.transformer.to("cpu")
+        torch.cuda.empty_cache()
+        gc.collect()
+
+        # ── Step 2: move text_encoder to GPU ──────────────────────────────
+        pipeline.text_encoder.to(DEVICE)
+        vram_used = torch.cuda.memory_allocated() / 1e9
+        print(f"[EchoMimic]   text_encoder on GPU — VRAM used: {vram_used:.1f} GB")
+
+        try:
+            result = _orig_encode(*args, **kwargs)
+        finally:
+            # ── Step 3: always restore, even if encoding raised ───────────
+            print("[EchoMimic]   restoring text_encoder → CPU, transformer → GPU…")
+            pipeline.text_encoder.to("cpu")
+            torch.cuda.empty_cache()
+            gc.collect()
+            pipeline.transformer.to(DEVICE)
+            torch.cuda.empty_cache()
+            vram_used = torch.cuda.memory_allocated() / 1e9
+            print(f"[EchoMimic]   transformer restored — VRAM used: {vram_used:.1f} GB")
+
+        # ── Cache result on CPU ───────────────────────────────────────────
+        result_tuple = result if isinstance(result, tuple) else (result,)
+        _EMBED_CACHE[cache_key] = tuple(
+            t.detach().cpu() if isinstance(t, torch.Tensor) else t
+            for t in result_tuple
+        )
+        return result
+
+    pipeline.encode_prompt = _encode_with_gpu_swap
+    print("[EchoMimic] encode_prompt patched: GPU model-swap + embedding cache enabled")
+
 
 def _load_models():
     global _pipeline, _wav2vec_model, _wav2vec_extractor, _vae_temporal_ratio, _models_ready
@@ -385,6 +460,13 @@ def _load_models():
         print("[EchoMimic] MPS — enabling model_cpu_offload")
         _pipeline.enable_model_cpu_offload()
 
+    # ── GPU text encoding patch ───────────────────────────────────────────
+    # On CUDA: patch encode_prompt to temporarily swap transformer→CPU and
+    # text_encoder→GPU so UMT5-XXL runs at GPU speed (seconds, not minutes).
+    # Embeddings are cached per (prompt, negative_prompt) so multi-chunk jobs
+    # pay the encoding cost only once.
+    _patch_encode_prompt_gpu_swap(_pipeline)
+
     _models_ready = True
     print("[EchoMimic] All models ready.")
 
@@ -447,80 +529,166 @@ OUTPUT_HEIGHT = 512
 OUTPUT_WIDTH  = 512
 
 
+# ── Per-chunk frame count — safe for 24 GB VRAM at 512×512 ──────────────────
+# (121-1) % 4 == 0 ✓ ≈ 4.8 s per chunk
+CHUNK_FRAMES   = 121
+# Hard cap on total video length (30 s = 750 frames at 25 fps)
+MAX_TOTAL_FRAMES = 750
+
+
+def _pipeline_output_to_tensor(output) -> torch.Tensor:
+    """Extract the video tensor from whatever the pipeline returns."""
+    if isinstance(output, tuple):
+        return output[0]
+    if hasattr(output, "frames"):
+        return output.frames
+    if hasattr(output, "videos"):
+        return output.videos
+    return output
+
+
+def _last_frame_as_image(videos: torch.Tensor) -> Image.Image:
+    """Extract the last frame of a [B,C,T,H,W] or [C,T,H,W] tensor as PIL."""
+    v = videos[0] if videos.dim() == 5 else videos   # → [C, T, H, W]
+    last = v[:, -1, :, :].cpu().float()               # → [C, H, W]
+    if last.min() < -0.1:                             # [-1,1] → [0,1]
+        last = (last + 1.0) / 2.0
+    last = last.clamp(0.0, 1.0)
+    arr = (last * 255).byte().permute(1, 2, 0).numpy()
+    return Image.fromarray(arr)
+
+
+def _generate_one_chunk(
+    anchor_image: Image.Image,
+    chunk_audio: np.ndarray,
+    sr: int,
+    num_frames: int,
+    prompt: str,
+    seed: int,
+) -> torch.Tensor:
+    """Run the pipeline for a single chunk. Returns raw video tensor."""
+    audio_embeds = _get_audio_embed(chunk_audio, num_frames, sr)
+    audio_embeds = audio_embeds.to(device=DEVICE, dtype=DTYPE)
+
+    input_video, input_video_mask, clip_image = get_image_to_video_latent2(
+        anchor_image, None,
+        video_length=num_frames,
+        sample_size=[OUTPUT_HEIGHT, OUTPUT_WIDTH],
+    )
+
+    _gen_device = "cuda" if _CUDA else "cpu"
+    generator = torch.Generator(device=_gen_device).manual_seed(seed)
+
+    with torch.no_grad():
+        output = _pipeline(
+            prompt=prompt or "A person is speaking naturally, realistic, high quality.",
+            negative_prompt=(
+                "Gesture is bad. Gesture is unclear. Strange and twisted hands. "
+                "Bad hands. Bad fingers. Unclear and blurry hands."
+            ),
+            num_frames=num_frames,
+            audio_embeds=audio_embeds,
+            audio_scale=1.0,
+            ip_mask=None,
+            height=OUTPUT_HEIGHT,
+            width=OUTPUT_WIDTH,
+            guidance_scale=6.0,
+            audio_guidance_scale=3.0,
+            neg_scale=1.0,
+            neg_steps=0,
+            num_inference_steps=8,
+            video=input_video,
+            mask_video=input_video_mask,
+            clip_image=clip_image,
+            generator=generator,
+            use_dynamic_cfg=False,
+            use_dynamic_acfg=False,
+            shift=5.0,
+            cfg_skip_ratio=0.0,
+            return_dict=False,
+        )
+
+    videos = _pipeline_output_to_tensor(output)
+    torch.cuda.empty_cache()
+    gc.collect()
+    return videos
+
+
 def _run_echomimic(job_id: str, image_path: str, audio_path: str, prompt: str):
+    import time
     try:
+        t0 = time.time()
         print(f"[EchoMimic] job {job_id} — starting")
+
+        # Clear embed cache at job start — each job may use different prompts,
+        # and we don't want unbounded memory growth across many jobs.
+        # Within a single multi-chunk job the cache prevents redundant re-encoding.
+        _EMBED_CACHE.clear()
 
         # ── Load inputs ───────────────────────────────────────────────────
         ref_image = Image.open(image_path).convert("RGB")
         audio, sr = librosa.load(audio_path, sr=16000, mono=True)
-        audio = _loudness_norm(audio, sr)
+        audio     = _loudness_norm(audio, sr)
 
-        # ── Compute video length from audio duration ──────────────────────
-        fps = 25
+        # ── Compute total valid frame count ───────────────────────────────
+        fps        = 25
         raw_frames = max(17, int(len(audio) / sr * fps))
-        # Clamp to (n-1) % temporal_ratio == 0
-        num_frames = _valid_video_length(
+        raw_frames = min(raw_frames, MAX_TOTAL_FRAMES)
+        total_frames = _valid_video_length(
             int((raw_frames - 1) // _vae_temporal_ratio * _vae_temporal_ratio) + 1,
             _vae_temporal_ratio,
         )
-        audio = audio[: int(num_frames / fps * sr)]
-        print(f"[EchoMimic] job {job_id} — {num_frames} frames")
+        audio = audio[: int(total_frames / fps * sr)]
+        print(f"[EchoMimic] job {job_id} — {total_frames} frames ({total_frames/fps:.1f}s)")
 
-        # ── Audio embeddings ──────────────────────────────────────────────
-        audio_embeds = _get_audio_embed(audio, num_frames, sr)
-        audio_embeds = audio_embeds.to(device=DEVICE, dtype=DTYPE)
+        # ── Chunked generation ────────────────────────────────────────────
+        # Each chunk is CHUNK_FRAMES long. The last frame of chunk N becomes
+        # the anchor (reference portrait) for chunk N+1, maintaining temporal
+        # consistency across the full video.
+        chunk_tensors: list = []
+        anchor_image = ref_image
+        frame_cursor = 0
+        chunk_idx    = 0
 
-        # ── Image latents ─────────────────────────────────────────────────
-        input_video, input_video_mask, clip_image = get_image_to_video_latent2(
-            ref_image, None, video_length=num_frames, sample_size=[OUTPUT_HEIGHT, OUTPUT_WIDTH]
-        )
+        while frame_cursor < total_frames:
+            remaining    = total_frames - frame_cursor
+            chunk_frames = min(CHUNK_FRAMES, remaining)
+            chunk_frames = _valid_video_length(
+                int((chunk_frames - 1) // _vae_temporal_ratio * _vae_temporal_ratio) + 1,
+                _vae_temporal_ratio,
+            )
+            if chunk_frames < 17:
+                break
 
-        # ── Generator — diffusers requires CPU generator on MPS ───────────
-        _gen_device = "cuda" if _CUDA else "cpu"
-        generator = torch.Generator(device=_gen_device).manual_seed(42)
+            # Slice the audio window for this chunk
+            s0 = int(frame_cursor / fps * sr)
+            s1 = int((frame_cursor + chunk_frames) / fps * sr)
+            chunk_audio = audio[s0:s1]
 
-        # ── Pipeline call (matches infer_flash.py signature exactly) ─────
-        with torch.no_grad():
-            output = _pipeline(
-                prompt=prompt or "A person is speaking naturally, realistic, high quality.",
-                negative_prompt=(
-                    "Gesture is bad. Gesture is unclear. Strange and twisted hands. "
-                    "Bad hands. Bad fingers. Unclear and blurry hands."
-                ),
-                num_frames=num_frames,
-                audio_embeds=audio_embeds,
-                audio_scale=1.0,
-                ip_mask=None,
-                height=OUTPUT_HEIGHT,
-                width=OUTPUT_WIDTH,
-                guidance_scale=6.0,
-                audio_guidance_scale=3.0,
-                neg_scale=1.0,
-                neg_steps=0,
-                num_inference_steps=8,
-                video=input_video,
-                mask_video=input_video_mask,
-                clip_image=clip_image,
-                generator=generator,
-                use_dynamic_cfg=False,
-                use_dynamic_acfg=False,
-                shift=5.0,
-                cfg_skip_ratio=0.0,
-                return_dict=False,
+            chunk_idx += 1
+            n_chunks = max(1, -(-total_frames // CHUNK_FRAMES))   # ceiling div
+            print(f"[EchoMimic]   chunk {chunk_idx}/{n_chunks} — "
+                  f"frames {frame_cursor}–{frame_cursor+chunk_frames} "
+                  f"({frame_cursor/fps:.1f}s–{(frame_cursor+chunk_frames)/fps:.1f}s)")
+
+            videos = _generate_one_chunk(
+                anchor_image, chunk_audio, sr, chunk_frames, prompt,
+                seed=42 + chunk_idx,
             )
 
-        # ── Extract video tensor from pipeline output ─────────────────────
-        # WanFunInpaintAudioPipeline returns a tuple or PipelineOutput object.
-        # Extract the raw video tensor before indexing with [:, :, :num_frames].
-        if isinstance(output, tuple):
-            videos = output[0]
-        elif hasattr(output, "frames"):
-            videos = output.frames
-        elif hasattr(output, "videos"):
-            videos = output.videos
+            chunk_tensors.append(videos[:, :, :chunk_frames])
+
+            # Use last frame of this chunk as the next anchor
+            anchor_image = _last_frame_as_image(videos)
+            frame_cursor += chunk_frames
+
+        # ── Concatenate all chunks ────────────────────────────────────────
+        if len(chunk_tensors) == 1:
+            final_tensor = chunk_tensors[0]
         else:
-            videos = output
+            final_tensor = torch.cat(chunk_tensors, dim=2)   # [B, C, T, H, W]
+            print(f"[EchoMimic] concatenated {len(chunk_tensors)} chunks → "
+                  f"{final_tensor.shape[2]} frames")
 
         # ── Save video ────────────────────────────────────────────────────
         result_dir = _OUTPUT_DIR / job_id
@@ -528,20 +696,21 @@ def _run_echomimic(job_id: str, image_path: str, audio_path: str, prompt: str):
         tmp_path   = str(result_dir / "silent.mp4")
         final_path = str(result_dir / "result.mp4")
 
-        save_videos_grid(videos[:, :, :num_frames], tmp_path, fps=fps)
+        save_videos_grid(final_tensor, tmp_path, fps=fps)
 
         from moviepy import AudioFileClip, VideoFileClip
         video_clip = VideoFileClip(tmp_path)
-        audio_clip = AudioFileClip(audio_path).subclipped(0, num_frames / fps)
+        audio_clip = AudioFileClip(audio_path).subclipped(0, total_frames / fps)
         video_clip.with_audio(audio_clip).write_videofile(
             final_path, codec="libx264", audio_codec="aac", threads=2, logger=None
         )
         video_clip.close()
         os.remove(tmp_path)
 
+        elapsed = time.time() - t0
         _jobs[job_id]["video_path"] = final_path
         _jobs[job_id]["status"]     = "done"
-        print(f"[EchoMimic] job {job_id} done → {final_path}")
+        print(f"[EchoMimic] job {job_id} done → {final_path}  ({elapsed:.0f}s total)")
 
     except Exception as e:
         _jobs[job_id]["status"] = "failed"
