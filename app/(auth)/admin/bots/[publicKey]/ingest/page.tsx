@@ -351,7 +351,17 @@ export default function IngestPage() {
           onClose={handleClose}
           severity="error"
           variant="filled"
-          sx={{ width: "100%" , backgroundColor: "#fd9800"}}
+            sx={{
+              width: "100%",
+              backgroundColor: "#FFF7C7",
+              color: "#a0630e",
+              border: "1px solid #a0630e",
+              borderRadius: "8px",
+              padding: "6px 16px",
+              boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+              fontWeight: 500,
+              fontSize:"16px"
+            }}
         >
           {error}
         </Alert>
