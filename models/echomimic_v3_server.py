@@ -24,6 +24,16 @@ Start:
 # Enable PyTorch fallback for MPS ops that lack a Metal kernel
 import os
 os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
+
+import warnings
+# PyTorch's SDPA flash/memory-efficient backends silently drop padding masks.
+# For EchoMimic the sequences are fixed-length (no variable padding), so this
+# has no effect on output quality — suppress the log noise.
+warnings.filterwarnings(
+    "ignore",
+    message="Padding mask is disabled when using scaled_dot_product_attention",
+    category=UserWarning,
+)
 # Reduce CUDA allocator fragmentation — avoids OOM when a small allocation
 # fails even though enough total free memory exists across non-contiguous blocks.
 os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
@@ -460,9 +470,12 @@ def _load_models():
     if coefficients is not None:
         _pipeline.transformer.enable_teacache(
             coefficients,
-            num_steps=8,
+            num_steps=6,
             rel_l1_thresh=0.1,
-            num_skip_start_steps=5,
+            # Only skip caching on the very first 2 steps (high-noise regime
+            # where frame states change rapidly).  Previously 5 of 8 steps —
+            # meaning only 3 were ever cache-eligible.  Now 4 of 6 can be cached.
+            num_skip_start_steps=2,
             offload=False,
         )
         print("[EchoMimic] TeaCache enabled.")
@@ -598,18 +611,25 @@ def _generate_one_chunk(
     seed: int,
 ) -> torch.Tensor:
     """Run the pipeline for a single chunk. Returns raw video tensor."""
+    import time as _time
+
+    t_audio = _time.time()
     audio_embeds = _get_audio_embed(chunk_audio, num_frames, sr)
     audio_embeds = audio_embeds.to(device=DEVICE, dtype=DTYPE)
+    print(f"[EchoMimic]     audio embed: {_time.time()-t_audio:.1f}s")
 
+    t_latent = _time.time()
     input_video, input_video_mask, clip_image = get_image_to_video_latent2(
         anchor_image, None,
         video_length=num_frames,
         sample_size=[OUTPUT_HEIGHT, OUTPUT_WIDTH],
     )
+    print(f"[EchoMimic]     latent prep:  {_time.time()-t_latent:.1f}s")
 
     _gen_device = "cuda" if _CUDA else "cpu"
     generator = torch.Generator(device=_gen_device).manual_seed(seed)
 
+    t_denoise = _time.time()
     with torch.no_grad():
         output = _pipeline(
             prompt=prompt or "A person is speaking naturally, realistic, high quality.",
@@ -627,7 +647,9 @@ def _generate_one_chunk(
             audio_guidance_scale=3.0,
             neg_scale=1.0,
             neg_steps=0,
-            num_inference_steps=8,
+            # 6 steps (vs 8) — flow matching + FlowUniPC converges well at 6;
+            # combined with TeaCache this halves effective transformer calls.
+            num_inference_steps=6,
             video=input_video,
             mask_video=input_video_mask,
             clip_image=clip_image,
@@ -635,9 +657,14 @@ def _generate_one_chunk(
             use_dynamic_cfg=False,
             use_dynamic_acfg=False,
             shift=5.0,
-            cfg_skip_ratio=0.0,
+            # Skip CFG (classifier-free guidance) for the last 40% of steps.
+            # CFG doubles transformer calls per step; skipping it for late steps
+            # (low-noise refinement) saves ~2 forward passes with minimal
+            # quality impact since the trajectory is already well-defined.
+            cfg_skip_ratio=0.4,
             return_dict=False,
         )
+    print(f"[EchoMimic]     denoising:    {_time.time()-t_denoise:.1f}s")
 
     videos = _pipeline_output_to_tensor(output)
     torch.cuda.empty_cache()
