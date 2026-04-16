@@ -30,11 +30,16 @@ export const ProfileHeaderCard = styled(GlassPanel)`
   gap: 24px;
   padding: 32px;
   border-top: 4px solid ${COLOR.PRIMARY};
+  width: 100%;
+  max-width: 600px;
 
   @media (max-width: ${BREAKPOINTS.MOBILE}) {
     flex-direction: column;
     text-align: center;
-    padding: 24px 20px;
+    padding: 20px;
+  }
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    padding: 20px;
   }
 `;
 
@@ -91,11 +96,17 @@ export const ProfileInfo = styled.div`
 `;
 
 export const ProfileName = styled.h1`
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 800;
   color: ${COLOR.DARK};
   margin: 0;
-  /* letter-spacing: -0.5px; */
+`;
+
+export const ProfileEmailWrapper = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
 `;
 
 export const ProfileEmail = styled.p`
@@ -108,7 +119,7 @@ export const RoleBadge = styled.span`
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 14px;
+  padding: 10px;
   background: ${COLOR.PRIMARY}15;
   color: ${COLOR.PRIMARY};
   border-radius: 99px;
@@ -116,10 +127,9 @@ export const RoleBadge = styled.span`
   font-weight: 700;
   border: 1px solid ${COLOR.PRIMARY}33;
   width: fit-content;
-  margin-top: 4px;
 
   @media (max-width: ${BREAKPOINTS.MOBILE}) {
-    margin: 4px auto 0;
+    padding: 8px;
   }
 `;
 
@@ -128,18 +138,18 @@ export const FormSection = styled(GlassPanel)`
   flex-direction: column;
   background-color: ${COLOR.CREAM};
   border: 1px solid ${COLOR.PRIMARY};
-  gap: 24px;
+  gap: 32px;
+  width: 100%;
+  max-width: 800px;
 `;
 
 export const FormSectionTitle = styled.h2`
   font-size: 18px;
   font-weight: 700;
   color: ${COLOR.DARK};
-  margin: 0;
   display: flex;
   align-items: center;
   gap: 10px;
-  padding-bottom: 16px;
   border-bottom: 1px solid ${COLOR.BORDER}66;
 `;
 
@@ -184,11 +194,10 @@ export const Input = styled.input`
   }
 
   &::placeholder {
-    color: ${COLOR.TEXT_SECONDARY}88;
+    color: ${COLOR.TEXT_SECONDARY};
   }
 
   &:disabled {
-    background: ${COLOR.BACKGROUND_2};
     color: ${COLOR.TEXT_SECONDARY};
     cursor: not-allowed;
   }

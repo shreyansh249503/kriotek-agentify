@@ -1,4 +1,4 @@
-import { COLOR } from "@/styles";
+import { BREAKPOINTS, COLOR } from "@/styles";
 import styled from "styled-components";
 
 export const GlassPanel = styled.div`
@@ -12,6 +12,16 @@ export const GlassPanel = styled.div`
     inset 0 0 0 1px rgba(255, 255, 255, 0.5);
   padding: 28px;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    padding: 22px;
+    border-radius: 18px;
+  }
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    padding: 16px;
+    border-radius: 14px;
+  }
 `;
 
 export const StatCard = styled(GlassPanel)`
@@ -70,6 +80,12 @@ export const StatIconBox = styled.div<{ $color: string }>`
     color: ${COLOR.PRIMARY_HOVER};
     box-shadow: 0 8px 16px ${COLOR.PRIMARY}22;
   }
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+  }
 `;
 
 export const StatDelta = styled.span<{ $up?: boolean }>`
@@ -91,6 +107,15 @@ export const StatValue = styled.p`
   margin: 0;
   line-height: 1;
   letter-spacing: -1.2px;
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    font-size: 28px;
+  }
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    font-size: 24px;
+    letter-spacing: -0.8px;
+  }
 `;
 
 export const StatLabel = styled.p`

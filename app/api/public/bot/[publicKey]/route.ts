@@ -9,7 +9,7 @@ export async function GET(
   const db = await getDb();
   const bot = await db.getRepository(Bot).findOne({
     where: { public_key: publicKey },
-    select: ["name", "primary_color"],
+    select: ["name", "primary_color", "logo_url"],
   }).catch((err) => {
     console.log("Error", err);
     return null;

@@ -19,6 +19,7 @@ import {
   Input,
   SaveButton,
   DashboardWrapper,
+  ProfileEmailWrapper,
 } from "./styled";
 import { useCurrentUser } from "@/hooks/useAuth";
 import { Loader } from "@/components";
@@ -29,6 +30,7 @@ import {
   ShieldCheckIcon,
   CameraIcon,
   CircleNotchIcon,
+  PasswordIcon,
 } from "@phosphor-icons/react";
 import { SuccessMessage, ErrorMessage } from "./styled";
 
@@ -119,11 +121,13 @@ function ProfileForm({ user }: ProfileFormProps) {
 
         <ProfileInfo>
           <ProfileName>{formData.name || ""}</ProfileName>
-          <ProfileEmail>{formData.email}</ProfileEmail>
-          <RoleBadge>
-            <ShieldCheckIcon size={16} weight="fill" />
-            {formData.role}
-          </RoleBadge>
+          <ProfileEmailWrapper>
+            <ProfileEmail>{formData.email}</ProfileEmail>
+            <RoleBadge>
+              <ShieldCheckIcon size={20} weight="fill" />
+              {formData.role}
+            </RoleBadge>
+          </ProfileEmailWrapper>
         </ProfileInfo>
       </ProfileHeaderCard>
 
@@ -131,11 +135,11 @@ function ProfileForm({ user }: ProfileFormProps) {
         {successMsg && <SuccessMessage>{successMsg}</SuccessMessage>}
         {errorMsg && <ErrorMessage>{errorMsg}</ErrorMessage>}
 
+        <div style={{display: "flex", flexDirection: "column", gap: "20px"}}>
         <FormSectionTitle>
           <UserIcon size={20} weight="duotone" />
           Personal Information
         </FormSectionTitle>
-
         <FormGrid>
           <FormGroup>
             <Label>Full Name</Label>
@@ -146,16 +150,6 @@ function ProfileForm({ user }: ProfileFormProps) {
               placeholder="Enter full name"
             />
           </FormGroup>
-
-          {/* <FormGroup>
-            <Label>Last Name</Label>
-            <Input
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              placeholder="Enter last name"
-            />
-          </FormGroup> */}
 
           <FormGroup>
             <Label>Email Address</Label>
@@ -189,6 +183,15 @@ function ProfileForm({ user }: ProfileFormProps) {
               placeholder="Enter company name"
             />
           </FormGroup>
+        </FormGrid>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+          <FormSectionTitle>
+            <PasswordIcon size={26} weight="duotone" />
+            Change Password
+          </FormSectionTitle>
+          <FormGrid>
           <FormGroup>
             <Label>New Password</Label>
             <Input
@@ -209,8 +212,11 @@ function ProfileForm({ user }: ProfileFormProps) {
               placeholder="Confirm new password"
             />
           </FormGroup>
-        </FormGrid>
+          </FormGrid>
+        </div>
+
       </FormSection>
+      
 
       <SaveButton onClick={handleSave} disabled={isSaving}>
         {isSaving ? (

@@ -43,6 +43,14 @@ export const DashboardWrapper = styled.div`
   display: flex;
   flex-direction: column;
   gap: 32px;
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    gap: 24px;
+  }
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    gap: 18px;
+  }
 `;
 
 export const SectionTitle = styled.h2`
@@ -55,6 +63,16 @@ export const SectionTitle = styled.h2`
   display: flex;
   align-items: center;
   gap: 8px;
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    margin: 0 0 16px 0;
+  }
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    font-size: 12px;
+    margin: 0 0 12px 0;
+    gap: 6px;
+  }
 `;
 
 export const EmptyChart = styled.div`
@@ -77,6 +95,16 @@ export const GlassPanel = styled.div`
     inset 0 0 0 1px rgba(255, 255, 255, 0.5);
   padding: 28px;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    padding: 22px;
+    border-radius: 18px;
+  }
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    padding: 16px;
+    border-radius: 14px;
+  }
 `;
 
 export const StatCard = styled(GlassPanel)`
@@ -158,6 +186,15 @@ export const StatValue = styled.p`
   margin: 0;
   line-height: 1;
   letter-spacing: -1.2px;
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    font-size: 28px;
+  }
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    font-size: 24px;
+    letter-spacing: -0.8px;
+  }
 `;
 
 export const StatLabel = styled.p`
@@ -187,6 +224,15 @@ export const ChartWrapper = styled.div`
   width: 100%;
   height: 260px;
   margin-top: 10px;
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    height: 220px;
+  }
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    height: 200px;
+    margin-top: 6px;
+  }
 `;
 
 export const BotListItem = styled.div`
@@ -287,6 +333,18 @@ export const QuickActionCard = styled(Link)`
     box-shadow: 0 12px 28px rgba(0, 0, 0, 0.06);
     transform: translateX(8px) translateY(-2px);
   }
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    padding: 16px;
+    gap: 14px;
+    border-radius: 14px;
+  }
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    padding: 14px;
+    gap: 12px;
+    border-radius: 12px;
+  }
 `;
 
 export const QuickActionIcon = styled.div<{ $color: string }>`
@@ -300,6 +358,12 @@ export const QuickActionIcon = styled.div<{ $color: string }>`
   justify-content: center;
   flex-shrink: 0;
   box-shadow: 0 4px 10px ${({ $color }) => $color}15;
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+  }
 `;
 
 export const QuickActionText = styled.div`
@@ -369,6 +433,31 @@ export const PerformanceTable = styled.table`
 
   tr:hover td {
     background: rgba(0, 0, 0, 0.005);
+  }
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    font-size: 13px;
+
+    th {
+      padding: 10px 12px;
+      font-size: 10px;
+    }
+
+    td {
+      padding: 12px;
+    }
+  }
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    font-size: 12px;
+
+    th {
+      padding: 8px 10px;
+    }
+
+    td {
+      padding: 10px;
+    }
   }
 `;
 

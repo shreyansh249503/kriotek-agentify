@@ -18,6 +18,11 @@ import {
   TopRow,
   FormContainer,
   SideContainer,
+  UploadContainer,
+  UploadButton,
+  RemoveButton,
+  LeftContainer,
+  ContactGrid,
 } from "./styled";
 import { CreateBotInput } from "@/types/bot";
 import { CustomSelect } from "../custom-select";
@@ -42,23 +47,29 @@ export const BotForm = ({
     contactPrompt: "Would you like us to contact you for more details?",
     contactEmailMessage:
       "Thanks for reaching out! Our team will contact you shortly.",
+    logoUrl: "",
+    ecommerceEnabled: false,
+    ecommercePrompt: "",
   };
 
   const [form, setForm] = useState<CreateBotInput>(
     initialData
       ? {
-          name: initialData.name ?? "",
-          description: initialData.description ?? "",
-          tone: initialData.tone ?? "friendly",
-          primaryColor: initialData.primary_color ?? "#4f46e5",
-          contactEnabled: initialData.contact_enabled ?? false,
-          contactEmail: initialData.contact_email ?? "",
-          contactPrompt:
-            initialData.contact_prompt ?? defaultValues.contactPrompt,
-          contactEmailMessage:
-            initialData.contact_email_message ??
-            defaultValues.contactEmailMessage,
-        }
+        name: initialData.name ?? "",
+        description: initialData.description ?? "",
+        tone: initialData.tone ?? "friendly",
+        primaryColor: initialData.primary_color ?? "#4f46e5",
+        contactEnabled: initialData.contact_enabled ?? false,
+        contactEmail: initialData.contact_email ?? "",
+        contactPrompt:
+          initialData.contact_prompt ?? defaultValues.contactPrompt,
+        contactEmailMessage:
+          initialData.contact_email_message ??
+          defaultValues.contactEmailMessage,
+        logoUrl: initialData.logo_url ?? "",
+        ecommerceEnabled: initialData.ecommerce_enabled ?? false,
+        ecommercePrompt: initialData.ecommerce_prompt ?? "",
+      }
       : defaultValues,
   );
 
@@ -79,6 +90,9 @@ export const BotForm = ({
         contactEmailMessage:
           initialData.contact_email_message ??
           "Thanks for reaching out! Our team will contact you shortly.",
+        logoUrl: initialData.logo_url ?? "",
+        ecommerceEnabled: initialData.ecommerce_enabled ?? false,
+        ecommercePrompt: initialData.ecommerce_prompt ?? "",
       });
     } else {
       setForm(defaultValues);
@@ -92,6 +106,40 @@ export const BotForm = ({
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
+  const [uploading, setUploading] = useState(false);
+
+  async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 1024 * 1024) {
+      alert("File is too large. Max size is 1MB.");
+      return;
+    }
+
+    setUploading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.url) {
+        update("logoUrl", data.url);
+      } else {
+        alert(data.error || "Upload failed");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     await onSubmit(form);
@@ -100,7 +148,7 @@ export const BotForm = ({
   return (
     <Form onSubmit={handleSubmit}>
       <FormContainer>
-        <div>
+        <LeftContainer>
           <FormGrid>
             <TopRow>
               <FormSection>
@@ -158,6 +206,72 @@ export const BotForm = ({
                     This color will be used for buttons and accents.
                   </HelperText>
                 </Field>
+
+                <Field style={{ marginTop: "20px" }}>
+                  <Label>Bot Avatar</Label>
+                  <UploadContainer>
+                    {form.logoUrl ? (
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "12px",
+                        }}
+                      >
+                        <img
+                          src={form.logoUrl}
+                          alt="Bot Avatar"
+                          style={{
+                            width: "58px",
+                            height: "58px",
+                            borderRadius: "50%",
+                            objectFit: "cover",
+                            border: "1px solid #ddd",
+                          }}
+                        />
+                        <RemoveButton
+                          type="button"
+                          onClick={() => update("logoUrl", "")}
+                        >
+                          Remove
+                        </RemoveButton>
+                      </div>
+                    ) : (
+                      <UploadButton>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleLogoUpload}
+                          disabled={uploading}
+                        />
+                        {uploading ? (
+                          "Uploading..."
+                        ) : (
+                          <>
+                            <svg
+                              width="20"
+                              height="20"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                              <polyline points="17 8 12 3 7 8" />
+                              <line x1="12" y1="3" x2="12" y2="15" />
+                            </svg>
+                            Upload Image
+                          </>
+                        )}
+                      </UploadButton>
+                    )}
+                  </UploadContainer>
+                  <HelperText>
+                    Recommended: Square image, max 1MB.
+                  </HelperText>
+                </Field>
               </FormSection>
             </TopRow>
 
@@ -184,14 +298,7 @@ export const BotForm = ({
               </Field>
 
               {form.contactEnabled && (
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: "24px",
-                    marginTop: "10px",
-                  }}
-                >
+                <ContactGrid>
                   <div style={{ gridColumn: "1 / -1" }}>
                     <Field>
                       <Label>Notification Email</Label>
@@ -239,7 +346,49 @@ export const BotForm = ({
                       Sent to the user after they provide their email.
                     </HelperText>
                   </Field>
-                </div>
+                </ContactGrid>
+              )}
+            </FormSection>
+
+            <FormSection>
+              <SectionHeader>
+                <SectionTitle>E-Commerce / Sales Settings</SectionTitle>
+              </SectionHeader>
+
+              <Field>
+                <ToggleContainer>
+                  <ToggleSwitch
+                    checked={form.ecommerceEnabled || false}
+                    onClick={() =>
+                      update("ecommerceEnabled", !form.ecommerceEnabled)
+                    }
+                  />
+                  <span style={{ fontWeight: 600 }}>Enable E-Commerce Mode</span>
+                </ToggleContainer>
+                <HelperText>
+                  Allow the bot to pitch products and share checkout links based on the conversation.
+                </HelperText>
+              </Field>
+
+              {form.ecommerceEnabled && (
+                <ContactGrid>
+                  <div style={{ gridColumn: "1 / -1" }}>
+                    <Field>
+                      <Label>Product Catalog & Sales Instructions</Label>
+                      <TextArea
+                        disabled={!form.ecommerceEnabled}
+                        placeholder="Provide details about your products, pricing, and the exact links the bot should share as a 'pitchman'..."
+                        value={form.ecommercePrompt || ""}
+                        onChange={(e) => update("ecommercePrompt", e.target.value)}
+                        rows={6}
+                        style={{ minHeight: "120px" }}
+                      />
+                      <HelperText>
+                        List out your products, the links to buy them, and any specific convincing strategies the bot should use.
+                      </HelperText>
+                    </Field>
+                  </div>
+                </ContactGrid>
               )}
             </FormSection>
           </FormGrid>
@@ -247,7 +396,7 @@ export const BotForm = ({
           <Button type="submit" disabled={loading}>
             {loading ? "Saving..." : submitLabel}
           </Button>
-        </div>
+        </LeftContainer>
         <SideContainer>
           <BotPreview
             name={form.name || ""}
@@ -255,6 +404,7 @@ export const BotForm = ({
             tone={form.tone || "friendly"}
             contactEnabled={form.contactEnabled || false}
             contactPrompt={form.contactPrompt || ""}
+            logoUrl={form.logoUrl}
           />
           {initialData?.id && (
             <EmbedSuccess publicKey={initialData?.public_key || ""} />

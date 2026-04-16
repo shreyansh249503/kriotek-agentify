@@ -1,9 +1,7 @@
-import { COLOR } from "@/styles";
+import { COLOR, BREAKPOINTS } from "@/styles";
 import styled from "styled-components";
 
 export const BotPreviewContainer = styled.div`
-  position: sticky;
-  top: 105px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -12,6 +10,10 @@ export const BotPreviewContainer = styled.div`
   background-color: ${COLOR.CREAM};
   border-radius: 16px;
   border: 1px solid ${COLOR.BORDER};
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    padding: 16px;
+  }
 `;
 export const BotPreviewTitle = styled.label`
   font-size: 18px;
@@ -19,10 +21,16 @@ export const BotPreviewTitle = styled.label`
   color: ${COLOR.DARK};
 `;
 export const BotPreviewWrapper = styled.div`
-  width: 320px;
+  width: 100%;
+  max-width: 320px;
+  margin: 0 auto;
   border: 1px solid ${COLOR.BORDER};
   border-radius: 12px;
   overflow: hidden;
+
+  @media (max-width: ${BREAKPOINTS.DESKTOP}) {
+    max-width: 100%;
+  }
 `;
 export const BotPreviewHeader = styled.div<{ $color: string }>`
   background: ${({ $color }) => $color};

@@ -6,6 +6,9 @@ interface SidebarContextType {
   isCollapsed: boolean;
   toggleSidebar: () => void;
   setIsCollapsed: (value: boolean) => void;
+  isDrawerOpen: boolean;
+  toggleDrawer: () => void;
+  closeDrawer: () => void;
 }
 
 const SidebarContext = createContext<SidebarContextType | undefined>(undefined);
@@ -20,6 +23,8 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({
     return false;
   });
 
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
   const toggleSidebar = () => {
     setIsCollapsed((prev) => {
       const newState = !prev;
@@ -28,9 +33,24 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({
     });
   };
 
+  const toggleDrawer = () => {
+    setIsDrawerOpen((prev) => !prev);
+  };
+
+  const closeDrawer = () => {
+    setIsDrawerOpen(false);
+  };
+
   return (
     <SidebarContext.Provider
-      value={{ isCollapsed, toggleSidebar, setIsCollapsed }}
+      value={{
+        isCollapsed,
+        toggleSidebar,
+        setIsCollapsed,
+        isDrawerOpen,
+        toggleDrawer,
+        closeDrawer,
+      }}
     >
       {children}
     </SidebarContext.Provider>

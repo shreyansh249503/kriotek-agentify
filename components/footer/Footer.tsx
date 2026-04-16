@@ -13,7 +13,7 @@ import {
   SocialIcon,
   CopyrightSection,
   CopyrightText,
-  LegalLinks,
+  // LegalLinks,
   FooterLogo,
 } from "./styled";
 import BotLogo from "@/assets/images/Agentify logo white.png";
@@ -51,39 +51,40 @@ export const Footer = () => {
             </SocialLinks>
           </FooterBrand>
 
-          <FooterColumn>
+          <FooterBrand>
             <FooterTitle>Product</FooterTitle>
+            <FooterColumn>
             <FooterLink href="/admin">Dashboard</FooterLink>
             <FooterLink href="/admin/bots">My Bots</FooterLink>
             <FooterLink href="/pricing">Pricing</FooterLink>
             <FooterLink href="/documentation">Documentation</FooterLink>
-          </FooterColumn>
+            </FooterColumn>
+          </FooterBrand>
 
-          <FooterColumn>
+          <FooterBrand>
             <FooterTitle>Company</FooterTitle>
+            <FooterColumn>
             <FooterLink href="/about">About Us</FooterLink>
             <FooterLink href="/careers">Careers</FooterLink>
             <FooterLink href="/blog">Blog</FooterLink>
             <FooterLink href="/contact">Contact</FooterLink>
-          </FooterColumn>
+            </FooterColumn>
+          </FooterBrand>
 
-          <FooterColumn>
+          <FooterBrand>
             <FooterTitle>Legal</FooterTitle>
+            <FooterColumn>
             <FooterLink href="/privacy">Privacy Policy</FooterLink>
             <FooterLink href="/terms">Terms of Service</FooterLink>
             <FooterLink href="/security">Security</FooterLink>
-          </FooterColumn>
+            </FooterColumn>
+          </FooterBrand>
         </FooterGrid>
 
         <CopyrightSection>
           <CopyrightText>
             © {new Date().getFullYear()} Agentigy. All rights reserved.
           </CopyrightText>
-          <LegalLinks>
-            <FooterLink href="/privacy">Privacy</FooterLink>
-            <FooterLink href="/terms">Terms</FooterLink>
-            <FooterLink href="/cookies">Cookies</FooterLink>
-          </LegalLinks>
         </CopyrightSection>
       </FooterContent>
     </FooterContainer>

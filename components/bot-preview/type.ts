@@ -4,4 +4,5 @@ export interface BotPreviewProps {
   tone: string;
   contactEnabled: boolean;
   contactPrompt?: string;
+  logoUrl?: string;
 }

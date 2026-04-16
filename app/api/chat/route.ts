@@ -168,29 +168,88 @@ export async function POST(req: Request) {
   });
 
   // ── 6. Stream receptionist response ────────────────────────────────────────
-  const result = runReceptionistAgent({
-    messages: fullConversation,
-    botConfig: bot,
-    leadDecision,
-    websiteContext,
-  });
-
-  const response = result.toTextStreamResponse();
-  if (!response.body) {
-    return new Response("Error streaming response", {
-      status: 500,
-      headers: corsHeaders,
+  let result;
+  try {
+    result = runReceptionistAgent({
+      messages: fullConversation,
+      botConfig: bot,
+      leadDecision,
+      websiteContext,
     });
+  } catch (err: any) {
+    console.error("[route] Sync error starting agent:", err);
+    const isQuota = err?.statusCode === 429 || err?.lastError?.statusCode === 429 || err?.message?.includes("quota");
+    const msg = isQuota ? "Your free tier of the day is over. Please try again later." : "An error occurred.";
+    return new Response(msg, { status: isQuota ? 429 : 500, headers: corsHeaders });
   }
 
-  const [streamForClient, streamForSaving] = response.body.tee();
+  const encoder = new TextEncoder();
+  const customStream = new ReadableStream({
+    async start(controller) {
+      try {
+        for await (const part of result.fullStream) {
+          if (part.type === "text-delta") {
+            controller.enqueue(encoder.encode(part.text));
+          } else if (part.type === "error") {
+            console.error("[route] fullStream error:", part.error);
+            const err: any = part.error;
+            const isQuota =
+              err?.statusCode === 429 ||
+              err?.lastError?.statusCode === 429 ||
+              err?.message?.toLowerCase().includes("quota") ||
+              String(err).includes("429") ||
+              String(err).includes("quota");
+
+            if (isQuota) {
+              controller.enqueue(
+                encoder.encode(
+                  "\n\n*Your free tier of the day is over. Please try again later.*"
+                )
+              );
+            } else {
+              controller.enqueue(
+                encoder.encode(
+                  "\n\n*Sorry, an error occurred while generating the response.*"
+                )
+              );
+            }
+          }
+        }
+      } catch (err: any) {
+        console.error("[route] Stream error exception:", err);
+        const isQuota =
+          err?.statusCode === 429 ||
+          err?.lastError?.statusCode === 429 ||
+          err?.message?.toLowerCase().includes("quota") ||
+          String(err).includes("429");
+
+        if (isQuota) {
+          controller.enqueue(
+            encoder.encode(
+              "\n\n*Your free tier of the day is over. Please try again later.*"
+            )
+          );
+        } else {
+          controller.enqueue(
+            encoder.encode(
+              "\n\n*Sorry, an error occurred while generating the response.*"
+            )
+          );
+        }
+      } finally {
+        controller.close();
+      }
+    },
+  });
+
+  const [streamForClient, streamForSaving] = customStream.tee();
   saveAssistantMessage(streamForSaving, convo.id, fullConversation).catch(
     console.error,
   );
 
   return new Response(streamForClient, {
     headers: {
-      ...Object.fromEntries(response.headers.entries()),
+      "Content-Type": "text/plain; charset=utf-8",
       "Cache-Control": "no-cache",
       ...corsHeaders,
     },

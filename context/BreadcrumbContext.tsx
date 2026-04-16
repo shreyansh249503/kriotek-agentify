@@ -1,11 +1,10 @@
-// context/BreadcrumbContext.tsx
 "use client";
 
 import { createContext, useContext, useState } from "react";
 
 type BreadcrumbMeta = {
-  customLabels: Record<string, string>; // { "123": "My Bot" }
-  nonLinkable: string[]; // ["123"] — segments with no page
+  customLabels: Record<string, string>; 
+  nonLinkable: string[];
 };
 
 const BreadcrumbContext = createContext<{

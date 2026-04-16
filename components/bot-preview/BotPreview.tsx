@@ -16,6 +16,7 @@ export const BotPreview = ({
   tone,
   contactEnabled,
   contactPrompt,
+  logoUrl,
 }: BotPreviewProps) => {
   return (
     <BotPreviewContainer>
@@ -25,18 +26,18 @@ export const BotPreview = ({
         <BotPreviewHeader $color={color}>{name || "Your Bot"}</BotPreviewHeader>
 
         <BotPreviewBody>
-          <BubbleBot>Hello 👋 I&apos;m here to help!</BubbleBot>
+          <BubbleBot logoUrl={logoUrl}>Hello 👋 I&apos;m here to help!</BubbleBot>
 
           <BubbleUser color={color}>Tell me about your services</BubbleUser>
 
-          <BubbleBot>
+          <BubbleBot logoUrl={logoUrl}>
             Sure! I&apos;d be happy to help.
             <br />
             <small style={{ opacity: 0.6 }}>Tone: {tone}</small>
           </BubbleBot>
 
           {contactEnabled && (
-            <BubbleBot>
+            <BubbleBot logoUrl={logoUrl}>
               {contactPrompt || "Would you like us to contact you?"}
             </BubbleBot>
           )}
@@ -48,10 +49,38 @@ export const BotPreview = ({
 
 interface BubbleBotProps {
   children: ReactNode;
+  logoUrl?: string;
 }
 
-function BubbleBot({ children }: BubbleBotProps) {
-  return <BubbleBotContainer>{children}</BubbleBotContainer>;
+function BubbleBot({ children, logoUrl }: BubbleBotProps) {
+  return (
+    <div style={{ display: "flex", gap: "8px", alignItems: "flex-end" }}>
+      {logoUrl ? (
+        <img
+          src={logoUrl}
+          alt="Bot Avatar"
+          style={{ width: "32px", height: "32px", borderRadius: "50%", objectFit: "cover" }}
+        />
+      ) : (
+        <div
+          style={{
+            width: "32px",
+            height: "32px",
+            borderRadius: "50%",
+              background: "#4F46E5",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+              color: "white",
+            fontSize: "12px",
+          }}
+        >
+          AI
+        </div>
+      )}
+      <BubbleBotContainer>{children}</BubbleBotContainer>
+    </div>
+  );
 }
 
 interface BubbleUserProps {

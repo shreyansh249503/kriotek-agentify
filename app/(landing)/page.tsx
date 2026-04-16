@@ -114,13 +114,15 @@ export default function AdminHome() {
         </HeroContent>
       </HeroSection>
 
-      <FeaturesSection>
+      <FeaturesSection id="features">
         <SectionContainer>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "16px" }}>
           <SectionTitle>Powerful Features</SectionTitle>
           <SectionSubtitle>
             Everything you need to build and deploy intelligent AI agents that
             scale with your business.
           </SectionSubtitle>
+          </div>
 
           <FeaturesGrid>
             <FeatureCard>
@@ -192,12 +194,14 @@ export default function AdminHome() {
         </SectionContainer>
       </FeaturesSection>
 
-      <BenefitsSection>
+      <BenefitsSection id="benefits">
         <SectionContainer>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "16px" }}>
           <SectionTitle>How It Works</SectionTitle>
           <SectionSubtitle>
             Get your AI agent up and running in just a few simple steps.
           </SectionSubtitle>
+          </div>
 
           <BenefitsList>
             <BenefitItem>

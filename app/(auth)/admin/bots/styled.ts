@@ -88,10 +88,38 @@ export const TableContainer = styled.div`
   border: 1px solid ${COLOR.BORDER}66;
   overflow: hidden;
   transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
 
-  @media (max-width: ${BREAKPOINTS.MOBILE}) {
-    overflow-x: auto;
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    border-radius: 12px;
   }
+`;
+
+export const TableWrapper = styled.div`
+  width: 100%;
+  overflow-x: auto;
+  
+  &::-webkit-scrollbar {
+    height: 6px;
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: ${COLOR.BORDER}88;
+    border-radius: 10px;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: ${COLOR.PRIMARY}44;
+  }
+
+  scrollbar-width: thin;
+  scrollbar-color: ${COLOR.BORDER}88 transparent;
 `;
 
 export const StyledTable = styled.table`
