@@ -24,6 +24,9 @@ Start:
 # Enable PyTorch fallback for MPS ops that lack a Metal kernel
 import os
 os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
+# Reduce CUDA allocator fragmentation — avoids OOM when a small allocation
+# fails even though enough total free memory exists across non-contiguous blocks.
+os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
 
 # ─────────────────────────────────────────────────────────────────────────────
 # transformers ≥ 4.51 added a hard version gate that refuses to call torch.load
@@ -271,6 +274,22 @@ def _patch_encode_prompt_gpu_swap(pipeline: "WanFunInpaintAudioPipeline") -> Non
 
     _orig_encode = pipeline.encode_prompt  # bound method
 
+    def _gpu_models(pl):
+        """Return all pipeline attributes that are nn.Modules currently on GPU."""
+        import torch.nn as nn
+        candidates = ["transformer", "vae", "clip_image_encoder", "image_encoder"]
+        found = []
+        for name in candidates:
+            mod = getattr(pl, name, None)
+            if mod is not None and isinstance(mod, nn.Module):
+                try:
+                    first_param = next(mod.parameters(), None)
+                    if first_param is not None and first_param.device.type == "cuda":
+                        found.append((name, mod))
+                except Exception:
+                    pass
+        return found
+
     def _encode_with_gpu_swap(*args, **kwargs):
         # ── Build cache key ───────────────────────────────────────────────
         prompt      = kwargs.get("prompt")      or (args[0] if args else "")
@@ -279,20 +298,31 @@ def _patch_encode_prompt_gpu_swap(pipeline: "WanFunInpaintAudioPipeline") -> Non
 
         if cache_key in _EMBED_CACHE:
             print("[EchoMimic] encode_prompt → cache hit, skipping GPU swap")
-            # Move cached CPU tensors to current execution device
             cached = _EMBED_CACHE[cache_key]
             return tuple(
                 t.to(DEVICE) if isinstance(t, torch.Tensor) else t
                 for t in cached
             )
 
-        print("[EchoMimic] encode_prompt → swapping transformer to CPU, text_encoder to GPU…")
-        # ── Step 1: free VRAM by moving transformer to CPU ────────────────
-        pipeline.transformer.to("cpu")
+        # ── Step 1: move ALL GPU models to CPU to free max VRAM ──────────
+        # Text encoder (UMT5-XXL) needs ~20 GB; L4 has ~22 GB total.
+        # VAE + CLIP + transformer together use ~9 GB — we must evict all of
+        # them before there is room for the text encoder.
+        gpu_models = _gpu_models(pipeline)
+        gpu_model_names = [n for n, _ in gpu_models]
+        print(f"[EchoMimic] encode_prompt → moving {gpu_model_names} to CPU to free VRAM…")
+        for _, mod in gpu_models:
+            mod.to("cpu")
         torch.cuda.empty_cache()
         gc.collect()
+        vram_free = (
+            torch.cuda.get_device_properties(0).total_memory
+            - torch.cuda.memory_allocated()
+        ) / 1e9
+        print(f"[EchoMimic]   VRAM free after eviction: {vram_free:.1f} GB")
 
         # ── Step 2: move text_encoder to GPU ──────────────────────────────
+        print("[EchoMimic]   loading text_encoder onto GPU…")
         pipeline.text_encoder.to(DEVICE)
         vram_used = torch.cuda.memory_allocated() / 1e9
         print(f"[EchoMimic]   text_encoder on GPU — VRAM used: {vram_used:.1f} GB")
@@ -301,14 +331,15 @@ def _patch_encode_prompt_gpu_swap(pipeline: "WanFunInpaintAudioPipeline") -> Non
             result = _orig_encode(*args, **kwargs)
         finally:
             # ── Step 3: always restore, even if encoding raised ───────────
-            print("[EchoMimic]   restoring text_encoder → CPU, transformer → GPU…")
+            print("[EchoMimic]   restoring text_encoder → CPU, GPU models back…")
             pipeline.text_encoder.to("cpu")
             torch.cuda.empty_cache()
             gc.collect()
-            pipeline.transformer.to(DEVICE)
+            for name, mod in gpu_models:
+                mod.to(DEVICE)
             torch.cuda.empty_cache()
             vram_used = torch.cuda.memory_allocated() / 1e9
-            print(f"[EchoMimic]   transformer restored — VRAM used: {vram_used:.1f} GB")
+            print(f"[EchoMimic]   GPU models restored — VRAM used: {vram_used:.1f} GB")
 
         # ── Cache result on CPU ───────────────────────────────────────────
         result_tuple = result if isinstance(result, tuple) else (result,)
