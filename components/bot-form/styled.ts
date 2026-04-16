@@ -17,7 +17,7 @@ export const FormContainer = styled.div`
   align-items: flex-start;
   gap: 24px;
 
-  @media (max-width: ${BREAKPOINTS.DESKTOP}) {
+  @media (max-width: 1200px) {
     flex-direction: column;
   }
 `;
@@ -159,9 +159,10 @@ export const TopRow = styled.div`
   grid-template-columns: 2fr 1fr;
   gap: 24px;
 
-  @media (max-width: ${BREAKPOINTS.DESKTOP}) {
-    grid-template-columns: 1fr;
-  }
+@media(max-width: 1600px) {
+  grid-template-columns: 1fr;
+}
+
 `;
 
 export const SectionHeader = styled.div`
@@ -331,6 +332,9 @@ export const SideContainer = styled.div`
   width: 100%;
   max-width: 420px;
   flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 
   @media (max-width: ${BREAKPOINTS.DESKTOP}) {
     position: static;

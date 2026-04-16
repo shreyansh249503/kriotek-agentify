@@ -3,7 +3,7 @@ import { BREAKPOINTS, COLOR } from "@/styles";
 
 export const EmbedSuccessContainer = styled.div`
   width: 100%;
-  min-height: 500px;
+  min-height: 480px;
   padding: 24px;
   border: 1px solid ${COLOR.BORDER};
   border-radius: 16px;
