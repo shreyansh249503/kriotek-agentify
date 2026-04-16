@@ -203,7 +203,7 @@ export async function POST(req: Request) {
             if (isQuota) {
               controller.enqueue(
                 encoder.encode(
-                  "\n\n*Error: Your free tier of the day is over. Please try again later.*"
+                  "\n\n*Your free tier of the day is over. Please try again later.*"
                 )
               );
             } else {
@@ -226,7 +226,7 @@ export async function POST(req: Request) {
         if (isQuota) {
           controller.enqueue(
             encoder.encode(
-              "\n\n*Error: Your free tier of the day is over. Please try again later.*"
+              "\n\n*Your free tier of the day is over. Please try again later.*"
             )
           );
         } else {
