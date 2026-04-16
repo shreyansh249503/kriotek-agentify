@@ -12,11 +12,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# On Apple Silicon, CPU and MPS share DRAM.  Large model weights loaded on CPU
-# count against the MPS watermark (default 70%).  Disable the cap so the OS
-# manages memory pressure instead of PyTorch hard-failing with OOM.
-export PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.0
-export PYTORCH_ENABLE_MPS_FALLBACK=1
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
 IMAGE_VENV="$SCRIPT_DIR/.venv"
 ECHO_VENV="$SCRIPT_DIR/echomimic_venv"
@@ -76,6 +72,18 @@ start_lipsync() {
 
   # shellcheck source=/dev/null
   source "$ECHO_VENV/bin/activate"
+
+  # ── Precompute text embeddings (runs UMT5-XXL once, then unloads it) ─────
+  # Skipped automatically if echomimic_weights/text_embeds.pt already exists.
+  _cyan "Checking text embeddings cache…"
+  if [[ ! -f "$SCRIPT_DIR/echomimic_weights/text_embeds.pt" ]]; then
+    _bold "text_embeds.pt not found — running precompute (loads UMT5-XXL ~20 GB, takes a few minutes)…"
+    (cd "$SCRIPT_DIR" && python precompute_text_embeds.py)
+    _green "Text embeddings saved. UMT5-XXL unloaded from RAM."
+  else
+    _green "Text embeddings cache found — skipping UMT5-XXL load."
+  fi
+
   _green "Starting uvicorn echomimic_v3_server:app on port 8001 …"
   (cd "$SCRIPT_DIR" && uvicorn echomimic_v3_server:app --host 0.0.0.0 --port 8001) &
   ECHO_PID=$!

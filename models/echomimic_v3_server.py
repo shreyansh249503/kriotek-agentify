@@ -132,6 +132,7 @@ _CONFIG_PATH  = _REPO / "config" / "config.yaml"
 _BASE_MODEL   = _WEIGHTS / "base"
 _WAV2VEC_PATH = _WEIGHTS / "wav2vec2"
 _TRANSFORMER  = _WEIGHTS / "transformer" / "transformer"
+_EMBEDS_PATH  = _WEIGHTS / "text_embeds.pt"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # EchoMimicV3 src/ imports
@@ -143,7 +144,6 @@ from einops import rearrange
 
 from src.wan_vae                             import AutoencoderKLWan
 from src.wan_image_encoder                   import CLIPModel
-from src.wan_text_encoder                    import WanT5EncoderModel
 from src.wan_transformer3d_audio_2512        import WanTransformerAudioMask3DModel
 from src.pipeline_wan_fun_inpaint_audio_2512 import WanFunInpaintAudioPipeline
 from src.wav2vec2                            import Wav2Vec2Model as EchoWav2Vec2Model
@@ -155,11 +155,77 @@ import pyloudnorm as pyln
 from PIL import Image
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Lazy global model cache
-# Models are loaded on first job and kept in CPU RAM between jobs.
-# enable_sequential_cpu_offload moves each model to GPU only during its
-# forward pass, then immediately back to CPU — so text encoder (20 GB) and
-# transformer (6 GB) never occupy VRAM at the same time.
+# Cached text encoder — replaces UMT5-XXL (20 GB) with a tiny nn.Module that
+# returns pre-computed embeddings from disk.
+#
+# The pipeline calls self.text_encoder(input_ids, attention_mask)[0] inside
+# encode_prompt.  This drop-in matches the incoming input_ids against the saved
+# positive/negative token IDs to return the correct embedding, then falls back
+# to the positive embedding for any unknown prompt.
+# ─────────────────────────────────────────────────────────────────────────────
+
+class _CachedTextEncoder(torch.nn.Module):
+    def __init__(self, pos_embeds, neg_embeds, pos_input_ids, neg_input_ids):
+        super().__init__()
+        # register_buffer makes these move with .to(device) and appear in
+        # .parameters() — needed for the pipeline's device detection:
+        #   te_device = next(self.text_encoder.parameters()).device
+        self.register_buffer("_sentinel",    torch.zeros(1))
+        self.register_buffer("pos_embeds",   pos_embeds)
+        self.register_buffer("neg_embeds",   neg_embeds)
+        self.register_buffer("pos_input_ids", pos_input_ids)
+        self.register_buffer("neg_input_ids", neg_input_ids)
+
+    def forward(self, input_ids=None, attention_mask=None, **kwargs):
+        dev = input_ids.device if input_ids is not None else self._sentinel.device
+        pos_ids = self.pos_input_ids.to(dev)
+        neg_ids = self.neg_input_ids.to(dev)
+
+        if (input_ids is not None
+                and input_ids.shape == pos_ids.shape
+                and (input_ids == pos_ids).all()):
+            return (self.pos_embeds.to(dev),)
+
+        if (input_ids is not None
+                and input_ids.shape == neg_ids.shape
+                and (input_ids == neg_ids).all()):
+            return (self.neg_embeds.to(dev),)
+
+        # Fallback: return positive embedding for any unrecognised prompt
+        return (self.pos_embeds.to(dev),)
+
+
+def _load_cached_text_encoder() -> "_CachedTextEncoder":
+    """Load pre-computed embeddings from disk (milliseconds, ~few MB)."""
+    if not _EMBEDS_PATH.exists():
+        raise RuntimeError(
+            f"Text embeddings not found at {_EMBEDS_PATH}.\n"
+            "Run:  python precompute_text_embeds.py\n"
+            "Or start via start.sh which runs this automatically."
+        )
+    data = torch.load(str(_EMBEDS_PATH), map_location="cpu", weights_only=False)
+    enc = _CachedTextEncoder(
+        pos_embeds=data["positive"].to(DTYPE),
+        neg_embeds=data["negative"].to(DTYPE),
+        pos_input_ids=data["pos_input_ids"],
+        neg_input_ids=data["neg_input_ids"],
+    )
+    size_mb = _EMBEDS_PATH.stat().st_size / 1e6
+    print(f"[EchoMimic] Loaded cached text embeddings from {_EMBEDS_PATH.name} ({size_mb:.1f} MB)")
+    return enc
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Lazy global model cache — loaded once on first job, reused after that.
+#
+# Memory layout (32 GB VM RAM  +  24 GB L4 VRAM):
+#   CPU RAM : text encoder only (~20 GB UMT5-XXL)
+#   CUDA    : VAE (~2 GB) + CLIP (~1 GB) + transformer (~6 GB) = ~9 GB
+#
+# Loading order matters: each model is moved to CUDA immediately after load
+# so its CPU copy is freed by gc before the next model loads.
+# Without this, all models pile up in CPU RAM simultaneously (~29 GB) and
+# exhaust the 32 GB VM → kernel swaps to disk → hang.
 # ─────────────────────────────────────────────────────────────────────────────
 
 _config             = None
@@ -169,8 +235,18 @@ _pipeline           = None
 _vae_temporal_ratio = 4
 
 
+def _to_cuda(model, name: str):
+    """Move model to CUDA then run gc so CPU RAM is freed before next load."""
+    print(f"[EchoMimic]     → {name} to CUDA…")
+    model = model.to(DEVICE)
+    gc.collect()
+    torch.cuda.empty_cache()
+    print(f"[EchoMimic]     VRAM used: {torch.cuda.memory_allocated()/1e9:.1f} GB")
+    return model
+
+
 def _load_audio_model():
-    """Load Wav2Vec2 into CPU RAM (small model, ~0.4 GB)."""
+    """Load Wav2Vec2 into CPU RAM (small, ~0.4 GB — stays on CPU)."""
     global _wav2vec_extractor, _wav2vec_model
     if _wav2vec_model is not None:
         return
@@ -187,11 +263,18 @@ def _load_audio_model():
 
 
 def _load_pipeline():
-    """Load VAE, text encoder, CLIP, transformer → assemble pipeline.
+    """Load pipeline models with eager GPU placement to avoid CPU RAM OOM.
 
-    All models start in CPU RAM.  enable_sequential_cpu_offload then hooks
-    each one to move to CUDA only during its forward pass and immediately
-    back to CPU after — so we never OOM even with the 20 GB text encoder.
+    Loading order and device placement:
+      1. VAE        → load → move to CUDA → CPU copy freed  (peak RAM: ~2 GB)
+      2. Text enc   → load → stays on CPU                   (peak RAM: ~20 GB)
+      3. CLIP       → load → move to CUDA → CPU copy freed  (peak RAM: ~21 GB)
+      4. Transformer→ load → move to CUDA → CPU copy freed  (peak RAM: ~26 GB, fits in 32 GB)
+
+    Final state: CPU holds text encoder only (~20 GB).
+                 CUDA holds VAE + CLIP + transformer (~9 GB).
+    No sequential_cpu_offload — that conflicts with explicit device placement.
+    Text encoding runs on CPU (slow but stable, no OOM risk).
     """
     global _pipeline, _vae_temporal_ratio, _config
 
@@ -201,9 +284,9 @@ def _load_pipeline():
     if _config is None:
         _config = OmegaConf.load(str(_CONFIG_PATH))
 
-    print("[EchoMimic] Loading pipeline models (VAE, text encoder, CLIP, transformer)…")
+    print("[EchoMimic] Loading pipeline models…")
 
-    # ── VAE ───────────────────────────────────────────────────────────────
+    # ── 1. VAE → CUDA immediately ─────────────────────────────────────────
     print("[EchoMimic]   1/4  VAE…")
     vae_path = str(_BASE_MODEL / _config["vae_kwargs"].get("vae_subpath", "vae"))
     vae = AutoencoderKLWan.from_pretrained(
@@ -211,30 +294,27 @@ def _load_pipeline():
         additional_kwargs=OmegaConf.to_container(_config["vae_kwargs"]),
     ).to(DTYPE)
     _vae_temporal_ratio = _config["vae_kwargs"].get("temporal_compression_ratio", 4)
-    gc.collect()
+    vae = _to_cuda(vae, "VAE")
 
-    # ── Text encoder (UMT5-XXL, ~20 GB) ──────────────────────────────────
-    print("[EchoMimic]   2/4  text encoder (UMT5-XXL — large, be patient)…")
-    te_path = str(_BASE_MODEL / _config["text_encoder_kwargs"].get("text_encoder_subpath", "text_encoder"))
-    text_encoder = WanT5EncoderModel.from_pretrained(
-        te_path,
-        additional_kwargs=OmegaConf.to_container(_config["text_encoder_kwargs"]),
-        low_cpu_mem_usage=False,
-        torch_dtype=DTYPE,
-    ).eval()
-    gc.collect()
+    # ── 2. Cached text encoder — replaces UMT5-XXL ───────────────────────
+    # Loads pre-computed embeddings from text_embeds.pt (~few MB, instant).
+    # UMT5-XXL (20 GB) is never loaded here — it ran once in precompute_text_embeds.py.
+    print("[EchoMimic]   2/4  cached text encoder (from text_embeds.pt)…")
+    text_encoder = _load_cached_text_encoder()
 
     tok_sub  = _config["text_encoder_kwargs"].get("tokenizer_subpath", "tokenizer")
     tok_path = str(_BASE_MODEL / tok_sub) if (_BASE_MODEL / tok_sub).exists() else tok_sub
     tokenizer = AutoTokenizer.from_pretrained(tok_path)
 
-    # ── CLIP image encoder ────────────────────────────────────────────────
+    # ── 3. CLIP → CUDA immediately ────────────────────────────────────────
     print("[EchoMimic]   3/4  CLIP image encoder…")
     ie_path = str(_BASE_MODEL / _config["image_encoder_kwargs"].get("image_encoder_subpath", "image_encoder"))
     clip = CLIPModel.from_pretrained(ie_path, transformer_additional_kwargs={}).to(DTYPE).eval()
-    gc.collect()
+    clip = _to_cuda(clip, "CLIP")
 
-    # ── Transformer (EchoMimic V3, ~6 GB) ────────────────────────────────
+    # ── 4. Transformer → CUDA immediately ────────────────────────────────
+    # Peak CPU RAM during this load: cached text encoder (~few MB) + transformer
+    # (6 GB) = ~6 GB total.  Negligible.  Transformer moves to CUDA after.
     print("[EchoMimic]   4/4  EchoMimic V3 transformer…")
     transformer = WanTransformerAudioMask3DModel.from_pretrained(
         str(_TRANSFORMER),
@@ -242,7 +322,7 @@ def _load_pipeline():
         low_cpu_mem_usage=False,
         torch_dtype=DTYPE,
     )
-    gc.collect()
+    transformer = _to_cuda(transformer, "transformer")
 
     # ── Scheduler ─────────────────────────────────────────────────────────
     sched_cfg = OmegaConf.to_container(_config["scheduler_kwargs"])
@@ -252,7 +332,7 @@ def _load_pipeline():
     )
 
     # ── Assemble pipeline ─────────────────────────────────────────────────
-    print("[EchoMimic]   Assembling pipeline…")
+    print("[EchoMimic]   assembling pipeline…")
     _pipeline = WanFunInpaintAudioPipeline(
         transformer=transformer,
         vae=vae,
@@ -261,14 +341,13 @@ def _load_pipeline():
         scheduler=scheduler,
         clip_image_encoder=clip,
     )
+    # Do NOT call _pipeline.to(DEVICE) or enable_sequential_cpu_offload —
+    # models are already on their correct devices.  The pipeline infers its
+    # execution device from the transformer's current device (CUDA).
 
-    # Sequential CPU offload: each component moves to CUDA only during its
-    # forward pass.  Peak VRAM = largest single model (~20 GB text encoder)
-    # which fits in the L4's 24 GB.  No manual GPU swap needed.
-    print("[EchoMimic]   Enabling sequential_cpu_offload…")
-    _pipeline.enable_sequential_cpu_offload()
-
-    print("[EchoMimic] Pipeline ready.")
+    vram_used = torch.cuda.memory_allocated() / 1e9
+    vram_total = torch.cuda.get_device_properties(0).total_memory / 1e9
+    print(f"[EchoMimic] Pipeline ready. VRAM: {vram_used:.1f}/{vram_total:.0f} GB")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -353,9 +432,7 @@ def _generate_one_chunk(
     t0 = _t.time()
 
     audio_embeds = _get_audio_embed(chunk_audio, num_frames, sr)
-    # sequential_cpu_offload pipeline expects CPU tensors — it will move them
-    # to CUDA internally via the registered hooks.
-    audio_embeds = audio_embeds.cpu().to(DTYPE)
+    audio_embeds = audio_embeds.to(device=DEVICE, dtype=DTYPE)
 
     input_video, input_video_mask, clip_image = get_image_to_video_latent2(
         anchor_image, None,
