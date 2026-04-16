@@ -155,12 +155,26 @@ export interface GeneratedVideo {
 
 export async function generateImage(
   prompt: string,
-  options?: { negative_prompt?: string; width?: number; height?: number; steps?: number },
+  options?: {
+    negative_prompt?: string;
+    width?: number;
+    height?: number;
+    steps?: number;
+    guidance_scale?: number;
+    seed?: number;
+  },
 ): Promise<GeneratedImage> {
   const res = await fetch(`${MODELS_BASE}/image/generate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt, ...options }),
+    body: JSON.stringify({
+      prompt,
+      width: 512,
+      height: 512,
+      steps: 20,
+      guidance_scale: 7.5,
+      ...options,
+    }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));

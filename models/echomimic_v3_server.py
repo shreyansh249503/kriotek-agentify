@@ -1,8 +1,6 @@
 """
-EchoMimic V3 API Server
-────────────────────────
-Runs on port 8001, separate from the image/TTS server (port 8000).
-
+EchoMimic V3 API Server — CUDA only
+─────────────────────────────────────
 Endpoints:
   POST /lipsync/generate         — start async job, returns {job_id}
   GET  /lipsync/status/{job_id}  — poll: processing | done | failed
@@ -10,10 +8,9 @@ Endpoints:
   GET  /health                   — model + device status
 
 Requirements:
-  • CUDA GPU (≥12 GB VRAM) OR Apple Silicon (MPS, unified memory)
+  • CUDA GPU (≥12 GB VRAM)
   • EchoMimicV3 repo cloned to  models/EchoMimicV3/
   • Weights downloaded to       models/echomimic_weights/
-    (run:  python download_echomimic_weights.py)
 
 Start:
   cd models
@@ -21,49 +18,29 @@ Start:
   uvicorn echomimic_v3_server:app --host 0.0.0.0 --port 8001
 """
 
-# Enable PyTorch fallback for MPS ops that lack a Metal kernel
 import os
-os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
+os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
 
 import warnings
-# PyTorch's SDPA flash/memory-efficient backends silently drop padding masks.
-# For EchoMimic the sequences are fixed-length (no variable padding), so this
-# has no effect on output quality — suppress the log noise.
 warnings.filterwarnings(
     "ignore",
     message="Padding mask is disabled when using scaled_dot_product_attention",
     category=UserWarning,
 )
-# Reduce CUDA allocator fragmentation — avoids OOM when a small allocation
-# fails even though enough total free memory exists across non-contiguous blocks.
-os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
 
 # ─────────────────────────────────────────────────────────────────────────────
-# transformers ≥ 4.51 added a hard version gate that refuses to call torch.load
-# on any torch < 2.6 (CVE-2025-32434).  On environments where the cu121 index
-# caps out at torch 2.5.1 (e.g. CUDA 12.1 driver), we bypass the gate because:
-#   1. We already patch torch.load to set weights_only=False explicitly, so the
-#      vulnerable ambiguous-default behaviour never occurs.
-#   2. The gate is a version string check, not a functional security control.
-# This patch is a no-op when torch >= 2.6 is present.
+# transformers ≥ 4.51 refuses torch.load on torch < 2.6 (CVE-2025-32434).
+# cu121 only goes up to torch 2.5.1 — bypass the version gate.
+# ─────────────────────────────────────────────────────────────────────────────
 import torch as _torch_ver_check
-import sys as _sys
 if tuple(int(x) for x in _torch_ver_check.__version__.split("+")[0].split(".")[:2]) < (2, 6):
     try:
         import transformers.utils.import_utils as _tui
         if hasattr(_tui, "check_torch_load_is_safe"):
             _tui.check_torch_load_is_safe = lambda: None
-            print("[EchoMimic] Patched transformers check_torch_load_is_safe (torch < 2.6 + explicit weights_only=False)")
+            print("[EchoMimic] Patched transformers check_torch_load_is_safe (torch < 2.6)")
     except Exception as _e:
         print(f"[EchoMimic] Could not patch transformers safety check: {_e}")
-
-# Disable the MPS high-watermark cap.
-# On Apple Silicon, CPU and MPS share the same DRAM pool, so large models loaded
-# on CPU count toward the MPS allocation budget (default 70% of total RAM).
-# With ~20 GB of model weights, the 70% cap (~20.4 GB on a 32 GB Mac) is hit
-# before inference can allocate working buffers.  Setting ratio=0.0 removes the
-# cap so the OS manages pressure instead.  Safe as long as total RAM > model size.
-os.environ.setdefault("PYTORCH_MPS_HIGH_WATERMARK_RATIO", "0.0")
 
 import asyncio
 import base64
@@ -81,66 +58,34 @@ import torch
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 
-# ─────────────────────────────────────────────────────────────────────────────
-# On MPS, torch.cuda.amp.autocast is a no-op (CUDA not available), so model
-# code that wraps forward passes with it skips dtype casting entirely, causing
-# float32 input vs float16 weight mismatches.  Patch it to use MPS autocast.
-# ─────────────────────────────────────────────────────────────────────────────
-_mps_available = getattr(torch.backends, "mps", None) is not None and torch.backends.mps.is_available()
-if _mps_available and not torch.cuda.is_available():
-    import torch.cuda.amp as _cuda_amp
-    _OrigAutocast = _cuda_amp.autocast
+if not torch.cuda.is_available():
+    raise RuntimeError(
+        "EchoMimic V3 requires a CUDA GPU. No CUDA device detected.\n"
+        "This server is CUDA-only — do not run on CPU or MPS."
+    )
 
-    class _MPSAutocast:
-        """Drop-in for torch.cuda.amp.autocast that uses MPS autocast on Apple Silicon."""
-        def __init__(self, enabled=True, dtype=None, cache_enabled=None, **kwargs):
-            _dtype = dtype if dtype is not None else torch.float16
-            self._ctx = torch.amp.autocast(device_type="mps", dtype=_dtype, enabled=enabled)
-
-        def __enter__(self):
-            return self._ctx.__enter__()
-
-        def __exit__(self, *args):
-            return self._ctx.__exit__(*args)
-
-        def __call__(self, func):
-            return self._ctx(func) if callable(func) else self
-
-    _cuda_amp.autocast = _MPSAutocast
-    torch.cuda.amp.autocast = _MPSAutocast  # type: ignore
+DEVICE = "cuda"
+DTYPE  = torch.bfloat16
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Memory-mapped torch.load — prevents doubling peak RAM when loading large
-# .pth/.safetensors weight files (tensors are paged in on demand instead of
-# being fully read into RAM before dtype conversion).
-# Applied globally so EchoMimicV3 src/ loaders benefit automatically.
+# Patch torch.load: add mmap=True (avoids RAM doubling on large weight files)
+# and weights_only=False (EchoMimicV3 .pth files need full unpickling).
 # ─────────────────────────────────────────────────────────────────────────────
 _orig_torch_load = torch.load
 
 @functools.wraps(_orig_torch_load)
 def _mmap_torch_load(f, *args, **kwargs):
-    # Only apply mmap to file paths (not file objects / URLs)
     if isinstance(f, (str, os.PathLike)):
-        if "mmap" not in kwargs:
-            kwargs["mmap"] = True
-        # PyTorch 2.6+ requires weights_only to be set explicitly.
-        # EchoMimicV3's internal torch.load calls don't pass it, which triggers
-        # a FutureWarning that becomes an error in newer transformers.
-        # Use weights_only=False to preserve the original behaviour for .pth files;
-        # safetensors files never go through torch.load so this is safe.
-        if "weights_only" not in kwargs:
-            kwargs["weights_only"] = False
+        kwargs.setdefault("mmap", True)
+        kwargs.setdefault("weights_only", False)
     return _orig_torch_load(f, *args, **kwargs)
 
 torch.load = _mmap_torch_load
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Fix broken diffusers import in EchoMimicV3 src — load_model_dict_into_meta
-# was removed in diffusers 0.33+.  Inject a shim so low_cpu_mem_usage=True
-# works for the transformer (saves ~2× peak RAM during load).
+# diffusers 0.33+ removed load_model_dict_into_meta — inject a shim.
 # ─────────────────────────────────────────────────────────────────────────────
 def _load_model_dict_into_meta_shim(model, state_dict, dtype=None, **kwargs):
-    """Minimal shim for diffusers' removed load_model_dict_into_meta."""
     from accelerate.utils import set_module_tensor_to_device
     for key, value in state_dict.items():
         if dtype is not None:
@@ -152,7 +97,6 @@ def _load_model_dict_into_meta_shim(model, state_dict, dtype=None, **kwargs):
                 mod = getattr(mod, part)
             set_module_tensor_to_device(mod, parts[-1], device="cpu", value=value)
         except Exception:
-            # fallback: just do a normal assignment
             mod = model
             for part in parts[:-1]:
                 mod = getattr(mod, part)
@@ -162,12 +106,12 @@ try:
     import diffusers.models.modeling_utils as _dmu
     if not hasattr(_dmu, "load_model_dict_into_meta"):
         _dmu.load_model_dict_into_meta = _load_model_dict_into_meta_shim
-        print("[EchoMimic] Injected load_model_dict_into_meta shim into diffusers")
+        print("[EchoMimic] Injected load_model_dict_into_meta shim")
 except Exception as _e:
     print(f"[EchoMimic] Could not patch diffusers: {_e}")
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Paths — override via env vars if needed
+# Paths
 # ─────────────────────────────────────────────────────────────────────────────
 
 _REPO       = Path(os.environ.get("ECHOMIMIC_REPO",    Path(__file__).parent / "EchoMimicV3"))
@@ -175,203 +119,62 @@ _WEIGHTS    = Path(os.environ.get("ECHOMIMIC_WEIGHTS", Path(__file__).parent / "
 _OUTPUT_DIR = Path(__file__).parent / "echomimic_results"
 _OUTPUT_DIR.mkdir(exist_ok=True)
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Device detection
-# ─────────────────────────────────────────────────────────────────────────────
+for _p, _msg in [
+    (_REPO,    "Run: git clone https://github.com/antgroup/echomimic_v3 models/EchoMimicV3"),
+    (_WEIGHTS, "Run: python download_echomimic_weights.py"),
+]:
+    if not _p.exists():
+        raise RuntimeError(f"Missing: {_p}\n{_msg}")
 
-_CUDA = torch.cuda.is_available()
-_MPS  = (not _CUDA) and getattr(torch.backends, "mps", None) is not None and torch.backends.mps.is_available()
-
-if not _CUDA and not _MPS:
-    raise RuntimeError(
-        "EchoMimic V3 requires either a CUDA GPU (≥12 GB VRAM) or Apple Silicon (MPS).\n"
-        "No supported accelerator detected."
-    )
-
-if not _REPO.exists():
-    raise RuntimeError(
-        f"EchoMimicV3 repo not found at {_REPO}.\n"
-        "Run:  git clone https://github.com/antgroup/echomimic_v3 models/EchoMimicV3"
-    )
-
-if not _WEIGHTS.exists():
-    raise RuntimeError(
-        f"EchoMimic V3 weights not found at {_WEIGHTS}.\n"
-        "Run:  python download_echomimic_weights.py"
-    )
-
-# Add EchoMimicV3 repo to path so we can import its src/ modules
 sys.path.insert(0, str(_REPO))
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Device / dtype
-# MPS doesn't support bfloat16 — use float16 instead
-# ─────────────────────────────────────────────────────────────────────────────
-
-DEVICE = "cuda" if _CUDA else "mps"
-DTYPE  = torch.bfloat16 if _CUDA else torch.float16
-
-print(f"[EchoMimic] device={DEVICE}  dtype={DTYPE}")
+_CONFIG_PATH  = _REPO / "config" / "config.yaml"
+_BASE_MODEL   = _WEIGHTS / "base"
+_WAV2VEC_PATH = _WEIGHTS / "wav2vec2"
+_TRANSFORMER  = _WEIGHTS / "transformer" / "transformer"
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Imports from EchoMimicV3 src/ (flat structure — no subpackages)
+# EchoMimicV3 src/ imports
 # ─────────────────────────────────────────────────────────────────────────────
 
 from omegaconf import OmegaConf
 from transformers import AutoTokenizer, Wav2Vec2FeatureExtractor
 from einops import rearrange
 
-from src.wan_vae                          import AutoencoderKLWan                  # noqa: E402
-from src.wan_image_encoder                import CLIPModel                          # noqa: E402
-from src.wan_text_encoder                 import WanT5EncoderModel                 # noqa: E402
-from src.wan_transformer3d_audio_2512     import WanTransformerAudioMask3DModel    # noqa: E402
-from src.pipeline_wan_fun_inpaint_audio_2512 import WanFunInpaintAudioPipeline     # noqa: E402
-from src.wav2vec2                         import Wav2Vec2Model as EchoWav2Vec2Model # noqa: E402
-from src.utils                            import (                                  # noqa: E402
-    get_image_to_video_latent2,
-    save_videos_grid,
-    filter_kwargs as src_filter_kwargs,
-)
-from src.fm_solvers_unipc                 import FlowUniPCMultistepScheduler        # noqa: E402
-from src.cache_utils                      import get_teacache_coefficients          # noqa: E402
+from src.wan_vae                             import AutoencoderKLWan
+from src.wan_image_encoder                   import CLIPModel
+from src.wan_text_encoder                    import WanT5EncoderModel
+from src.wan_transformer3d_audio_2512        import WanTransformerAudioMask3DModel
+from src.pipeline_wan_fun_inpaint_audio_2512 import WanFunInpaintAudioPipeline
+from src.wav2vec2                            import Wav2Vec2Model as EchoWav2Vec2Model
+from src.utils                               import get_image_to_video_latent2, save_videos_grid, filter_kwargs as src_filter_kwargs
+from src.fm_solvers_unipc                    import FlowUniPCMultistepScheduler
 
-import librosa          # noqa: E402
-import pyloudnorm as pyln  # noqa: E402
-from PIL import Image   # noqa: E402
+import librosa
+import pyloudnorm as pyln
+from PIL import Image
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Weight paths
+# Lazy global model cache
+# Models are loaded on first job and kept in CPU RAM between jobs.
+# enable_sequential_cpu_offload moves each model to GPU only during its
+# forward pass, then immediately back to CPU — so text encoder (20 GB) and
+# transformer (6 GB) never occupy VRAM at the same time.
 # ─────────────────────────────────────────────────────────────────────────────
 
-# Config lives inside the cloned EchoMimicV3 repo
-_CONFIG_PATH  = _REPO / "config" / "config.yaml"
-_BASE_MODEL   = _WEIGHTS / "base"          # Wan2.1-Fun-V1.1-1.3B-InP snapshot
-_WAV2VEC_PATH = _WEIGHTS / "wav2vec2"      # TencentGameMate/chinese-wav2vec2-base
-_TRANSFORMER  = _WEIGHTS / "transformer" / "transformer"   # BadToBest/EchoMimicV3 → transformer/transformer/
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Global model state
-# ─────────────────────────────────────────────────────────────────────────────
-
-_pipeline:       Optional[WanFunInpaintAudioPipeline] = None
-_wav2vec_model:  Optional[EchoWav2Vec2Model]          = None
-_wav2vec_extractor: Optional[Wav2Vec2FeatureExtractor] = None
-_vae_temporal_ratio: int = 4   # populated from config at load time
-_models_ready = False
-
-# Cache for text embeddings so multi-chunk jobs (same prompt) only encode once
-_EMBED_CACHE: dict = {}
+_config             = None
+_wav2vec_extractor  = None
+_wav2vec_model      = None
+_pipeline           = None
+_vae_temporal_ratio = 4
 
 
-def _patch_encode_prompt_gpu_swap(pipeline: "WanFunInpaintAudioPipeline") -> None:
-    """Monkey-patch pipeline.encode_prompt to run the UMT5-XXL text encoder on GPU.
-
-    Strategy (CUDA only):
-      1. Move transformer → CPU  (frees ~6 GB VRAM)
-      2. Move text_encoder → GPU (needs ~20 GB — now fits in the freed space)
-      3. Encode prompt on GPU    (seconds instead of minutes)
-      4. Move text_encoder → CPU (restore)
-      5. Move transformer → GPU  (restore for denoising)
-
-    Also caches embeddings by (prompt, negative_prompt) hash so that the second
-    and subsequent chunks of a multi-chunk job skip encoding entirely.
-    """
-    if not _CUDA:
-        return  # MPS already uses model_cpu_offload — no manual swap needed
-
-    import hashlib
-    import types
-
-    _orig_encode = pipeline.encode_prompt  # bound method
-
-    def _gpu_models(pl):
-        """Return all pipeline attributes that are nn.Modules currently on GPU."""
-        import torch.nn as nn
-        candidates = ["transformer", "vae", "clip_image_encoder", "image_encoder"]
-        found = []
-        for name in candidates:
-            mod = getattr(pl, name, None)
-            if mod is not None and isinstance(mod, nn.Module):
-                try:
-                    first_param = next(mod.parameters(), None)
-                    if first_param is not None and first_param.device.type == "cuda":
-                        found.append((name, mod))
-                except Exception:
-                    pass
-        return found
-
-    def _encode_with_gpu_swap(*args, **kwargs):
-        # ── Build cache key ───────────────────────────────────────────────
-        prompt      = kwargs.get("prompt")      or (args[0] if args else "")
-        neg_prompt  = kwargs.get("negative_prompt") or (args[1] if len(args) > 1 else "")
-        cache_key   = hashlib.md5(f"{prompt}||{neg_prompt}".encode()).hexdigest()
-
-        if cache_key in _EMBED_CACHE:
-            print("[EchoMimic] encode_prompt → cache hit, skipping GPU swap")
-            cached = _EMBED_CACHE[cache_key]
-            return tuple(
-                t.to(DEVICE) if isinstance(t, torch.Tensor) else t
-                for t in cached
-            )
-
-        # ── Step 1: move ALL GPU models to CPU to free max VRAM ──────────
-        # Text encoder (UMT5-XXL) needs ~20 GB; L4 has ~22 GB total.
-        # VAE + CLIP + transformer together use ~9 GB — we must evict all of
-        # them before there is room for the text encoder.
-        gpu_models = _gpu_models(pipeline)
-        gpu_model_names = [n for n, _ in gpu_models]
-        print(f"[EchoMimic] encode_prompt → moving {gpu_model_names} to CPU to free VRAM…")
-        for _, mod in gpu_models:
-            mod.to("cpu")
-        torch.cuda.empty_cache()
-        gc.collect()
-        vram_free = (
-            torch.cuda.get_device_properties(0).total_memory
-            - torch.cuda.memory_allocated()
-        ) / 1e9
-        print(f"[EchoMimic]   VRAM free after eviction: {vram_free:.1f} GB")
-
-        # ── Step 2: move text_encoder to GPU ──────────────────────────────
-        print("[EchoMimic]   loading text_encoder onto GPU…")
-        pipeline.text_encoder.to(DEVICE)
-        vram_used = torch.cuda.memory_allocated() / 1e9
-        print(f"[EchoMimic]   text_encoder on GPU — VRAM used: {vram_used:.1f} GB")
-
-        try:
-            result = _orig_encode(*args, **kwargs)
-        finally:
-            # ── Step 3: always restore, even if encoding raised ───────────
-            print("[EchoMimic]   restoring text_encoder → CPU, GPU models back…")
-            pipeline.text_encoder.to("cpu")
-            torch.cuda.empty_cache()
-            gc.collect()
-            for name, mod in gpu_models:
-                mod.to(DEVICE)
-            torch.cuda.empty_cache()
-            vram_used = torch.cuda.memory_allocated() / 1e9
-            print(f"[EchoMimic]   GPU models restored — VRAM used: {vram_used:.1f} GB")
-
-        # ── Cache result on CPU ───────────────────────────────────────────
-        result_tuple = result if isinstance(result, tuple) else (result,)
-        _EMBED_CACHE[cache_key] = tuple(
-            t.detach().cpu() if isinstance(t, torch.Tensor) else t
-            for t in result_tuple
-        )
-        return result
-
-    pipeline.encode_prompt = _encode_with_gpu_swap
-    print("[EchoMimic] encode_prompt patched: GPU model-swap + embedding cache enabled")
-
-
-def _load_models():
-    global _pipeline, _wav2vec_model, _wav2vec_extractor, _vae_temporal_ratio, _models_ready
-
-    print("[EchoMimic] Loading models — this will take a few minutes…")
-
-    config = OmegaConf.load(str(_CONFIG_PATH))
-
-    # ── Wav2Vec2 audio encoder (kept on CPU for inference) ────────────────
-    print("[EchoMimic] Loading Wav2Vec2…")
+def _load_audio_model():
+    """Load Wav2Vec2 into CPU RAM (small model, ~0.4 GB)."""
+    global _wav2vec_extractor, _wav2vec_model
+    if _wav2vec_model is not None:
+        return
+    print("[EchoMimic] Loading Wav2Vec2 (audio encoder)…")
     _wav2vec_extractor = Wav2Vec2FeatureExtractor.from_pretrained(
         str(_WAV2VEC_PATH), local_files_only=True
     )
@@ -380,143 +183,96 @@ def _load_models():
     ).to("cpu")
     _wav2vec_model.feature_extractor._freeze_parameters()
     gc.collect()
+    print("[EchoMimic] Wav2Vec2 ready.")
 
-    def _to_gpu(model, name: str):
-        """Move a model to GPU immediately after loading so CPU RAM is freed
-        before the next (possibly larger) model is loaded."""
-        if _CUDA:
-            print(f"[EchoMimic]   → moving {name} to GPU…")
-            model = model.to(DEVICE)
-            gc.collect()
-            torch.cuda.empty_cache()
-        return model
+
+def _load_pipeline():
+    """Load VAE, text encoder, CLIP, transformer → assemble pipeline.
+
+    All models start in CPU RAM.  enable_sequential_cpu_offload then hooks
+    each one to move to CUDA only during its forward pass and immediately
+    back to CPU after — so we never OOM even with the 20 GB text encoder.
+    """
+    global _pipeline, _vae_temporal_ratio, _config
+
+    if _pipeline is not None:
+        return
+
+    if _config is None:
+        _config = OmegaConf.load(str(_CONFIG_PATH))
+
+    print("[EchoMimic] Loading pipeline models (VAE, text encoder, CLIP, transformer)…")
 
     # ── VAE ───────────────────────────────────────────────────────────────
-    print("[EchoMimic] Loading VAE…")
-    vae_path = str(_BASE_MODEL / config["vae_kwargs"].get("vae_subpath", "vae"))
+    print("[EchoMimic]   1/4  VAE…")
+    vae_path = str(_BASE_MODEL / _config["vae_kwargs"].get("vae_subpath", "vae"))
     vae = AutoencoderKLWan.from_pretrained(
         vae_path,
-        additional_kwargs=OmegaConf.to_container(config["vae_kwargs"]),
+        additional_kwargs=OmegaConf.to_container(_config["vae_kwargs"]),
     ).to(DTYPE)
-    _vae_temporal_ratio = config["vae_kwargs"].get("temporal_compression_ratio", 4)
-    vae = _to_gpu(vae, "VAE")
+    _vae_temporal_ratio = _config["vae_kwargs"].get("temporal_compression_ratio", 4)
     gc.collect()
 
-    # ── Text encoder + tokenizer ──────────────────────────────────────────
-    # IMPORTANT: kept on CPU intentionally.
-    # UMT5-XXL is ~20 GB in bfloat16 — it alone fills a 24 GB GPU.
-    # It only runs ONCE per job to encode the text prompt; the transformer
-    # runs 8 denoising steps on GPU.  Keeping it on CPU means VAE + CLIP +
-    # transformer (~10 GB) fit comfortably in VRAM.
-    print("[EchoMimic] Loading text encoder (CPU)…")
-    te_path = str(_BASE_MODEL / config["text_encoder_kwargs"].get("text_encoder_subpath", "text_encoder"))
+    # ── Text encoder (UMT5-XXL, ~20 GB) ──────────────────────────────────
+    print("[EchoMimic]   2/4  text encoder (UMT5-XXL — large, be patient)…")
+    te_path = str(_BASE_MODEL / _config["text_encoder_kwargs"].get("text_encoder_subpath", "text_encoder"))
     text_encoder = WanT5EncoderModel.from_pretrained(
         te_path,
-        additional_kwargs=OmegaConf.to_container(config["text_encoder_kwargs"]),
+        additional_kwargs=OmegaConf.to_container(_config["text_encoder_kwargs"]),
         low_cpu_mem_usage=False,
         torch_dtype=DTYPE,
     ).eval()
-    # do NOT move to GPU — stays on CPU throughout
     gc.collect()
 
-    tok_subpath = config["text_encoder_kwargs"].get("tokenizer_subpath", "tokenizer")
-    tok_path = str(_BASE_MODEL / tok_subpath) if ((_BASE_MODEL / tok_subpath).exists()) else tok_subpath
+    tok_sub  = _config["text_encoder_kwargs"].get("tokenizer_subpath", "tokenizer")
+    tok_path = str(_BASE_MODEL / tok_sub) if (_BASE_MODEL / tok_sub).exists() else tok_sub
     tokenizer = AutoTokenizer.from_pretrained(tok_path)
 
     # ── CLIP image encoder ────────────────────────────────────────────────
-    print("[EchoMimic] Loading CLIP image encoder…")
-    ie_path = str(_BASE_MODEL / config["image_encoder_kwargs"].get("image_encoder_subpath", "image_encoder"))
-    clip_image_encoder = CLIPModel.from_pretrained(
-        ie_path,
-        transformer_additional_kwargs={},
-    ).to(DTYPE).eval()
-    clip_image_encoder = _to_gpu(clip_image_encoder, "CLIP")
+    print("[EchoMimic]   3/4  CLIP image encoder…")
+    ie_path = str(_BASE_MODEL / _config["image_encoder_kwargs"].get("image_encoder_subpath", "image_encoder"))
+    clip = CLIPModel.from_pretrained(ie_path, transformer_additional_kwargs={}).to(DTYPE).eval()
     gc.collect()
 
-    # ── Transformer ───────────────────────────────────────────────────────
-    print("[EchoMimic] Loading EchoMimic V3 transformer…")
-    transformer_additional_kwargs = OmegaConf.to_container(config["transformer_additional_kwargs"])
+    # ── Transformer (EchoMimic V3, ~6 GB) ────────────────────────────────
+    print("[EchoMimic]   4/4  EchoMimic V3 transformer…")
     transformer = WanTransformerAudioMask3DModel.from_pretrained(
         str(_TRANSFORMER),
-        transformer_additional_kwargs=transformer_additional_kwargs,
+        transformer_additional_kwargs=OmegaConf.to_container(_config["transformer_additional_kwargs"]),
         low_cpu_mem_usage=False,
         torch_dtype=DTYPE,
     )
-    transformer = _to_gpu(transformer, "transformer")
     gc.collect()
 
     # ── Scheduler ─────────────────────────────────────────────────────────
-    sched_cfg = OmegaConf.to_container(config["scheduler_kwargs"])
-    sched_cfg["shift"] = 1   # as done in infer_flash.py for Flow_Unipc
+    sched_cfg = OmegaConf.to_container(_config["scheduler_kwargs"])
+    sched_cfg["shift"] = 1
     scheduler = FlowUniPCMultistepScheduler(
         **src_filter_kwargs(FlowUniPCMultistepScheduler, sched_cfg)
     )
 
     # ── Assemble pipeline ─────────────────────────────────────────────────
-    print("[EchoMimic] Assembling pipeline…")
+    print("[EchoMimic]   Assembling pipeline…")
     _pipeline = WanFunInpaintAudioPipeline(
         transformer=transformer,
         vae=vae,
         tokenizer=tokenizer,
         text_encoder=text_encoder,
         scheduler=scheduler,
-        clip_image_encoder=clip_image_encoder,
+        clip_image_encoder=clip,
     )
-    print("[EchoMimic] Pipeline assembled.")
 
-    # ── TeaCache ──────────────────────────────────────────────────────────
-    print("[EchoMimic] Enabling TeaCache…")
-    coefficients = get_teacache_coefficients("Wan2.1-Fun-V1.1-1.3B-InP")
-    if coefficients is not None:
-        _pipeline.transformer.enable_teacache(
-            coefficients,
-            num_steps=6,
-            rel_l1_thresh=0.1,
-            # Only skip caching on the very first 2 steps (high-noise regime
-            # where frame states change rapidly).  Previously 5 of 8 steps —
-            # meaning only 3 were ever cache-eligible.  Now 4 of 6 can be cached.
-            num_skip_start_steps=2,
-            offload=False,
-        )
-        print("[EchoMimic] TeaCache enabled.")
-    else:
-        print("[EchoMimic] TeaCache coefficients not found — skipping.")
+    # Sequential CPU offload: each component moves to CUDA only during its
+    # forward pass.  Peak VRAM = largest single model (~20 GB text encoder)
+    # which fits in the L4's 24 GB.  No manual GPU swap needed.
+    print("[EchoMimic]   Enabling sequential_cpu_offload…")
+    _pipeline.enable_sequential_cpu_offload()
 
-    # ── Device placement ──────────────────────────────────────────────────
-    # Devices after eager loading:
-    #   GPU : VAE, CLIP, transformer  (~10 GB total — fits in 24 GB VRAM)
-    #   CPU : text_encoder            (~20 GB UMT5-XXL — too large for GPU)
-    #   CPU : wav2vec2, tokenizer     (small, only needed for pre-processing)
-    #
-    # Do NOT call _pipeline.to(DEVICE) — it iterates every component and
-    # would OOM trying to move the 20 GB text encoder before we could stop it.
-    # The pipeline discovers its execution device from the transformer's device,
-    # so inference will route correctly to GPU automatically.
-    if _CUDA:
-        total_vram_gb = torch.cuda.get_device_properties(0).total_memory / 1e9
-        vram_used_gb  = torch.cuda.memory_allocated() / 1e9
-        print(f"[EchoMimic] VRAM: {vram_used_gb:.1f} GB used / {total_vram_gb:.0f} GB total")
-        if total_vram_gb < 20:
-            # Not enough VRAM even for transformer alone — fall back to offload
-            print(f"[EchoMimic] Low VRAM — enabling sequential_cpu_offload")
-            _pipeline.enable_sequential_cpu_offload()
-    else:
-        print("[EchoMimic] MPS — enabling model_cpu_offload")
-        _pipeline.enable_model_cpu_offload()
-
-    # ── GPU text encoding patch ───────────────────────────────────────────
-    # On CUDA: patch encode_prompt to temporarily swap transformer→CPU and
-    # text_encoder→GPU so UMT5-XXL runs at GPU speed (seconds, not minutes).
-    # Embeddings are cached per (prompt, negative_prompt) so multi-chunk jobs
-    # pay the encoding cost only once.
-    _patch_encode_prompt_gpu_swap(_pipeline)
-
-    _models_ready = True
-    print("[EchoMimic] All models ready.")
+    print("[EchoMimic] Pipeline ready.")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Audio helpers (taken directly from infer_flash.py)
+# Audio helpers
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _loudness_norm(audio_array: np.ndarray, sr: int = 16000, lufs: float = -23) -> np.ndarray:
@@ -527,16 +283,12 @@ def _loudness_norm(audio_array: np.ndarray, sr: int = 16000, lufs: float = -23) 
     return pyln.normalize.loudness(audio_array, loudness, lufs)
 
 
-def _get_audio_embed(
-    mel_input: np.ndarray,
-    video_length: int,
-    sr: int = 16000,
-) -> torch.Tensor:
-    """Extract Wav2Vec2 embeddings then apply temporal windowing (window=5)."""
+def _get_audio_embed(audio: np.ndarray, video_length: int, sr: int = 16000) -> torch.Tensor:
+    """Wav2Vec2 embeddings with temporal windowing (window=5)."""
     audio_feature = np.squeeze(
-        _wav2vec_extractor(mel_input, sampling_rate=sr).input_values
+        _wav2vec_extractor(audio, sampling_rate=sr).input_values
     )
-    audio_feature = torch.from_numpy(audio_feature).float().to("cpu").unsqueeze(0)
+    audio_feature = torch.from_numpy(audio_feature).float().unsqueeze(0)
 
     with torch.no_grad():
         embeddings = _wav2vec_model(audio_feature, seq_len=video_length, output_hidden_states=True)
@@ -544,18 +296,16 @@ def _get_audio_embed(
     audio_emb = torch.stack(embeddings.hidden_states[1:], dim=1).squeeze(0)
     audio_emb = rearrange(audio_emb, "b s d -> s b d").cpu().detach()
 
-    # Temporal windowing (window half-size = 2, total = 5 frames context)
     indices = (torch.arange(2 * 2 + 1) - 2) * 1
     center_indices = (
-        torch.arange(0, video_length, 1).unsqueeze(1) + indices.unsqueeze(0)
+        torch.arange(0, video_length).unsqueeze(1) + indices.unsqueeze(0)
     )
     center_indices = torch.clamp(center_indices, min=0, max=audio_emb.shape[0] - 1)
-    audio_emb = audio_emb[center_indices]           # [F, 5, 12, 768]
-    return audio_emb.unsqueeze(0)                   # [1, F, 5, 12, 768]
+    audio_emb = audio_emb[center_indices]       # [F, 5, 12, 768]
+    return audio_emb.unsqueeze(0)               # [1, F, 5, 12, 768]
 
 
 def _valid_video_length(raw: int, temporal_ratio: int = 4) -> int:
-    """Round to nearest valid frame count: (n-1) % temporal_ratio == 0, min 17."""
     if raw < 17:
         return 17
     remainder = (raw - 1) % temporal_ratio
@@ -563,25 +313,16 @@ def _valid_video_length(raw: int, temporal_ratio: int = 4) -> int:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Job queue
+# Generation constants
 # ─────────────────────────────────────────────────────────────────────────────
 
-_jobs: dict = {}
-_thread_pool = concurrent.futures.ThreadPoolExecutor(max_workers=1)
-
-OUTPUT_HEIGHT = 512
-OUTPUT_WIDTH  = 512
-
-
-# ── Per-chunk frame count — safe for 24 GB VRAM at 512×512 ──────────────────
-# (121-1) % 4 == 0 ✓ ≈ 4.8 s per chunk
-CHUNK_FRAMES   = 121
-# Hard cap on total video length (30 s = 750 frames at 25 fps)
-MAX_TOTAL_FRAMES = 750
+OUTPUT_HEIGHT    = 512
+OUTPUT_WIDTH     = 512
+CHUNK_FRAMES     = 121   # (121-1) % 4 == 0, ≈ 4.8 s per chunk
+MAX_TOTAL_FRAMES = 750   # hard cap — 30 s at 25 fps
 
 
 def _pipeline_output_to_tensor(output) -> torch.Tensor:
-    """Extract the video tensor from whatever the pipeline returns."""
     if isinstance(output, tuple):
         return output[0]
     if hasattr(output, "frames"):
@@ -592,44 +333,41 @@ def _pipeline_output_to_tensor(output) -> torch.Tensor:
 
 
 def _last_frame_as_image(videos: torch.Tensor) -> Image.Image:
-    """Extract the last frame of a [B,C,T,H,W] or [C,T,H,W] tensor as PIL."""
-    v = videos[0] if videos.dim() == 5 else videos   # → [C, T, H, W]
-    last = v[:, -1, :, :].cpu().float()               # → [C, H, W]
-    if last.min() < -0.1:                             # [-1,1] → [0,1]
+    v    = videos[0] if videos.dim() == 5 else videos
+    last = v[:, -1, :, :].cpu().float()
+    if last.min() < -0.1:
         last = (last + 1.0) / 2.0
-    last = last.clamp(0.0, 1.0)
-    arr = (last * 255).byte().permute(1, 2, 0).numpy()
+    arr  = (last.clamp(0, 1) * 255).byte().permute(1, 2, 0).numpy()
     return Image.fromarray(arr)
 
 
 def _generate_one_chunk(
     anchor_image: Image.Image,
-    chunk_audio: np.ndarray,
-    sr: int,
-    num_frames: int,
-    prompt: str,
-    seed: int,
+    chunk_audio:  np.ndarray,
+    sr:           int,
+    num_frames:   int,
+    prompt:       str,
+    seed:         int,
 ) -> torch.Tensor:
-    """Run the pipeline for a single chunk. Returns raw video tensor."""
-    import time as _time
+    import time as _t
+    t0 = _t.time()
 
-    t_audio = _time.time()
     audio_embeds = _get_audio_embed(chunk_audio, num_frames, sr)
-    audio_embeds = audio_embeds.to(device=DEVICE, dtype=DTYPE)
-    print(f"[EchoMimic]     audio embed: {_time.time()-t_audio:.1f}s")
+    # sequential_cpu_offload pipeline expects CPU tensors — it will move them
+    # to CUDA internally via the registered hooks.
+    audio_embeds = audio_embeds.cpu().to(DTYPE)
 
-    t_latent = _time.time()
     input_video, input_video_mask, clip_image = get_image_to_video_latent2(
         anchor_image, None,
         video_length=num_frames,
         sample_size=[OUTPUT_HEIGHT, OUTPUT_WIDTH],
     )
-    print(f"[EchoMimic]     latent prep:  {_time.time()-t_latent:.1f}s")
 
-    _gen_device = "cuda" if _CUDA else "cpu"
-    generator = torch.Generator(device=_gen_device).manual_seed(seed)
+    generator = torch.Generator(device="cuda").manual_seed(seed)
 
-    t_denoise = _time.time()
+    print(f"[EchoMimic]     prep: {_t.time()-t0:.1f}s — starting denoising ({num_frames} frames)…")
+    t1 = _t.time()
+
     with torch.no_grad():
         output = _pipeline(
             prompt=prompt or "A person is speaking naturally, realistic, high quality.",
@@ -647,8 +385,6 @@ def _generate_one_chunk(
             audio_guidance_scale=3.0,
             neg_scale=1.0,
             neg_steps=0,
-            # 6 steps (vs 8) — flow matching + FlowUniPC converges well at 6;
-            # combined with TeaCache this halves effective transformer calls.
             num_inference_steps=6,
             video=input_video,
             mask_video=input_video_mask,
@@ -657,19 +393,23 @@ def _generate_one_chunk(
             use_dynamic_cfg=False,
             use_dynamic_acfg=False,
             shift=5.0,
-            # Skip CFG (classifier-free guidance) for the last 40% of steps.
-            # CFG doubles transformer calls per step; skipping it for late steps
-            # (low-noise refinement) saves ~2 forward passes with minimal
-            # quality impact since the trajectory is already well-defined.
             cfg_skip_ratio=0.4,
             return_dict=False,
         )
-    print(f"[EchoMimic]     denoising:    {_time.time()-t_denoise:.1f}s")
 
+    print(f"[EchoMimic]     denoising: {_t.time()-t1:.1f}s")
     videos = _pipeline_output_to_tensor(output)
-    torch.cuda.empty_cache()
     gc.collect()
+    torch.cuda.empty_cache()
     return videos
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Job queue
+# ─────────────────────────────────────────────────────────────────────────────
+
+_jobs:        dict = {}
+_thread_pool  = concurrent.futures.ThreadPoolExecutor(max_workers=1)
 
 
 def _run_echomimic(job_id: str, image_path: str, audio_path: str, prompt: str):
@@ -678,17 +418,14 @@ def _run_echomimic(job_id: str, image_path: str, audio_path: str, prompt: str):
         t0 = time.time()
         print(f"[EchoMimic] job {job_id} — starting")
 
-        # Clear embed cache at job start — each job may use different prompts,
-        # and we don't want unbounded memory growth across many jobs.
-        # Within a single multi-chunk job the cache prevents redundant re-encoding.
-        _EMBED_CACHE.clear()
+        # ── Step 1: audio model → embeddings ─────────────────────────────
+        print(f"[EchoMimic] step 1/3 — loading audio model + extracting embeddings…")
+        _load_audio_model()
 
-        # ── Load inputs ───────────────────────────────────────────────────
         ref_image = Image.open(image_path).convert("RGB")
         audio, sr = librosa.load(audio_path, sr=16000, mono=True)
         audio     = _loudness_norm(audio, sr)
 
-        # ── Compute total valid frame count ───────────────────────────────
         fps        = 25
         raw_frames = max(17, int(len(audio) / sr * fps))
         raw_frames = min(raw_frames, MAX_TOTAL_FRAMES)
@@ -697,16 +434,18 @@ def _run_echomimic(job_id: str, image_path: str, audio_path: str, prompt: str):
             _vae_temporal_ratio,
         )
         audio = audio[: int(total_frames / fps * sr)]
-        print(f"[EchoMimic] job {job_id} — {total_frames} frames ({total_frames/fps:.1f}s)")
+        print(f"[EchoMimic] {total_frames} frames ({total_frames/fps:.1f}s)")
 
-        # ── Chunked generation ────────────────────────────────────────────
-        # Each chunk is CHUNK_FRAMES long. The last frame of chunk N becomes
-        # the anchor (reference portrait) for chunk N+1, maintaining temporal
-        # consistency across the full video.
+        # ── Step 2: load video pipeline (first call only) ─────────────────
+        print(f"[EchoMimic] step 2/3 — loading video pipeline (first call downloads ~26 GB)…")
+        _load_pipeline()
+
+        # ── Step 3: generate video in chunks ─────────────────────────────
+        print(f"[EchoMimic] step 3/3 — generating video…")
         chunk_tensors: list = []
-        anchor_image = ref_image
-        frame_cursor = 0
-        chunk_idx    = 0
+        anchor_image  = ref_image
+        frame_cursor  = 0
+        chunk_idx     = 0
 
         while frame_cursor < total_frames:
             remaining    = total_frames - frame_cursor
@@ -718,13 +457,12 @@ def _run_echomimic(job_id: str, image_path: str, audio_path: str, prompt: str):
             if chunk_frames < 17:
                 break
 
-            # Slice the audio window for this chunk
             s0 = int(frame_cursor / fps * sr)
             s1 = int((frame_cursor + chunk_frames) / fps * sr)
             chunk_audio = audio[s0:s1]
 
             chunk_idx += 1
-            n_chunks = max(1, -(-total_frames // CHUNK_FRAMES))   # ceiling div
+            n_chunks = max(1, -(-total_frames // CHUNK_FRAMES))
             print(f"[EchoMimic]   chunk {chunk_idx}/{n_chunks} — "
                   f"frames {frame_cursor}–{frame_cursor+chunk_frames} "
                   f"({frame_cursor/fps:.1f}s–{(frame_cursor+chunk_frames)/fps:.1f}s)")
@@ -733,22 +471,15 @@ def _run_echomimic(job_id: str, image_path: str, audio_path: str, prompt: str):
                 anchor_image, chunk_audio, sr, chunk_frames, prompt,
                 seed=42 + chunk_idx,
             )
-
             chunk_tensors.append(videos[:, :, :chunk_frames])
-
-            # Use last frame of this chunk as the next anchor
-            anchor_image = _last_frame_as_image(videos)
+            anchor_image  = _last_frame_as_image(videos)
             frame_cursor += chunk_frames
 
-        # ── Concatenate all chunks ────────────────────────────────────────
-        if len(chunk_tensors) == 1:
-            final_tensor = chunk_tensors[0]
-        else:
-            final_tensor = torch.cat(chunk_tensors, dim=2)   # [B, C, T, H, W]
-            print(f"[EchoMimic] concatenated {len(chunk_tensors)} chunks → "
-                  f"{final_tensor.shape[2]} frames")
+        # ── Concatenate ───────────────────────────────────────────────────
+        final_tensor = chunk_tensors[0] if len(chunk_tensors) == 1 else \
+                       torch.cat(chunk_tensors, dim=2)
 
-        # ── Save video ────────────────────────────────────────────────────
+        # ── Save video with audio ─────────────────────────────────────────
         result_dir = _OUTPUT_DIR / job_id
         result_dir.mkdir(exist_ok=True)
         tmp_path   = str(result_dir / "silent.mp4")
@@ -782,25 +513,23 @@ def _run_echomimic(job_id: str, image_path: str, audio_path: str, prompt: str):
 
 app = FastAPI(
     title="EchoMimic V3 API",
-    description="Audio-driven talking-head video — EchoMimicV3 (Wan2.1 based)",
-    version="1.0.0",
+    description="Audio-driven talking-head video — CUDA only",
+    version="2.0.0",
 )
-
-
-@app.on_event("startup")
-def startup():
-    _load_models()
 
 
 @app.get("/health")
 def health():
-    vram = round(torch.cuda.get_device_properties(0).total_memory / 1e9, 1) if _CUDA else "N/A (unified)"
+    vram_total = round(torch.cuda.get_device_properties(0).total_memory / 1e9, 1)
+    vram_used  = round(torch.cuda.memory_allocated() / 1e9, 1)
     return {
-        "status":  "ok" if _models_ready else "loading",
-        "device":  DEVICE,
-        "dtype":   str(DTYPE),
-        "vram_gb": vram,
-        "model":   "EchoMimicV3-Flash",
+        "status":        "ok",
+        "device":        DEVICE,
+        "dtype":         str(DTYPE),
+        "vram_total_gb": vram_total,
+        "vram_used_gb":  vram_used,
+        "audio_loaded":  _wav2vec_model is not None,
+        "pipeline_loaded": _pipeline is not None,
     }
 
 
@@ -810,9 +539,6 @@ async def lipsync_generate(
     audio:  UploadFile = File(..., description="Driving audio (WAV/MP3)"),
     prompt: str        = Form("", description="Text description of the subject"),
 ):
-    if not _models_ready:
-        raise HTTPException(status_code=503, detail="Models are still loading, try again shortly")
-
     img_bytes = await image.read()
     aud_bytes = await audio.read()
 
@@ -840,7 +566,7 @@ async def lipsync_generate(
     loop = asyncio.get_event_loop()
     loop.run_in_executor(_thread_pool, _run_echomimic, job_id, img_path, aud_path, prompt)
 
-    print(f"[EchoMimic] started job {job_id}")
+    print(f"[EchoMimic] queued job {job_id}")
     return JSONResponse({"job_id": job_id, "status": "processing"}, status_code=202)
 
 
@@ -875,10 +601,10 @@ def lipsync_result(job_id: str):
         b64_video = base64.b64encode(f.read()).decode()
 
     return JSONResponse({
-        "job_id":           job_id,
-        "video":            f"data:video/mp4;base64,{b64_video}",
+        "job_id":  job_id,
+        "video":   f"data:video/mp4;base64,{b64_video}",
+        "width":   OUTPUT_WIDTH,
+        "height":  OUTPUT_HEIGHT,
+        "frames":  None,
         "duration_seconds": None,
-        "width":            OUTPUT_WIDTH,
-        "height":           OUTPUT_HEIGHT,
-        "frames":           None,
     })

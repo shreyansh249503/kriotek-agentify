@@ -233,7 +233,7 @@ export default function AvatarStudioPage() {
     setAvatarError(null);
     setSavedId(null);
     try {
-      const result = await generateImage(avatarPrompt, { width: 512, height: 512 });
+      const result = await generateImage(avatarPrompt);
       setAvatarImage(result.image);
       setStep("avatar", "done");
       setStep("voice", "active");

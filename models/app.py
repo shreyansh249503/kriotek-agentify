@@ -2,8 +2,8 @@
 AI Models API
 ─────────────
 Endpoints:
-  POST /image/generate  — SDXL-Turbo  (text → image)
-  POST /tts/generate    — Kokoro TTS  (text → speech)
+  POST /image/generate  — SDXL-Base 1.0  (text → image)
+  POST /tts/generate    — Kokoro TTS      (text → speech)
   GET  /health          — model status
 
 Lip-sync is handled by the EchoMimic V3 server (echomimic_v3_server.py, port 8001).
@@ -48,22 +48,37 @@ print(f"[startup] device: {device}")
 
 app = FastAPI(
     title="AI Models API",
-    description="SDXL-Turbo · Kokoro TTS",
-    version="3.0.0",
+    description="SDXL-Base 1.0 · Kokoro TTS",
+    version="4.0.0",
 )
 
 # ─────────────────────────────────────────────────────────────────────────────
-# SDXL-Turbo  (image generation)
+# SDXL-Base 1.0  (image generation)
+#
+# Why not SDXL-Turbo?
+#   Turbo is distilled for 1–4 step generation with guidance_scale=0.0.
+#   It produces fast but low-quality images — no prompt adherence, no detail.
+#   SDXL-Base with 20 steps + guidance_scale=7.5 generates at native 1024×1024
+#   with dramatically better anatomy, detail, and prompt following.
+#   On CUDA: ~8–15 s.  On MPS (M-series): ~30–90 s.  Worth the wait for avatars.
 # ─────────────────────────────────────────────────────────────────────────────
 
+# float16 on CUDA (fast + memory efficient); float32 on MPS/CPU (MPS fp16 support
+# is limited for SDXL's attention layers).
 _img_dtype = torch.float16 if device == "cuda" else torch.float32
 
-print("[IMG] Loading SDXL-Turbo…")
+print("[IMG] Loading SDXL-Base 1.0…")
 img_pipe = AutoPipelineForText2Image.from_pretrained(
-    "stabilityai/sdxl-turbo",
+    "stabilityai/stable-diffusion-xl-base-1.0",
     torch_dtype=_img_dtype,
     variant="fp16" if device == "cuda" else None,
+    use_safetensors=True,
 ).to(device)
+
+# Enable memory-efficient attention — reduces VRAM/RAM usage and speeds up
+# generation on both CUDA and MPS.
+img_pipe.enable_attention_slicing()
+
 print("[IMG] Ready.")
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -103,7 +118,7 @@ def health():
         "status": "ok",
         "device": device,
         "models": {
-            "image":   "sdxl-turbo",
+            "image":   "sdxl-base-1.0",
             "tts":     "kokoro",
             "lipsync": "echomimic-v3 (port 8001)",
         },
@@ -114,12 +129,22 @@ def health():
 # POST /image/generate
 # ─────────────────────────────────────────────────────────────────────────────
 
+# Default negative prompt — covers the most common SDXL failure modes.
+_DEFAULT_NEGATIVE = (
+    "blurry, low quality, bad anatomy, deformed face, ugly, disfigured, "
+    "extra limbs, missing fingers, watermark, text, signature, cropped, "
+    "worst quality, jpeg artifacts, oversaturated"
+)
+
+
 class ImageRequest(BaseModel):
     prompt: str
-    width: int = 512
-    height: int = 512
-    guidance_scale: float = 0.0
-    seed: Optional[int] = None
+    negative_prompt: Optional[str] = None
+    width:  int   = 1024
+    height: int   = 1024
+    steps:  int   = 20
+    guidance_scale: float = 7.5
+    seed:   Optional[int] = None
 
 
 @app.post("/image/generate", tags=["Image"])
@@ -127,16 +152,24 @@ def image_generate(req: ImageRequest):
     if not req.prompt.strip():
         raise HTTPException(status_code=400, detail="prompt is required")
 
+    # Clamp to reasonable bounds to prevent OOM / very long waits
+    width  = max(512, min(req.width,  1024))
+    height = max(512, min(req.height, 1024))
+    steps  = max(10,  min(req.steps,  50))
+
     generator = (
         torch.Generator(device=device).manual_seed(req.seed)
         if req.seed is not None else None
     )
 
+    negative_prompt = req.negative_prompt if req.negative_prompt is not None else _DEFAULT_NEGATIVE
+
     result = img_pipe(
         prompt=req.prompt,
-        width=req.width,
-        height=req.height,
-        num_inference_steps=4,
+        negative_prompt=negative_prompt,
+        width=width,
+        height=height,
+        num_inference_steps=steps,
         guidance_scale=req.guidance_scale,
         generator=generator,
     )
