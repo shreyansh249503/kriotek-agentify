@@ -116,7 +116,11 @@ export async function POST(req: Request) {
   if (contactEnabled && leadDecision?.isComplete && !alreadyComplete) {
     const { name = "", email = "", phone = "" } = leadDecision.collectedInfo;
 
-    console.log("[route] LEAD COMPLETE — firing pipeline:", { name, email, phone });
+    console.log("[route] LEAD COMPLETE — firing pipeline:", {
+      name,
+      email,
+      phone,
+    });
 
     // Mark conversation complete
     await convoRepo.update(convo.id, {
@@ -178,9 +182,17 @@ export async function POST(req: Request) {
     });
   } catch (err: any) {
     console.error("[route] Sync error starting agent:", err);
-    const isQuota = err?.statusCode === 429 || err?.lastError?.statusCode === 429 || err?.message?.includes("quota");
-    const msg = isQuota ? "Your free tier of the day is over. Please try again later." : "An error occurred.";
-    return new Response(msg, { status: isQuota ? 429 : 500, headers: corsHeaders });
+    const isQuota =
+      err?.statusCode === 429 ||
+      err?.lastError?.statusCode === 429 ||
+      err?.message?.includes("quota");
+    const msg = isQuota
+      ? "Your free tier of the day is over. Please try again later."
+      : "An error occurred.";
+    return new Response(msg, {
+      status: isQuota ? 429 : 500,
+      headers: corsHeaders,
+    });
   }
 
   const encoder = new TextEncoder();
@@ -203,14 +215,14 @@ export async function POST(req: Request) {
             if (isQuota) {
               controller.enqueue(
                 encoder.encode(
-                  "\n\n*Your free tier of the day is over. Please try again later.*"
-                )
+                  "\n\n*Your free tier of the day is over. Please try again later.*",
+                ),
               );
             } else {
               controller.enqueue(
                 encoder.encode(
-                  "\n\n*Sorry, an error occurred while generating the response.*"
-                )
+                  "\n\n*Sorry, an error occurred while generating the response.*",
+                ),
               );
             }
           }
@@ -226,14 +238,14 @@ export async function POST(req: Request) {
         if (isQuota) {
           controller.enqueue(
             encoder.encode(
-              "\n\n*Your free tier of the day is over. Please try again later.*"
-            )
+              "\n\n*Your free tier of the day is over. Please try again later.*",
+            ),
           );
         } else {
           controller.enqueue(
             encoder.encode(
-              "\n\n*Sorry, an error occurred while generating the response.*"
-            )
+              "\n\n*Sorry, an error occurred while generating the response.*",
+            ),
           );
         }
       } finally {
