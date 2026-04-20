@@ -58,9 +58,9 @@ export const Header = () => {
             
           ) : (
             <>
-              <AuthButton href="/login">Login</AuthButton>
+              <AuthButton href="/login">Sign in</AuthButton>
               <AuthButton href="/signup" $variant="primary">
-                Sign Up
+                Try for Free
               </AuthButton>
             </>
           )}

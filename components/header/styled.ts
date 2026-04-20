@@ -91,7 +91,7 @@ export const LinkTag = styled(Link)`
 export const LoginSignupContainer = styled.div`
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 10px;
 
   @media (max-width: ${BREAKPOINTS.TABLET}) {
     display: none;
@@ -174,7 +174,7 @@ export const DrawerAuth = styled.div`
 export const AuthButton = styled(Link) <{ $variant?: "primary" | "secondary" }>`
 width: fit-content;
   padding: 8px 20px;
-  border-radius: 999px;
+  border-radius: 10px;
   font-weight: 600;
   font-size: 14px;
   text-decoration: none;
