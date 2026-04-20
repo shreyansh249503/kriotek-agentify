@@ -1,6 +1,7 @@
 import styled, { keyframes } from "styled-components";
+import { BREAKPOINTS, COLOR } from "@/styles";
 import Link from "next/link";
-import { COLOR } from "@/styles";
+
 
 const fadeIn = keyframes`
   from { opacity: 0; transform: translateY(20px); }
@@ -36,26 +37,27 @@ const blink = keyframes`
   50% { opacity: 0.6; }
 `;
 
+
+
 export const HeroSection = styled.section`
-  min-height: 100vh;
+  /* min-height: 100vh; */
+  height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
   background-color: ${COLOR.LIGHT};
   background-image:
-    radial-gradient(
-      at 0% 0%,
-      ${COLOR.CREAM} 0,
-      transparent 50%
-    ),
-    radial-gradient(
-      at 100% 0%,
-      ${COLOR.BACKGROUND} 0,
-      transparent 50%
-    );
+    radial-gradient(at 0% 0%, ${COLOR.CREAM} 0, transparent 50%),
+    radial-gradient(at 100% 0%, ${COLOR.BACKGROUND} 0, transparent 50%);
   position: relative;
   overflow: hidden;
   padding-top: 80px;
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    padding-top: 60px;
+    height: auto;
+    min-height: 80vh;
+  }
 
   &::before {
     content: "";
@@ -67,6 +69,84 @@ export const HeroSection = styled.section`
     z-index: 1;
   }
 `;
+
+export const HeroContent = styled.div`
+  height: 100vh;
+  justify-content: center;
+  position: relative;
+  z-index: 10;
+  max-width: 1200px;
+  padding: 0 24px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 42px;
+`;
+
+export const MainHeading = styled.h1`
+  font-size: 72px;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: ${COLOR.DARK};
+  margin: 0;
+  animation: ${fadeIn} 0.8s ease-out;
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    font-size: 42px;
+  }
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    font-size: 36px;
+  }
+`;
+
+export const SubHeading = styled.p`
+  font-size: 20px;
+  color: ${COLOR.TEXT_SECONDARY};
+  max-width: 600px;
+  line-height: 1.6;
+  margin: 0;
+  animation: ${fadeIn} 0.8s ease-out 0.2s backwards;
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    font-size: 18px;
+  }
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    font-size: 16px;
+  }
+`;
+
+export const CTAContainer = styled.div`
+  display: flex;
+  gap: 16px;
+  animation: ${fadeIn} 0.8s ease-out 0.4s backwards;
+
+  @media (max-width: 640px) {
+    flex-direction: column;
+    width: 100%;
+  }
+`;
+
+export const SecondaryButton = styled(Link)`
+  padding: 16px 32px;
+  background: white;
+  color: ${COLOR.DARK};
+  font-weight: 700;
+  border-radius: 10px;
+  text-decoration: none;
+  border: 2px solid ${COLOR.BORDER};
+  transition: all 0.3s ease;
+
+  &:hover {
+    border-color: ${COLOR.PRIMARY};
+    background: ${COLOR.LIGHT};
+    transform: translateY(-2px);
+  }
+`;
+
 
 export const AnimatedBackground = styled.div`
   position: absolute;
@@ -130,6 +210,7 @@ export const AICircle = styled.div<{
       0 0 40px ${COLOR.PRIMARY};
   }
 `;
+
 
 export const FloatingParticle = styled.div<{
   $delay?: string;
@@ -211,11 +292,7 @@ export const NeuralLine = styled.div<{
   left: ${({ $left }) => $left || "20%"};
   width: ${({ $width }) => $width || "150px"};
   height: 2.5px;
-  background: linear-gradient(
-    90deg,
-    ${COLOR.PRIMARY} 0%,
-    transparent 70%
-  );
+  background: linear-gradient(90deg, ${COLOR.PRIMARY} 0%, transparent 70%);
   opacity: 0.4;
   transform: rotate(${({ $rotate }) => $rotate || "0deg"});
   transform-origin: left center;
@@ -236,253 +313,18 @@ export const NeuralLine = styled.div<{
   }
 `;
 
-export const HeroContent = styled.div`
-  position: relative;
-  z-index: 10;
-  max-width: 1200px;
-  padding: 0 24px;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 32px;
-`;
-
-export const MainHeading = styled.h1`
-  font-size: 72px;
-  font-weight: 800;
-  line-height: 1.1;
-  letter-spacing: -0.02em;
-  color: ${COLOR.DARK};
-  margin: 0;
-  animation: ${fadeIn} 0.8s ease-out;
-
-  @media (max-width: 768px) {
-    font-size: 48px;
-  }
-`;
-
-export const SubHeading = styled.p`
-  font-size: 20px;
-  color: ${COLOR.TEXT_SECONDARY};
-  max-width: 600px;
-  line-height: 1.6;
-  margin: 0;
-  animation: ${fadeIn} 0.8s ease-out 0.2s backwards;
-`;
-
-export const CTAContainer = styled.div`
-  display: flex;
-  gap: 16px;
-  margin-top: 16px;
-  animation: ${fadeIn} 0.8s ease-out 0.4s backwards;
-
-  @media (max-width: 640px) {
-    flex-direction: column;
-    width: 100%;
-  }
-`;
-
 export const PrimaryButton = styled(Link)`
   padding: 16px 32px;
   background: ${COLOR.PRIMARY};
   color: ${COLOR.DARK};
   font-weight: 700;
-  border-radius: 9999px;
+  border-radius: 10px;
   text-decoration: none;
   transition: all 0.3s ease;
   box-shadow: 0 4px 12px ${COLOR.SHADOW};
 
   &:hover {
-    background: ${COLOR.PRIMARY_HOVER};
     transform: translateY(-2px);
     box-shadow: 0 8px 20px rgba(168, 225, 12, 0.4);
   }
-`;
-
-export const SecondaryButton = styled(Link)`
-  padding: 16px 32px;
-  background: white;
-  color: ${COLOR.DARK};
-  font-weight: 700;
-  border-radius: 9999px;
-  text-decoration: none;
-  border: 2px solid ${COLOR.BORDER};
-  transition: all 0.3s ease;
-
-  &:hover {
-    border-color: ${COLOR.PRIMARY};
-    background: ${COLOR.LIGHT};
-    transform: translateY(-2px);
-  }
-`;
-
-export const FeaturesSection = styled.section`
-  padding: 120px 24px;
-  background: ${COLOR.WHITE};
-  position: relative;
-`;
-
-export const SectionContainer = styled.div`
-  max-width: 1200px;
-  margin: 0 auto;
-`;
-
-export const SectionTitle = styled.h2`
-  font-size: 42px;
-  font-weight: 800;
-  color: ${COLOR.DARK};
-  text-align: center;
-  margin-bottom: 16px;
-  letter-spacing: -0.02em;
-`;
-
-export const SectionSubtitle = styled.p`
-  font-size: 18px;
-  color: ${COLOR.TEXT_SECONDARY};
-  text-align: center;
-  max-width: 600px;
-  margin: 0 auto 80px;
-`;
-
-export const FeaturesGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-  gap: 32px;
-`;
-
-export const FeatureCard = styled.div`
-  padding: 40px;
-  background: ${COLOR.WHITE};
-  border: 1px solid ${COLOR.BORDER};
-  border-radius: 24px;
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  position: relative;
-  overflow: hidden;
-  box-shadow: 0 4px 6px -1px ${COLOR.SHADOW};
-
-  &:hover {
-    transform: translateY(-8px);
-    border-color: ${COLOR.PRIMARY};
-    box-shadow: 0 20px 40px -5px rgba(0, 0, 0, 0.1);
-  }
-`;
-
-export const FeatureIcon = styled.div`
-  width: 56px;
-  height: 56px;
-  background-color: ${COLOR.BACKGROUND_2};
-  border-radius: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 28px;
-  color: ${COLOR.PRIMARY}; // Or dark green
-  margin-bottom: 24px;
-`;
-
-export const FeatureTitle = styled.h3`
-  font-size: 20px;
-  font-weight: 700;
-  color: ${COLOR.DARK};
-  margin-bottom: 12px;
-`;
-
-export const FeatureDescription = styled.p`
-  font-size: 16px;
-  color: ${COLOR.TEXT_SECONDARY};
-  line-height: 1.6;
-  margin: 0;
-`;
-
-export const BenefitsSection = styled.section`
-  padding: 120px 24px;
-  background: ${COLOR.LIGHT};
-`;
-
-export const BenefitsList = styled.div`
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 64px;
-  margin-top: 64px;
-
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-    gap: 40px;
-  }
-`;
-
-export const BenefitItem = styled.div`
-  display: flex;
-  gap: 24px;
-  align-items: flex-start;
-`;
-
-export const BenefitNumber = styled.span`
-  font-size: 64px;
-  font-weight: 800;
-  color: ${COLOR.BORDER}; // Subtle number
-  line-height: 1;
-  font-feature-settings: "tnum";
-  font-variant-numeric: tabular-nums;
-`;
-
-export const BenefitContent = styled.div`
-  padding-top: 12px;
-`;
-
-export const BenefitTitle = styled.h4`
-  font-size: 24px;
-  font-weight: 700;
-  color: ${COLOR.DARK};
-  margin-bottom: 12px;
-`;
-
-export const BenefitDescription = styled.p`
-  font-size: 16px;
-  color: ${COLOR.TEXT_SECONDARY};
-  line-height: 1.6;
-  margin: 0;
-`;
-
-export const FinalCTA = styled.section`
-  padding: 120px 24px;
-  background: ${COLOR.DARK};
-  text-align: center;
-  position: relative;
-  overflow: hidden;
-
-  &::before {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 600px;
-    height: 600px;
-    background: radial-gradient(
-      circle,
-      rgba(168, 225, 12, 0.1) 0%,
-      transparent 70%
-    );
-    pointer-events: none;
-  }
-`;
-
-export const CTATitle = styled.h2`
-  font-size: 48px;
-  font-weight: 800;
-  color: ${COLOR.WHITE};
-  margin-bottom: 24px;
-  letter-spacing: -0.02em;
-  position: relative;
-`;
-
-export const CTADescription = styled.p`
-  font-size: 20px;
-  color: ${COLOR.LIGHT};
-  max-width: 600px;
-  margin: 0 auto 48px;
-  position: relative;
-  opacity: 0.9;
 `;

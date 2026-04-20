@@ -1,5 +1,5 @@
 import styled from "styled-components";
-
+import { BREAKPOINTS } from "@/styles";
 export const PickerWrapper = styled.div`
   background: #ffffff;
   border-radius: 12px;
@@ -115,6 +115,11 @@ export const PillInput = styled.input`
     border-color: #4f46e5;
     background: white;
   }
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    padding: 4px;
+    font-size: 10px;
+  }
 `;
 
 export const InputLabel = styled.span`
@@ -131,10 +136,11 @@ export const Divider = styled.div`
 `;
 
 export const SwatchesGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(8, 1fr);
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   padding: 4px;
+  justify-content: flex-start;
 `;
 
 export const SwatchCircle = styled.div<{ $color: string }>`

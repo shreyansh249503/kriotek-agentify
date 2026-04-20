@@ -7,36 +7,51 @@ import {
   InnerHeaderwrapper,
   PageTitle,
   ToggleButton,
+  HamburgerButton,
+  HomeButtonText,
+  HomeButtonIcon,
+  HeaderWrapper,
+  HeaderTitleWrapper,
 } from "./styled";
 import { usePathname } from "next/navigation";
-import { SquaresFourIcon } from "@phosphor-icons/react";
+import { SquaresFourIcon, ListIcon, HouseIcon } from "@phosphor-icons/react";
 import { useSidebar } from "@/context/SidebarContext";
 import { Breadcrumbs } from "../breadcrumbs";
 
 export const Adminheader = () => {
   const pathname = usePathname();
-  const { toggleSidebar } = useSidebar();
+  const { toggleSidebar, toggleDrawer } = useSidebar();
 
   const getPageTitle = () => {
     if (pathname === "/admin") return "Dashboard";
   };
 
   return (
-    <HeaderContainer>
+    <HeaderWrapper>
       <InnerHeaderwrapper>
-        <div style={{ display: "flex", alignItems: "center", gap: "2px" }}>
+        <HeaderContainer>
           <ToggleButton onClick={toggleSidebar} title="Toggle Sidebar">
             <SquaresFourIcon size={24} weight="bold" />
           </ToggleButton>
-          <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
+
+          <HamburgerButton onClick={toggleDrawer} title="Open Menu">
+            <ListIcon size={24} weight="bold" />
+          </HamburgerButton>
+          <HeaderTitleWrapper>
             <PageTitle>{getPageTitle()}</PageTitle>
             <Breadcrumbs />
-          </div>
-        </div>
+          </HeaderTitleWrapper>
+        </HeaderContainer>
         <ButtonWrapper>
-          <GoToHomeButton href={"/"}>Go to Home</GoToHomeButton>
+          <GoToHomeButton href={"/"}>
+            <HomeButtonText>Go to Home</HomeButtonText>
+            <HomeButtonIcon>
+              <HouseIcon size={18} weight="bold" />
+            </HomeButtonIcon>
+          </GoToHomeButton>
         </ButtonWrapper>
       </InnerHeaderwrapper>
-    </HeaderContainer>
+    </HeaderWrapper>
   );
 };
+

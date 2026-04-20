@@ -35,6 +35,15 @@ export class Bot {
   @Column({ name: "user_id" })
   user_id!: string;
 
+  @Column({ name: "logo_url", nullable: true })
+  logo_url!: string;
+
+  @Column({ name: "ecommerce_enabled", default: false })
+  ecommerce_enabled!: boolean;
+
+  @Column({ name: "ecommerce_prompt", nullable: true })
+  ecommerce_prompt!: string;
+
   @OneToMany(() => Lead, (lead) => lead.bot)
   leads!: Lead[];
 
@@ -94,10 +103,10 @@ export class Lead {
   @JoinColumn({ name: "bot_id" })
   bot!: Bot;
 
-  @Column()
+  @Column({ nullable: true })
   name!: string;
 
-  @Column()
+  @Column({ nullable: true })
   email!: string;
 
   @Column({ nullable: true })

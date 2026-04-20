@@ -111,7 +111,7 @@ export default function AdminContent() {
           />
         </StatsGrid>
 
-        <PanelRow style={{ gridTemplateColumns: "1.8fr 1fr" }}>
+        <PanelRow>
           <Panel as={motion.div} variants={itemVariants}>
             <SectionTitle>
               <Activity size={16} /> Contact Capture Performance

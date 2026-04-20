@@ -71,7 +71,7 @@ const Option = styled.div<{ $isSelected: boolean }>`
   padding: 12px 16px;
   font-size: 15px;
   cursor: pointer;
-  background-color: ${(props) => (props.$isSelected ? "#f3f4f6" : "white")};
+  background-color: ${(props) => (props.$isSelected ? "#fdfdfd" : "white")};
   transition: background-color 0.2s;
   display: flex;
   align-items: center;

@@ -1,7 +1,6 @@
-// components/breadcrumbs/styled.ts
 import styled from "styled-components";
 import Link from "next/link";
-import { COLOR } from "@/styles";
+import { BREAKPOINTS, COLOR } from "@/styles";
 
 export const BreadcrumbContainer = styled.nav`
   display: flex;
@@ -18,9 +17,17 @@ export const BreadcrumbItem = styled.div`
   gap: 4px;
 
   span {
-  font-size: 20px;
-  font-weight: 700;
-  color: ${COLOR.DARK};
+    font-size: 20px;
+    font-weight: 700;
+    color: ${COLOR.DARK};
+    
+    @media (max-width: ${BREAKPOINTS.MOBILE}) {
+      font-size: 16px;
+      max-width: 80px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
   }
 `;
 
@@ -30,6 +37,15 @@ export const BreadcrumbLink = styled(Link)`
   color: ${COLOR.DARK};
   text-decoration: none;
   transition: color 0.15s ease;
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    font-size: 16px;
+    max-width: 80px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: inline-block;
+  }
 `;
 
 export const BreadcrumbSeparator = styled.span`

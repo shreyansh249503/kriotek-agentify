@@ -40,12 +40,14 @@ export const EmbedSuccess = ({ publicKey }: { publicKey: string }) => {
 
       <InnerEmbedSuccessContainer>
         <TabButton
+          type="button"
           active={activeTab === "html"}
           onClick={() => setActiveTab("html")}
         >
           <CodeIcon size={18} /> HTML
         </TabButton>
         <TabButton
+          type="button"
           active={activeTab === "nextjs"}
           onClick={() => setActiveTab("nextjs")}
         >
@@ -55,7 +57,7 @@ export const EmbedSuccess = ({ publicKey }: { publicKey: string }) => {
 
       <Description>
         {activeTab === "html"
-          ? "Copy and paste this script into your website's <body>."
+          ? "Paste this script into your website's <body>."
           : "Use this component in your Next.js application."}
       </Description>
 
@@ -64,7 +66,7 @@ export const EmbedSuccess = ({ publicKey }: { publicKey: string }) => {
           <CodeFileName>
             {activeTab === "html" ? "index.html" : "Layout.tsx"}
           </CodeFileName>
-          <CodeCopyButton copied={copied} onClick={copy}>
+          <CodeCopyButton type="button" copied={copied} onClick={copy}>
             {copied ? (
               "Copied!"
             ) : (

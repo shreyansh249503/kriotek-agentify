@@ -1,6 +1,6 @@
 "use client";
 
-import { COLOR } from "@/styles";
+import { COLOR, BREAKPOINTS } from "@/styles";
 import styled from "styled-components";
 
 export const Form = styled.form`
@@ -16,6 +16,16 @@ export const FormContainer = styled.div`
   justify-content: space-between;
   align-items: flex-start;
   gap: 24px;
+
+  @media (max-width: 1200px) {
+    flex-direction: column;
+  }
+`;
+
+export const LeftContainer = styled.div`
+  flex: 1;
+  width: 100%;
+  max-width: 100%;
 `;
 
 export const Field = styled.div`
@@ -131,6 +141,10 @@ export const FormSection = styled.div`
   border-radius: 16px;
   border: 1px solid ${COLOR.BORDER};
   height: 100%;
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    padding: 20px;
+  }
 `;
 
 export const FormGrid = styled.div`
@@ -145,9 +159,10 @@ export const TopRow = styled.div`
   grid-template-columns: 2fr 1fr;
   gap: 24px;
 
-  @media (max-width: 1024px) {
-    grid-template-columns: 1fr;
-  }
+@media(max-width: 1600px) {
+  grid-template-columns: 1fr;
+}
+
 `;
 
 export const SectionHeader = styled.div`
@@ -313,8 +328,74 @@ export const CopyStatus = styled.span`
 export const SideContainer = styled.div`
   position: sticky;
   top: 105px;
+  height: fit-content;
+  width: 100%;
+  max-width: 420px;
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   gap: 24px;
-  height: fit-content;
+
+  @media (max-width: ${BREAKPOINTS.DESKTOP}) {
+    position: static;
+    max-width: 100%;
+  }
+`;
+
+export const ContactGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-top: 10px;
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+export const UploadContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 10px;
+`;
+
+export const UploadButton = styled.label`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: ${COLOR.WHITE};
+  border: 2px dashed ${COLOR.BORDER};
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: ${COLOR.DARK};
+  transition: all 0.3s ease;
+
+  &:hover {
+    border-color: ${COLOR.PRIMARY};
+    background: ${COLOR.LIGHT};
+  }
+
+  input {
+    display: none;
+  }
+`;
+
+export const RemoveButton = styled.button`
+  background: #a8e10b6b;
+  border: 1px solid #a8e10b;
+  color: #2E2E2E;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 8px 16px;
+  border-radius: 50px;
+  transition: all 0.2s;
+
+  &:hover {
+    background: rgba(168, 225, 11, 0.75);
+  }
 `;

@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { Loader, SearchBar, EmptyState, Pagination } from "@/components";
 import {
   TableContainer,
+  TableWrapper,
   StyledTable,
   TableHead,
   TableRow,
@@ -68,80 +69,83 @@ export default function LeadsPage() {
 
       {filteredLeads.length > 0 ? (
         <TableContainer>
-          <StyledTable>
-            <TableHead>
-              <TableRow>
-                <TableHeader>User</TableHeader>
-                <TableHeader>Email</TableHeader>
-                <TableHeader>Phone Number</TableHeader>
-                <TableHeader>Collected By</TableHeader>
-                <TableHeader>Date</TableHeader>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {currentLeads.map((lead) => (
-                <TableRow key={lead.id}>
-                  <TableCell>
-                    <UserName>
-                      <UserIconWrapper>
-                        <UserIcon size={20} weight="bold" />
-                      </UserIconWrapper>
-                      {lead.name || "Anonymous"}
-                    </UserName>
-                  </TableCell>
-                  <TableCell>
-                    <ContactInfo>
-                      {lead.email && <div>{lead.email}</div> || "No Email"}
-                    </ContactInfo>
-                  </TableCell>
-                  <TableCell>
-                    <ContactInfo>
-                      {lead.phone && <div>{lead.phone}</div> || "No Phone"}
-                    </ContactInfo>
-                  </TableCell>
-                  <TableCell>
-                    <BotBadge>{lead.bot_name}</BotBadge>
-                  </TableCell>
-                  <TableCell>
-                    <DateText>
-                      {(() => {
-                        const raw = lead.created_at;
-                        if (!raw) return "—";
-                        
-                        // Robustly handle different formats to ensure UTC parsing
-                        let normalized = raw.trim();
-                        
-                        // Replace space with T for ISO compliance if needed
-                        if (!normalized.includes("T") && normalized.includes(" ")) {
-                          normalized = normalized.replace(" ", "T");
-                        }
-                        
-                        // Only append Z if no timezone information is present
-                        const hasTimezone = 
-                          normalized.includes("Z") || 
-                          normalized.includes("+") || 
-                          (/-\d{2}(:?\d{2})?$/.test(normalized) && normalized.length > 10);
-                          
-                        const utcStr = hasTimezone ? normalized : `${normalized}Z`;
-                        const date = new Date(utcStr);
-                        
-                        if (isNaN(date.getTime())) return raw;
-
-                        return date.toLocaleString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                          hour: "numeric",
-                          minute: "2-digit",
-                          hour12: true,
-                        });
-                      })()}
-                    </DateText>
-                  </TableCell>
+          <TableWrapper>
+            <StyledTable>
+              <TableHead>
+                <TableRow>
+                  <TableHeader>User</TableHeader>
+                  <TableHeader>Email</TableHeader>
+                  <TableHeader>Phone Number</TableHeader>
+                  <TableHeader>Collected By</TableHeader>
+                  <TableHeader>Date</TableHeader>
                 </TableRow>
-              ))}
-            </TableBody>
-          </StyledTable>
+              </TableHead>
+              <TableBody>
+                {currentLeads.map((lead) => (
+                  <TableRow key={lead.id}>
+                    <TableCell>
+                      <UserName>
+                        <UserIconWrapper>
+                          <UserIcon size={20} weight="bold" />
+                        </UserIconWrapper>
+                        {lead.name || "Anonymous"}
+                      </UserName>
+                    </TableCell>
+                    <TableCell>
+                      <ContactInfo>
+                        {(lead.email && <div>{lead.email}</div>) || "No Email"}
+                      </ContactInfo>
+                    </TableCell>
+                    <TableCell>
+                      <ContactInfo>
+                        {(lead.phone && <div>{lead.phone}</div>) || "No Phone"}
+                      </ContactInfo>
+                    </TableCell>
+                    <TableCell>
+                      <BotBadge>{lead.bot_name}</BotBadge>
+                    </TableCell>
+                    <TableCell>
+                      <DateText>
+                        {(() => {
+                          const raw = lead.created_at;
+                          if (!raw) return "—";
+
+                          // Robustly handle different formats to ensure UTC parsing
+                          let normalized = raw.trim();
+
+                          // Replace space with T for ISO compliance if needed
+                          if (!normalized.includes("T") && normalized.includes(" ")) {
+                            normalized = normalized.replace(" ", "T");
+                          }
+
+                          // Only append Z if no timezone information is present
+                          const hasTimezone =
+                            normalized.includes("Z") ||
+                            normalized.includes("+") ||
+                            (/-\d{2}(:?\d{2})?$/.test(normalized) &&
+                              normalized.length > 10);
+
+                          const utcStr = hasTimezone ? normalized : `${normalized}Z`;
+                          const date = new Date(utcStr);
+
+                          if (isNaN(date.getTime())) return raw;
+
+                          return date.toLocaleString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                            hour: "numeric",
+                            minute: "2-digit",
+                            hour12: true,
+                          });
+                        })()}
+                      </DateText>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </StyledTable>
+          </TableWrapper>
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}

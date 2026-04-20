@@ -1,11 +1,12 @@
 "use client";
 
 import styled from "styled-components";
-import { COLOR } from "@/styles";
+import { BREAKPOINTS, COLOR } from "@/styles";
 
 export const DashboardContainer = styled.div`
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   background-color: ${COLOR.LIGHT};
 `;
 
@@ -14,12 +15,20 @@ export const MainArea = styled.div`
   display: flex;
   flex-direction: column;
   min-width: 0;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
 `;
 
 export const ContentWrapper = styled.div`
   flex: 1;
 
-  @media (max-width: 768px) {
-    padding: 24px;
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    padding: 0;
+  }
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    padding: 0;
   }
 `;
+                                                                                                                                                                                                                                                                                                                     

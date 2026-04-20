@@ -42,17 +42,45 @@ export const TableContainer = styled.div`
   overflow: hidden;
   margin-top: 8px;
   transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
 
-  @media (max-width: ${BREAKPOINTS.MOBILE}) {
-    overflow-x: auto;
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    border-radius: 12px;
   }
+`;
+
+export const TableWrapper = styled.div`
+  width: 100%;
+  overflow-x: auto;
+  
+  &::-webkit-scrollbar {
+    height: 6px;
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: ${COLOR.BORDER};
+    border-radius: 10px;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: ${COLOR.PRIMARY};
+  }
+
+  scrollbar-width: thin;
+  scrollbar-color: ${COLOR.BORDER}88 transparent;
 `;
 
 export const StyledTable = styled.table`
   width: 100%;
   border-collapse: collapse;
   text-align: left;
-  min-width: 600px;
+  min-width: 800px;
 `;
 
 export const TableHead = styled.thead`
@@ -89,6 +117,7 @@ export const TableCell = styled.td`
   padding: 16px 24px;
   vertical-align: middle;
   color: ${COLOR.DARK};
+  white-space: nowrap;
 `;
 
 export const UserName = styled.div`
@@ -98,6 +127,7 @@ export const UserName = styled.div`
   display: flex;
   align-items: center;
   gap: 12px;
+  white-space: nowrap;
 `;
 
 export const UserIconWrapper = styled.div`
@@ -123,9 +153,11 @@ export const BotBadge = styled.span`
 export const ContactInfo = styled.div`
   font-size: 14px;
   color: ${COLOR.TEXT_SECONDARY};
+  white-space: nowrap;
 `;
 
 export const DateText = styled.div`
   font-size: 13px;
   color: ${COLOR.TEXT_SECONDARY};
+  white-space: nowrap;
 `;
