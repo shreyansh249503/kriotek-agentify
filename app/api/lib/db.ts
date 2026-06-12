@@ -1,6 +1,5 @@
 import "reflect-metadata";
 import { DataSource } from "typeorm";
-import { nanoid } from "nanoid";
 import { Bot, Conversation, Lead, CrawledPage, BotDocument } from "./entities";
 
 const globalForTypeorm = globalThis as unknown as {
@@ -29,7 +28,7 @@ export const getDb = async () => {
 
 // Proxy to behave like the pg Pool for piecemeal migration
 export const db = {
-  query: async (queryStr: string, params?: any[]) => {
+  query: async (queryStr: string, params?: unknown[]) => {
     const dataSource = await getDb();
     const rows = await dataSource.query(queryStr, params).catch((err) => {
       console.log(err);

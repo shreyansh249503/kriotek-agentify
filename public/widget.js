@@ -123,6 +123,50 @@
     bubble.innerHTML = `Hi 👋 I'm <strong>${botName}</strong>.<br/>How can I help you today?`;
   }
 
+  function processAnswerText(rawText) {
+    let text = rawText.replace(
+      /<product-carousel>(?![\s\S]*<\/product-carousel>)[\s\S]*/i,
+      '<div style="color: #666; font-style: italic; font-size: 12px; padding: 10px;">Generating product recommendations...</div>',
+    );
+    text = text.replace(
+      /<product-carousel>([\s\S]*?)<\/product-carousel>/gi,
+      (match, jsonString) => {
+        try {
+          const products = JSON.parse(jsonString.trim());
+          if (!Array.isArray(products) || products.length === 0) return "";
+          const carouselId =
+            "carousel-" + Math.random().toString(36).substr(2, 9);
+          let html = `<div class="carousel-wrapper" style="position: relative; display: flex; align-items: center; margin: 8px 0;">`;
+          html += `<button onclick="document.getElementById('${carouselId}').scrollBy({left: -220, behavior: 'smooth'})" style="position: absolute; left: -14px; z-index: 2; border-radius: 50%; width: 28px; height: 28px; background: white; border: 1px solid #e5e7eb; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; font-size: 18px; color: #333; padding-bottom: 2px;">&#8249;</button>`;
+          html += `<div id="${carouselId}" class="product-carousel">`;
+          products.forEach((p) => {
+            const imgUrl =
+              p.image ||
+              'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="%23ccc" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>';
+            html += `
+            <div class="product-card">
+              <img src="${imgUrl}" class="product-image" alt="${p.name || "Product"}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'100%\\' height=\\'100%\\' viewBox=\\'0 0 24 24\\' fill=\\'none\\' stroke=\\'%23ccc\\' stroke-width=\\'1\\' stroke-linecap=\\'round\\' stroke-linejoin=\\'round\\'><rect x=\\'3\\' y=\\'3\\' width=\\'18\\' height=\\'18\\' rx=\\'2\\' ry=\\'2\\'></rect><circle cx=\\'8.5\\' cy=\\'8.5\\' r=\\'1.5\\'></circle><polyline points=\\'21 15 16 10 5 21\\'></polyline></svg>'"/>
+              <div class="product-info">
+                <div class="product-name">${p.name || "Unnamed Product"}</div>
+                <div class="product-price">${p.price || ""}</div>
+                <button class="product-action" onclick="window.open('${p.url || "#"}', '_blank')">View Details</button>
+              </div>
+            </div>
+          `;
+          });
+          html += `</div>`;
+          html += `<button onclick="document.getElementById('${carouselId}').scrollBy({left: 220, behavior: 'smooth'})" style="position: absolute; right: -14px; z-index: 2; border-radius: 50%; width: 28px; height: 28px; background: white; border: 1px solid #e5e7eb; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; font-size: 18px; color: #333; padding-bottom: 2px;">&#8250;</button>`;
+          html += `</div>`;
+          return html.replace(/\n\s*/g, "");
+        } catch (e) {
+          console.error("Failed to parse product carousel JSON", e);
+          return "";
+        }
+      },
+    );
+    return text;
+  }
+
   // Load marked if not present
   if (!window.marked) {
     const script = document.createElement("script");
@@ -191,11 +235,12 @@
   const widget = document.createElement("div");
   widget.id = "ai-widget";
   widget.style.cssText = `
+    --bot-theme-color: ${THEME.color};
     position: fixed;
     bottom: 90px;
     right: 20px;
-    width: 380px;
-    height: 600px;
+    width: 420px;
+    height: 750px;
     max-height: 80vh;
     background: white;
     border-radius: 16px;
@@ -214,18 +259,30 @@
     <div style="
       background: ${THEME.color};
       color: white;
-      padding: 16px;
+      padding: 10px 16px;
       font-weight: 600;
       display: flex;
       justify-content: space-between;
       align-items: center;
       position: relative;">
       <div style="display: flex; align-items: center; gap: 8px;">
+        <img 
+          src="${THEME.logoUrl}"
+          alt="chat"
+          style="
+            width: 30px;
+            height: 30px;
+            object-fit: cover;
+            pointer-events: none;
+            border-radius: 50%;
+            background-color: white;
+          "
+        />
         <span>${THEME.botName}</span>
       </div>
-      <div style="display: flex; align-items: center; gap: 4px;">
-        <button id="ai-menu-btn" style="background:none; border:none; color:white; font-size:24px; cursor:pointer; padding: 4px; display: flex; align-items: center; justify-content: center; align-content: center;">...</button>
-        <button id="ai-close" style="background:none; border:none; color:white; font-size:20px; cursor:pointer; padding: 4px;">✕</button>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <button id="ai-menu-btn" style="background:none; border:none; color:white; font-size:24px; font-weight: 700; cursor:pointer; padding: 4px 4px 10px 4px; display: flex; align-items: center; justify-content: center; align-content: center;">...</button>
+        <button id="ai-close" style="background:none; border:none; color:white; font-size:24px; font-weight: 700; cursor:pointer; padding: 4px;">✕</button>
       </div>
       
       <!-- Menu Dropdown -->
@@ -260,7 +317,7 @@
     </div>
     
     <div style="flex:1; position: relative; overflow: hidden;">
-      <div id="ai-messages" style="height: 100%; padding: 16px; overflow-y:auto; background: #fff; display: flex; flex-direction: column;"></div>
+      <div id="ai-messages" style="height: 96%; padding: 16px 16px 60px 16px; overflow-y:auto; background: #fff; display: flex; flex-direction: column;"></div>
       
       <!-- Recent Chats View -->
       <div id="ai-history" style="
@@ -358,6 +415,79 @@
     @keyframes typingBounce {
       0%, 80%, 100% { transform: scale(0); }
       40% { transform: scale(1); }
+    }
+    .product-carousel {
+      display: flex;
+      overflow-x: auto;
+      gap: 12px;
+      padding: 10px 14px;
+      scroll-snap-type: x mandatory;
+      scrollbar-width: none;
+      flex: 1;
+      scroll-behavior: smooth;
+    }
+    .product-carousel::-webkit-scrollbar { display: none; }
+    .product-card {
+      min-width: 180px;
+      max-width: 200px;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      overflow: hidden;
+      scroll-snap-align: start;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .product-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+    .product-image {
+      width: 100%;
+      height: 140px;
+      object-fit: cover;
+      background: #f3f4f6;
+    }
+    .product-info {
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+    .product-name {
+      font-weight: 600;
+      font-size: 14px;
+      color: #111;
+      margin-bottom: 4px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      line-height: 1.2;
+    }
+    .product-price {
+      font-weight: 700;
+      font-size: 13px;
+      color: #374151;
+      margin-bottom: 12px;
+    }
+    .product-action {
+      margin-top: auto;
+      background: var(--bot-theme-color, #4f46e5);
+      color: white;
+      border: none;
+      padding: 8px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 12px;
+      cursor: pointer;
+      text-align: center;
+      transition: opacity 0.2s;
+    }
+    .product-action:hover {
+      opacity: 0.9;
     }
     #ai-messages::-webkit-scrollbar, #ai-history-list::-webkit-scrollbar { width: 6px; }
     #ai-messages::-webkit-scrollbar-thumb, #ai-history-list::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 10px; }
@@ -586,10 +716,11 @@
             messages.appendChild(createUserMessage(msg.content, THEME.color));
           } else if (msg.role === "assistant") {
             const bubble = createBotMessage(messages, THEME.logoUrl);
+            const processedAnswer = processAnswerText(msg.content);
             if (window.marked) {
-              bubble.innerHTML = window.marked.parse(msg.content);
+              bubble.innerHTML = window.marked.parse(processedAnswer);
             } else {
-              bubble.textContent = msg.content;
+              bubble.innerHTML = processedAnswer;
             }
           }
         });
@@ -640,10 +771,11 @@
         const { done, value } = await reader.read();
         if (done) break;
         answer += decoder.decode(value);
+        const processedAnswer = processAnswerText(answer);
         if (window.marked) {
-          bubble.innerHTML = window.marked.parse(answer);
+          bubble.innerHTML = window.marked.parse(processedAnswer);
         } else {
-          bubble.textContent = answer;
+          bubble.innerHTML = processedAnswer;
         }
         messages.scrollTop = messages.scrollHeight;
       }

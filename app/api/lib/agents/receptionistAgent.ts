@@ -36,6 +36,7 @@ export function runReceptionistAgent({
       supportedLanguages: botConfig.supported_languages,
       ecommerceEnabled: botConfig.ecommerce_enabled,
       ecommercePrompt: botConfig.ecommerce_prompt,
+      ecommerceProducts: botConfig.ecommerce_products,
     },
     { websiteContext },
     contactState,

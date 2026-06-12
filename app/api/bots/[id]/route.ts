@@ -40,6 +40,7 @@ export async function PUT(
     logoUrl,
     ecommerceEnabled,
     ecommercePrompt,
+    ecommerceProducts,
   } = body;
 
   const db = await getDb();
@@ -55,6 +56,7 @@ export async function PUT(
     logo_url: logoUrl,
     ecommerce_enabled: ecommerceEnabled,
     ecommerce_prompt: ecommercePrompt,
+    ecommerce_products: ecommerceProducts,
   });
 
   return Response.json({ status: "ok" });

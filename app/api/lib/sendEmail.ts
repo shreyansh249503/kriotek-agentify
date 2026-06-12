@@ -38,7 +38,7 @@ export async function sendOwnerNotification({
   leadData: {
     name: string;
     email: string;
-    phone: string;
+    phone?: string;
   };
 }) {
   const transporter = nodemailer.createTransport({
@@ -61,7 +61,7 @@ export async function sendOwnerNotification({
 
 function generateOwnerNotificationTemplate(
   botName: string,
-  leadData: { name: string; email: string; phone: string },
+  leadData: { name: string; email: string; phone?: string },
 ) {
   return `
 <!DOCTYPE html>
@@ -160,10 +160,11 @@ function generateOwnerNotificationTemplate(
           <span class="info-label">📧 Email:</span>
           <span class="info-value"><a href="mailto:${leadData.email}">${leadData.email}</a></span>
         </div>
+        ${leadData.phone ? `
         <div class="info-row">
           <span class="info-label">📞 Phone:</span>
           <span class="info-value"><a href="tel:${leadData.phone}">${leadData.phone}</a></span>
-        </div>
+        </div>` : ""}
       </div>
       
       <p style="color: #666; font-size: 14px; margin-top: 20px;">

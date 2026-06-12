@@ -1,4 +1,9 @@
 type Message = { role: "user" | "assistant" | "system"; content: string };
+interface StreamError {
+  statusCode?: number;
+  lastError?: { statusCode?: number };
+  message?: string;
+}
 import { getBotByPublicKey } from "../lib/bot";
 import { retrieveWebsiteContext } from "../lib/rag";
 import { sendOwnerNotification, sendUserEmail } from "../lib/sendEmail";
@@ -79,7 +84,7 @@ export async function POST(req: Request) {
           alreadyComplete
             ? {
                 collectedInfo: knownInfo,
-                missingFields: [] as ("name" | "email" | "phone")[],
+                missingFields: [] as ("name" | "email")[],
                 isComplete: true,
               }
             : null,
@@ -180,12 +185,13 @@ export async function POST(req: Request) {
       leadDecision,
       websiteContext,
     });
-  } catch (err: any) {
-    console.error("[route] Sync error starting agent:", err);
+  } catch (err) {
+    const error = err as StreamError;
+    console.error("[route] Sync error starting agent:", error);
     const isQuota =
-      err?.statusCode === 429 ||
-      err?.lastError?.statusCode === 429 ||
-      err?.message?.includes("quota");
+      error?.statusCode === 429 ||
+      error?.lastError?.statusCode === 429 ||
+      error?.message?.includes("quota");
     const msg = isQuota
       ? "Your free tier of the day is over. Please try again later."
       : "An error occurred.";
@@ -204,7 +210,7 @@ export async function POST(req: Request) {
             controller.enqueue(encoder.encode(part.text));
           } else if (part.type === "error") {
             console.error("[route] fullStream error:", part.error);
-            const err: any = part.error;
+            const err = part.error as StreamError;
             const isQuota =
               err?.statusCode === 429 ||
               err?.lastError?.statusCode === 429 ||
@@ -227,13 +233,14 @@ export async function POST(req: Request) {
             }
           }
         }
-      } catch (err: any) {
-        console.error("[route] Stream error exception:", err);
+      } catch (err) {
+        const error = err as StreamError;
+        console.error("[route] Stream error exception:", error);
         const isQuota =
-          err?.statusCode === 429 ||
-          err?.lastError?.statusCode === 429 ||
-          err?.message?.toLowerCase().includes("quota") ||
-          String(err).includes("429");
+          error?.statusCode === 429 ||
+          error?.lastError?.statusCode === 429 ||
+          error?.message?.toLowerCase().includes("quota") ||
+          String(error).includes("429");
 
         if (isQuota) {
           controller.enqueue(

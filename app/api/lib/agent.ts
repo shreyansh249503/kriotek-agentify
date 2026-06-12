@@ -1,3 +1,5 @@
+import { Product } from "@/types/bot";
+
 export type AgentConfig = {
   companyName: string;
   companyDescription: string;
@@ -5,6 +7,7 @@ export type AgentConfig = {
   supportedLanguages?: string[];
   ecommerceEnabled?: boolean;
   ecommercePrompt?: string | null;
+  ecommerceProducts?: Product[];
 };
 
 export type AgentContext = {
@@ -13,7 +16,7 @@ export type AgentContext = {
 
 export type ContactState = {
   collected: { name?: string; email?: string; phone?: string };
-  missingFields: ("name" | "email" | "phone")[];
+  missingFields: ("name" | "email")[];
   isComplete: boolean;
 };
 
@@ -82,7 +85,7 @@ NEVER do these mid-conversation:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 HANDLING RESISTANCE AND QUESTIONS ABOUT YOUR REQUESTS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-If the user questions WHY you need their contact info (e.g. "why do you need my email?", "what will you do with my number?"):
+If the user questions WHY you need their contact info (e.g. "why do you need my email?"):
 1. Explain honestly and briefly — the team wants to reach out personally, tailor a solution, follow up on their specific question, etc.
 2. Then IMMEDIATELY re-ask for that same field after your explanation. Do not drop the collection.
 Example: "Your email helps our team reach you directly with the right information for your needs. What's the best email to use?"
@@ -125,42 +128,49 @@ function buildEcommerceSection(
   config: AgentConfig,
   contactState?: ContactState,
 ): string {
-  if (!config.ecommerceEnabled || !config.ecommercePrompt) return "";
+  if (!config.ecommerceEnabled) return "";
 
-  // The user requested: "first collects user details then pitch."
-  // If contact collection is pending, we suppress the pitch.
-  // Wait, if contact collection is NOT enabled at all on the bot, contactState is undefined, so we can pitch.
-  // Wait, in buildSystemPrompt contactState is sometimes passed. 
-  // Wait, if bot.contact_enabled is true, but they haven't filled it out, contactState.isComplete is false.
-  // Wait, in route.ts, if contactEnabled is false, runLeadAgent is skipped and contactState might be null or {isComplete: true}.
-  // Actually, route.ts passes leadDecision into runReceptionistAgent.
-  // In receptionistAgent.ts, if leadDecision is null (e.g. contactEnabled is false), contactState is undefined.
-  // If contactState is undefined, or contactState.isComplete is true, we can pitch.
   const isContactPending = contactState && !contactState.isComplete;
 
   if (isContactPending) {
     return `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 E-COMMERCE PRIORITY OVERRIDE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-You have products to sell, BUT you MUST collect the user's contact details (name, email, phone) first. 
+You have products to sell, BUT you MUST collect the user's contact details (name, email) first. 
 Do NOT pitch products or provide checkout links yet. Focus completely on the CONTACT COLLECTION instructions above until all fields are gathered.`;
   }
+
+  const productsJson = Array.isArray(config.ecommerceProducts) && config.ecommerceProducts.length > 0 
+    ? JSON.stringify(config.ecommerceProducts, null, 2)
+    : "[]";
 
   return `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 E-COMMERCE & SALES STRATEGY
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-You are now in ACTIVE SALES MODE. Your goal is to act as an expert pitchman who convinces the user to purchase a product from your catalog based on their needs, and shares the checkout links provided below.
+You are now in ACTIVE SALES MODE. Your goal is to act as an expert pitchman who convinces the user to purchase a product from your catalog based on their needs.
 
-PRODUCT CATALOG & INSTRUCTIONS:
-${config.ecommercePrompt}
+PRODUCT CATALOG:
+${productsJson}
+
+SALES INSTRUCTIONS:
+${config.ecommercePrompt || "Recommend the best products from the catalog."}
 
 SALES RULES:
 1. Understand the user's needs and recommend the most suitable product(s) from the catalog.
-2. Highlight the benefits of the recommended product confidently.
-3. Provide the direct checkout link to purchase the product (only use links provided in the catalog above).
-4. Do NOT make up products, prices, or links that are not in your instructions or website context.
-5. Pay attention to the user's specific interests and preferences during the conversation to tailor your pitch perfectly.
-6. Always aim to "close the deal" by giving them a clear call-to-action to use the checkout link.
+2. Highlight the benefits of the recommended product confidently in natural language.
+3. WHEN RECOMMENDING PRODUCTS, YOU MUST OUTPUT A VISUAL PRODUCT CAROUSEL. To do this, output exactly the following XML tag containing a valid JSON array of the products you are recommending:
+<product-carousel>
+[
+  {
+    "name": "Product Name",
+    "price": "Product Price",
+    "image": "URL of product image",
+    "url": "Product details checkout link"
+  }
+]
+</product-carousel>
+4. NEVER make up products, prices, images, or links that are not in your instructions or catalog. If a product image or URL is not provided in the catalog, leave it as an empty string.
+5. Always output the <product-carousel> block after your natural language pitch. Do not put markdown inside the block, only valid JSON.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
 }
 
@@ -179,7 +189,6 @@ Not required for this bot. Focus entirely on answering questions.`;
 The USER who is chatting with you has already provided their contact details:
 - USER name: "${c.name}"
 - USER email: "${c.email}"
-- USER phone: "${c.phone}"
 
 CRITICAL IDENTITY RULES:
 - These are the CUSTOMER'S details, NOT yours. You are an AI assistant for ${companyName}.
@@ -206,29 +215,26 @@ HOW TO BEHAVE when contact is already collected:
   const fieldPhrasing: Record<string, string> = {
     name: `"By the way, who am I speaking with?" or "What's your name?"`,
     email: `"What's the best email address to reach you on?"`,
-    phone: `"And what's a good phone number for our team to reach you?"`,
   };
 
   const whyNeeded: Record<string, string> = {
     name: "knowing your name helps the team address you personally and tailor their response",
     email:
       "your email allows the team to send you detailed information and follow up on your specific needs",
-    phone:
-      "a phone number lets the team reach you quickly if they have a solution that matches your requirements",
   };
 
   return `CONTACT COLLECTION — INTELLIGENT MODE
 ${collectedSummary ? `Already confirmed — DO NOT re-ask: ${collectedSummary}\n` : ""}Still need to collect IN THIS ORDER: ${state.missingFields.join(" then ")}
 
 STRICT FIELD ORDER RULE — THIS IS CRITICAL:
-Always collect in this exact sequence: name first, then email, then phone.
+Always collect in this exact sequence: name first, then email.
 NEVER skip name to go straight to email. NEVER ask for email before you have the user's name.
 The ONLY field you should be asking for right now is: ${nextField}
 ${afterNext ? "After getting " + nextField + ", ask for: " + afterNext : ""}
 
 WHEN TO ASK for ${nextField}:
 - User showed genuine interest: asked about pricing, timelines, how to get started, or how to contact you
-- User wants to be contacted: "how do I reach you?", "can someone call me?", "I want to work with you"
+- User wants to be contacted: "how do I reach you?", "I want to work with you"
 - Conversation has been warm and engaged for a few messages
 
 WHEN NOT TO ASK:
@@ -255,5 +261,5 @@ IF USER SAYS OK/OKAY AFTER AN EXPLANATION:
 - Re-ask for ${nextField} immediately — they are ready
 - Do NOT list services or change topic
 
-REMEMBER:You are a real salesperson. Read the room. Be helpful, genuine, and persistent — but not pushy. name first, then email, then phone. This order is non-negotiable.`;
+REMEMBER:You are a real salesperson. Read the room. Be helpful, genuine, and persistent — but not pushy. name first, then email. This order is non-negotiable.`;
 }

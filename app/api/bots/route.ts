@@ -55,6 +55,7 @@ export async function POST(req: Request) {
     logoUrl,
     ecommerceEnabled = false,
     ecommercePrompt = "",
+    ecommerceProducts = [],
   } = body;
 
   const publicKey = nanoid(16);
@@ -75,6 +76,7 @@ export async function POST(req: Request) {
     logo_url: logoUrl,
     ecommerce_enabled: ecommerceEnabled,
     ecommerce_prompt: ecommercePrompt,
+    ecommerce_products: ecommerceProducts,
     user_id: user.id
   });
 

@@ -105,10 +105,11 @@ export default function IngestPage() {
                 ...prev,
                 text: { success: true },
               }));
-            } catch (err: any) {
+            } catch (err) {
+              const errorMessage = err instanceof Error ? err.message : "Text ingest failed";
               setResults((prev) => ({
                 ...prev,
-                text: { success: false, error: err.message },
+                text: { success: false, error: errorMessage },
               }));
             }
           })(),
@@ -138,10 +139,11 @@ export default function IngestPage() {
                 ...prev,
                 url: { success: true, chunks: data.chunksIngested },
               }));
-            } catch (err: any) {
+            } catch (err) {
+              const errorMessage = err instanceof Error ? err.message : "URL ingest failed";
               setResults((prev) => ({
                 ...prev,
-                url: { success: false, error: err.message },
+                url: { success: false, error: errorMessage },
               }));
             }
           })(),
@@ -167,10 +169,11 @@ export default function IngestPage() {
                 ...prev,
                 pdf: { success: true, chunks: data.chunks },
               }));
-            } catch (err: any) {
+            } catch (err) {
+              const errorMessage = err instanceof Error ? err.message : "PDF ingest failed";
               setResults((prev) => ({
                 ...prev,
-                pdf: { success: false, error: err.message },
+                pdf: { success: false, error: errorMessage },
               }));
             }
           })(),

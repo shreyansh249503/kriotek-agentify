@@ -6,7 +6,9 @@ import {
   OneToMany,
   ManyToOne,
   JoinColumn,
+  ColumnType,
 } from "typeorm";
+import { Product } from "../../../types/bot";
 
 @Entity("bots")
 export class Bot {
@@ -51,6 +53,9 @@ export class Bot {
 
   @Column({ name: "ecommerce_prompt", nullable: true })
   ecommerce_prompt!: string;
+
+  @Column({ type: "jsonb", nullable: true, name: "ecommerce_products" })
+  ecommerce_products!: Product[];
 
   @OneToMany(() => Lead, (lead) => lead.bot)
   leads!: Lead[];
@@ -147,6 +152,6 @@ export class BotDocument {
   @Column({ type: "text" })
   content!: string;
 
-  @Column({ type: "vector" as any, length: 768, nullable: true, select: false })
+  @Column({ type: "vector" as unknown as ColumnType, length: 768, nullable: true, select: false })
   embedding!: string | number[];
 }

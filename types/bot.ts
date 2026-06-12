@@ -13,6 +13,16 @@ export interface Bot {
   logo_url?: string | null;
   ecommerce_enabled?: boolean;
   ecommerce_prompt?: string | null;
+  ecommerce_products?: Product[];
+}
+
+export interface Product {
+  id?: string;
+  name: string;
+  price: string;
+  image: string;
+  url: string;
+  description?: string;
 }
 
 export interface CreateBotInput {
@@ -27,6 +37,7 @@ export interface CreateBotInput {
   logoUrl?: string;
   ecommerceEnabled?: boolean;
   ecommercePrompt?: string;
+  ecommerceProducts?: Product[];
 }
 
 export interface UpdateBotInput extends CreateBotInput {

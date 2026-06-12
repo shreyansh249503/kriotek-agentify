@@ -13,15 +13,11 @@ const LeadExtractionSchema = z.object({
     .string()
     .optional()
     .describe("Email address exactly as typed. Must contain @ and a domain."),
-  phone: z
-    .string()
-    .optional()
-    .describe("Phone number exactly as typed. Must be 7+ digits."),
 });
 
 export type LeadDecision = {
   collectedInfo: { name?: string; email?: string; phone?: string };
-  missingFields: ("name" | "email" | "phone")[];
+  missingFields: ("name" | "email")[];
   isComplete: boolean;
 };
 
@@ -37,7 +33,6 @@ type Message = {
 };
 
 const emailValid = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
-const phoneValid = (p: string) => p.replace(/\D/g, "").length >= 7;
 
 // Words that can NEVER be a person's name
 const NOT_A_NAME = new Set([
@@ -271,9 +266,8 @@ export async function runLeadAgent(
 ): Promise<LeadDecision> {
   const dbName = (knownInfo?.name || "").trim();
   const dbEmail = (knownInfo?.email || "").trim();
-  const dbPhone = (knownInfo?.phone || "").trim();
 
-  console.log("[leadAgent] knownInfo from DB:", { dbName, dbEmail, dbPhone });
+  console.log("[leadAgent] knownInfo from DB:", { dbName, dbEmail });
 
   // Build user text for anti-hallucination verification
   const userText = conversation
@@ -295,17 +289,15 @@ export async function runLeadAgent(
     }
   }
 
-  // ── Email + Phone: model extraction (these have reliable regex validation) ─
+  // ── Email: model extraction (these have reliable regex validation) ─────────
   let extractedEmail: string | undefined;
-  let extractedPhone: string | undefined;
 
-  const needsEmailOrPhone = !emailValid(dbEmail) || !phoneValid(dbPhone);
+  const needsEmail = !emailValid(dbEmail);
 
-  if (needsEmailOrPhone) {
+  if (needsEmail) {
     const alreadyHave = [
       finalName ? `name: "${finalName}" (confirmed)` : "",
       emailValid(dbEmail) ? `email: "${dbEmail}" (confirmed)` : "",
-      phoneValid(dbPhone) ? `phone: "${dbPhone}" (confirmed)` : "",
     ]
       .filter(Boolean)
       .join("\n");
@@ -324,7 +316,6 @@ STRICT RULES:
 ${alreadyHave ? `ALREADY CONFIRMED (skip these):\n${alreadyHave}\n` : ""}
 
 EMAIL: Extract only valid email — something@domain.tld
-PHONE: Extract only 7+ consecutive digits (spaces/dashes/+ allowed)
 NAME: Only extract if you see a clear name. When uncertain → undefined.
 
 Default to undefined. False positives cause real harm.`,
@@ -337,7 +328,6 @@ Default to undefined. False positives cause real harm.`,
       });
 
       extractedEmail = object.email;
-      extractedPhone = object.phone;
 
       // If history scan didn't find name, try model extraction with extra validation
       if (!finalName && object.name && !isLikelyNotAName(object.name)) {
@@ -358,10 +348,6 @@ Default to undefined. False positives cause real harm.`,
   function verifyInUserText(val?: string): string {
     if (!val) return "";
     const clean = val.trim().toLowerCase();
-    const digits = clean.replace(/\D/g, "");
-    if (digits.length >= 7) {
-      return userText.includes(digits.slice(0, 7)) ? val.trim() : "";
-    }
     return userText.includes(clean) ? val.trim() : "";
   }
 
@@ -372,26 +358,17 @@ Default to undefined. False positives cause real harm.`,
       ? rawEmail
       : "";
 
-  const rawPhone = extractedPhone?.trim() || "";
-  const finalPhone = phoneValid(dbPhone)
-    ? dbPhone
-    : phoneValid(rawPhone) && verifyInUserText(rawPhone)
-      ? rawPhone
-      : "";
-
-  const missingFields: ("name" | "email" | "phone")[] = [];
+  const missingFields: ("name" | "email")[] = [];
   if (!finalName) missingFields.push("name");
   if (!emailValid(finalEmail)) missingFields.push("email");
-  if (!phoneValid(finalPhone)) missingFields.push("phone");
 
   const result: LeadDecision = {
     collectedInfo: {
       name: finalName || undefined,
       email: emailValid(finalEmail) ? finalEmail : undefined,
-      phone: phoneValid(finalPhone) ? finalPhone : undefined,
     },
     missingFields,
-    isComplete: missingFields.length <= 1,
+    isComplete: missingFields.length === 0,
   };
 
   console.log("[leadAgent] result:", JSON.stringify(result));

@@ -50,6 +50,7 @@ export const BotForm = ({
     logoUrl: "",
     ecommerceEnabled: false,
     ecommercePrompt: "",
+    ecommerceProducts: [],
   };
 
   const [form, setForm] = useState<CreateBotInput>(
@@ -69,6 +70,7 @@ export const BotForm = ({
         logoUrl: initialData.logo_url ?? "",
         ecommerceEnabled: initialData.ecommerce_enabled ?? false,
         ecommercePrompt: initialData.ecommerce_prompt ?? "",
+        ecommerceProducts: initialData.ecommerce_products ?? [],
       }
       : defaultValues,
   );
@@ -93,6 +95,7 @@ export const BotForm = ({
         logoUrl: initialData.logo_url ?? "",
         ecommerceEnabled: initialData.ecommerce_enabled ?? false,
         ecommercePrompt: initialData.ecommerce_prompt ?? "",
+        ecommerceProducts: initialData.ecommerce_products ?? [],
       });
     } else {
       setForm(defaultValues);
@@ -374,17 +377,127 @@ export const BotForm = ({
                 <ContactGrid>
                   <div style={{ gridColumn: "1 / -1" }}>
                     <Field>
-                      <Label>Product Catalog & Sales Instructions</Label>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                        <Label style={{ margin: 0 }}>Products Catalog</Label>
+                        <Button 
+                          type="button" 
+                          onClick={() => update("ecommerceProducts", [...(form.ecommerceProducts || []), { name: '', price: '', image: '', url: '' }])} 
+                          disabled={!form.ecommerceEnabled} 
+                          style={{ padding: '6px 12px', fontSize: '12px', width: 'auto' }}
+                        >
+                          + Add Product
+                        </Button>
+                      </div>
+                      
+                      {(form.ecommerceProducts || []).map((product, idx) => (
+                        <div key={idx} style={{ background: '#f9fafb', border: '1px solid #e5e7eb', padding: '16px', borderRadius: '8px', marginBottom: '16px', position: 'relative' }}>
+                          <button 
+                            type="button" 
+                            onClick={() => update("ecommerceProducts", form.ecommerceProducts!.filter((_, i) => i !== idx))} 
+                            style={{ position: 'absolute', top: '12px', right: '12px', background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontWeight: 600, fontSize: '14px' }}
+                          >
+                            ✕
+                          </button>
+                          
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                            <Field style={{ marginBottom: 0 }}>
+                              <Label style={{ fontSize: '12px' }}>Product Name</Label>
+                              <Input 
+                                disabled={!form.ecommerceEnabled} 
+                                value={product.name} 
+                                onChange={(e) => {
+                                  const newProducts = [...form.ecommerceProducts!];
+                                  newProducts[idx].name = e.target.value;
+                                  update("ecommerceProducts", newProducts);
+                                }} 
+                                placeholder="e.g. Myaxyl Balm" 
+                              />
+                            </Field>
+                            <Field style={{ marginBottom: 0 }}>
+                              <Label style={{ fontSize: '12px' }}>Price</Label>
+                              <Input 
+                                disabled={!form.ecommerceEnabled} 
+                                value={product.price} 
+                                onChange={(e) => {
+                                  const newProducts = [...form.ecommerceProducts!];
+                                  newProducts[idx].price = e.target.value;
+                                  update("ecommerceProducts", newProducts);
+                                }} 
+                                placeholder="e.g. 60.00 INR" 
+                              />
+                            </Field>
+                          </div>
+                          
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                            <Field style={{ marginBottom: 0 }}>
+                              <Label style={{ fontSize: '12px' }}>Product Link</Label>
+                              <Input 
+                                disabled={!form.ecommerceEnabled} 
+                                value={product.url} 
+                                onChange={(e) => {
+                                  const newProducts = [...form.ecommerceProducts!];
+                                  newProducts[idx].url = e.target.value;
+                                  update("ecommerceProducts", newProducts);
+                                }} 
+                                placeholder="https://example.com/product" 
+                              />
+                            </Field>
+                            <Field style={{ marginBottom: 0 }}>
+                              <Label style={{ fontSize: '12px' }}>Product Image</Label>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                {product.image && (
+                                  <img src={product.image} alt="" style={{ width: '36px', height: '36px', objectFit: 'cover', borderRadius: '4px', border: '1px solid #ddd' }} />
+                                )}
+                                <input 
+                                  type="file" 
+                                  accept="image/*" 
+                                  disabled={!form.ecommerceEnabled || uploading} 
+                                  onChange={async (e) => {
+                                    const file = e.target.files?.[0];
+                                    if (!file) return;
+                                    if (file.size > 1024 * 1024) { alert("File is too large. Max size is 1MB."); return; }
+                                    
+                                    const formData = new FormData();
+                                    formData.append("file", file);
+                                    
+                                    try {
+                                      setUploading(true);
+                                      const res = await fetch("/api/upload", { method: "POST", body: formData });
+                                      const data = await res.json();
+                                      if (data.url) {
+                                        const newProducts = [...form.ecommerceProducts!];
+                                        newProducts[idx].image = data.url;
+                                        update("ecommerceProducts", newProducts);
+                                      } else {
+                                        alert(data.error || "Upload failed");
+                                      }
+                                    } catch (err) {
+                                      alert("Upload failed");
+                                    } finally {
+                                      setUploading(false);
+                                    }
+                                  }} 
+                                  style={{ fontSize: '12px', width: '100%' }} 
+                                />
+                              </div>
+                            </Field>
+                          </div>
+                        </div>
+                      ))}
+                    </Field>
+
+                    <Field>
+                      <Label>Sales Instructions</Label>
                       <TextArea
                         disabled={!form.ecommerceEnabled}
-                        placeholder="Provide details about your products, pricing, and the exact links the bot should share as a 'pitchman'..."
+                        placeholder="Provide details about any specific convincing strategies the bot should use (e.g., 'Mention we have free shipping on orders over $50')."
                         value={form.ecommercePrompt || ""}
                         onChange={(e) => update("ecommercePrompt", e.target.value)}
-                        rows={6}
-                        style={{ minHeight: "120px" }}
+                        rows={4}
+                        style={{ minHeight: "80px" }}
                       />
                       <HelperText>
-                        List out your products, the links to buy them, and any specific convincing strategies the bot should use.
+                        These instructions will be given to the bot along with the product catalog.
                       </HelperText>
                     </Field>
                   </div>
