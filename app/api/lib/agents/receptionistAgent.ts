@@ -8,7 +8,7 @@ type Message = { role: "user" | "assistant" | "system"; content: string };
 interface ReceptionistOptions {
   messages: Message[];
   botConfig: any;
-  leadDecision: LeadDecision | null; // null = contact collection disabled
+  leadDecision: LeadDecision | null;
   websiteContext: string;
 }
 

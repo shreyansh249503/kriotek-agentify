@@ -13,7 +13,6 @@ import {
   SocialIcon,
   CopyrightSection,
   CopyrightText,
-  // LegalLinks,
   FooterLogo,
 } from "./styled";
 import BotLogo from "@/assets/images/Agentify logo white.png";

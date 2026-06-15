@@ -33,7 +33,6 @@ export async function POST(req: Request) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  // 🔹 NEW: check if root URL already crawled
   const existing = await db.getRepository(CrawledPage).exists({
     where: { bot_public_key: publicKey, page_url: url },
   });

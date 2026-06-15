@@ -26,7 +26,6 @@ export const getDb = async () => {
   return AppDataSource;
 };
 
-// Proxy to behave like the pg Pool for piecemeal migration
 export const db = {
   query: async (queryStr: string, params?: unknown[]) => {
     const dataSource = await getDb();

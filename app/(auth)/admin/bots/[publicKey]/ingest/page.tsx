@@ -51,7 +51,7 @@ export default function IngestPage() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
-  const [status, setStatus] = useState("");
+
   const [results, setResults] = useState<{
     text?: { success: boolean; chunks?: number; error?: string };
     url?: { success: boolean; chunks?: number; error?: string };
@@ -68,7 +68,6 @@ export default function IngestPage() {
     setError(null);
     setProgress(0);
     setResults({});
-    setStatus("Initializing engine...");
 
     const progressInterval = setInterval(() => {
       setProgress((prev) => {
@@ -229,7 +228,7 @@ export default function IngestPage() {
     };
 
     fetchBotName();
-  }, [publicKey]);
+  }, [publicKey, setBreadcrumbMeta]);
 
   return (
     <NewBotContainer>

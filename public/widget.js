@@ -3,7 +3,6 @@
   const publicKey = scriptTag?.getAttribute("bot-id");
   if (!publicKey) return;
 
-  // Derive base URL for assets from script tag
   const scriptSrc = scriptTag.src;
   const ASSET_BASE_URL = scriptSrc.substring(0, scriptSrc.lastIndexOf("/"));
   const API_BASE_URL = ASSET_BASE_URL.replace("/public", "");
@@ -167,7 +166,6 @@
     return text;
   }
 
-  // Load marked if not present
   if (!window.marked) {
     const script = document.createElement("script");
     script.src = "https://cdn.jsdelivr.net/npm/marked/marked.min.js";
@@ -182,7 +180,6 @@
     localStorage.getItem(conversationKey) || crypto.randomUUID();
   localStorage.setItem(conversationKey, currentConversationId);
 
-  // Initialize history if it doesn't exist
   let historyIds = JSON.parse(localStorage.getItem(historyKey) || "[]");
   if (!historyIds.includes(currentConversationId)) {
     historyIds.push(currentConversationId);
@@ -554,7 +551,7 @@
   let greetingShownInSessions = {};
 
   function updateEndChatStatus() {
-    const hasMessages = messages.children.length > 1; // Assuming 0 or 1 is initial/greeting
+    const hasMessages = messages.children.length > 1; 
     const hasInput = input.value.trim().length > 0;
 
     if (hasMessages || hasInput) {
@@ -650,7 +647,6 @@
     greetingShownInSessions[currentConversationId] = false;
     confirmView.style.display = "none";
     closeWidget();
-    // After closing, when they open again, it will show greeting
   };
 
   widget.querySelector("#ai-recent-chats").onclick = async () => {

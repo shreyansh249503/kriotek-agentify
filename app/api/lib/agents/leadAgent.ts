@@ -34,9 +34,7 @@ type Message = {
 
 const emailValid = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
 
-// Words that can NEVER be a person's name
 const NOT_A_NAME = new Set([
-  // English
   "yes",
   "no",
   "ok",
@@ -88,7 +86,6 @@ const NOT_A_NAME = new Set([
   "help",
   "more",
   "all",
-  // Common chat nouns — root cause of "website" being extracted
   "website",
   "email",
   "phone",
@@ -127,7 +124,6 @@ const NOT_A_NAME = new Set([
   "solution",
   "solutions",
   "client",
-  // French
   "non",
   "oui",
   "merci",
@@ -136,7 +132,6 @@ const NOT_A_NAME = new Set([
   "bien",
   "voila",
   "alors",
-  // Spanish
   "si",
   "gracias",
   "hola",
@@ -144,7 +139,6 @@ const NOT_A_NAME = new Set([
   "claro",
   "bueno",
   "bien",
-  // Hindi/Urdu
   "haan",
   "nahi",
   "theek",
@@ -154,7 +148,6 @@ const NOT_A_NAME = new Set([
   "accha",
 ]);
 
-// Patterns that mean the assistant just asked for the user's name
 const NAME_REQUEST_PATTERNS = [
   "what's your name",
   "whats your name",
@@ -172,7 +165,6 @@ const NAME_REQUEST_PATTERNS = [
   "first name",
 ];
 
-// Words inside a value that prove it can't be a person's name
 const SENTENCE_WORDS = [
   "the",
   "and",
@@ -211,7 +203,6 @@ function isLikelyNotAName(value: string): boolean {
   if (lower.includes("@")) return true;
   if (lower.length < 2) return true;
   if (words.some((w) => SENTENCE_WORDS.includes(w))) return true;
-  // More than 4 words is probably not a name
   if (words.length > 4) return true;
 
   return false;
@@ -237,22 +228,17 @@ function extractNameFromConversationHistory(
     );
     if (!botAskedForName) continue;
 
-    // Next message should be the user's answer
     const next = msgs[i + 1];
     if (!next || next.role !== "user") continue;
 
     const candidate = next.content.trim();
 
-    // Reject if it's obviously not a name
     if (isLikelyNotAName(candidate)) continue;
 
-    // Must be a short message (1-5 words max)
     if (candidate.split(/\s+/).length > 5) continue;
 
-    // Must not contain special characters (except spaces, hyphens, apostrophes)
     if (/[^a-zA-Z\s\-'.]/.test(candidate)) continue;
 
-    // Valid name found
     return candidate;
   }
 
@@ -269,19 +255,15 @@ export async function runLeadAgent(
 
   console.log("[leadAgent] knownInfo from DB:", { dbName, dbEmail });
 
-  // Build user text for anti-hallucination verification
   const userText = conversation
     .filter((m) => m.role === "user")
     .map((m) => m.content)
     .join(" ")
     .toLowerCase();
 
-  // ── Name: DB wins, then scan full history, then model extraction ──────────
   let finalName = dbName;
 
   if (!finalName) {
-    // Scan the full conversation history for name request -> answer pairs
-    // This is immune to the race condition with async saveAssistantMessage
     const historyName = extractNameFromConversationHistory(conversation);
     if (historyName) {
       console.log("[leadAgent] Name found via history scan:", historyName);
@@ -289,7 +271,6 @@ export async function runLeadAgent(
     }
   }
 
-  // ── Email: model extraction (these have reliable regex validation) ─────────
   let extractedEmail: string | undefined;
 
   const needsEmail = !emailValid(dbEmail);
@@ -329,9 +310,7 @@ Default to undefined. False positives cause real harm.`,
 
       extractedEmail = object.email;
 
-      // If history scan didn't find name, try model extraction with extra validation
       if (!finalName && object.name && !isLikelyNotAName(object.name)) {
-        // Only accept model-extracted name if it appears in user text
         const nameLower = object.name.trim().toLowerCase();
         if (userText.includes(nameLower)) {
           finalName = object.name.trim();
@@ -340,11 +319,9 @@ Default to undefined. False positives cause real harm.`,
       }
     } catch (err) {
       console.error("[leadAgent] generateObject error (skipping extraction):", err);
-      // We continue without extracted info if the model fails (e.g. quota)
     }
   }
 
-  // ── Anti-hallucination: verify values appear in user messages ──────────────
   function verifyInUserText(val?: string): string {
     if (!val) return "";
     const clean = val.trim().toLowerCase();

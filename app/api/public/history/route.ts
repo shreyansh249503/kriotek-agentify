@@ -38,7 +38,6 @@ export async function POST(req: Request) {
       try {
         const msgs = typeof c.messages === 'string' ? JSON.parse(c.messages) : c.messages;
         if (msgs && msgs.length > 0) {
-          // Get the first user message or just the first message
           const userMsg = msgs.find((m: any) => m.role === 'user');
           firstMessage = userMsg ? userMsg.content : msgs[0].content;
         }

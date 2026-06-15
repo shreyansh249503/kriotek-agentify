@@ -54,7 +54,6 @@ export async function GET(req: Request) {
     .orderBy("total_leads", "DESC")
     .getRawMany();
 
-  // FIXED: Using generate_series guarantees no missing gaps if a month has 0 activity.
   const monthlyTrend = await db.query(
     `WITH months AS (
        SELECT generate_series(
@@ -94,7 +93,6 @@ export async function GET(req: Request) {
     [user.id],
   );
 
-  // FIXED: Avoided a Cartesian Product database call entirely by summing existing arrays
   const totals = {
     total_conversations: convoPerBot.reduce((sum, bot) => sum + Number(bot.total_conversations || 0), 0),
     total_messages: convoPerBot.reduce((sum, bot) => sum + Number(bot.total_messages || 0), 0),

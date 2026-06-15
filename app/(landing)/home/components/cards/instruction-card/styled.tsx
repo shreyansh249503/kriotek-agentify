@@ -10,7 +10,7 @@ export const BenefitItem = styled.div`
 export const BenefitNumber = styled.span`
   font-size: 64px;
   font-weight: 800;
-  color: ${COLOR.BORDER}; // Subtle number
+  color: ${COLOR.BORDER};
   line-height: 1;
   font-feature-settings: "tnum";
   font-variant-numeric: tabular-nums;

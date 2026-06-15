@@ -75,7 +75,6 @@ export default function LeadsPage() {
                 <TableRow>
                   <TableHeader>User</TableHeader>
                   <TableHeader>Email</TableHeader>
-                  <TableHeader>Phone Number</TableHeader>
                   <TableHeader>Collected By</TableHeader>
                   <TableHeader>Date</TableHeader>
                 </TableRow>
@@ -97,11 +96,6 @@ export default function LeadsPage() {
                       </ContactInfo>
                     </TableCell>
                     <TableCell>
-                      <ContactInfo>
-                        {(lead.phone && <div>{lead.phone}</div>) || "No Phone"}
-                      </ContactInfo>
-                    </TableCell>
-                    <TableCell>
                       <BotBadge>{lead.bot_name}</BotBadge>
                     </TableCell>
                     <TableCell>
@@ -110,15 +104,12 @@ export default function LeadsPage() {
                           const raw = lead.created_at;
                           if (!raw) return "—";
 
-                          // Robustly handle different formats to ensure UTC parsing
                           let normalized = raw.trim();
 
-                          // Replace space with T for ISO compliance if needed
                           if (!normalized.includes("T") && normalized.includes(" ")) {
                             normalized = normalized.replace(" ", "T");
                           }
 
-                          // Only append Z if no timezone information is present
                           const hasTimezone =
                             normalized.includes("Z") ||
                             normalized.includes("+") ||
