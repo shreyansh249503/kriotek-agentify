@@ -16,6 +16,7 @@ import {
   ChartBarIcon,
   ChatsCircleIcon,
   ShieldCheckIcon,
+  StorefrontIcon,
 } from "@phosphor-icons/react";
 
 const features = [
@@ -54,6 +55,12 @@ const features = [
     title: "Secure & Scalable",
     description:
       "Enterprise-grade security with data encryption, role-based access, and unlimited scalability for growing teams.",
+  },
+  {
+    icon: <StorefrontIcon weight="duotone" />,
+    title: "Sales & E-Commerce Mode",
+    description:
+      "Configure product catalogs, checkout links, and custom sales scripts to turn your AI bot into an active salesperson.",
   },
 ];
 

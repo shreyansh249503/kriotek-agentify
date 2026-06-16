@@ -52,13 +52,23 @@ export const SectionSubtitle = styled.p`
 `;
 
 export const FeaturesGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 32px;
+  width: 100%;
+
+  & > * {
+    flex: 1 1 300px;
+    max-width: 360px;
+  }
 
   @media (max-width: ${BREAKPOINTS.MOBILE}) {
-    grid-template-columns: 1fr;
     gap: 20px;
+    & > * {
+      flex: 1 1 100%;
+      max-width: 100%;
+    }
   }
 `;
 
