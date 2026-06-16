@@ -10,7 +10,6 @@ import {
   LinkTag,
   LoginSignupContainer,
   AuthButton,
-  PersonLogo,
   MenuButton,
   DrawerOverlay,
   DrawerContent,
@@ -47,7 +46,7 @@ export const Header = () => {
         <NavLinks>
           <LinkTag href="/#features">Features</LinkTag>
           <LinkTag href="/#benefits">Benefits</LinkTag>
-          <LinkTag href="/work-in-progress">Pricing</LinkTag>
+          <LinkTag href="/pricing">Pricing</LinkTag>
           <LinkTag href="/work-in-progress">Docs</LinkTag>
         </NavLinks>
 
@@ -80,7 +79,7 @@ export const Header = () => {
           <LinkTag href="/#benefits" onClick={closeMenu}>
             Benefits
           </LinkTag>
-          <LinkTag href="/work-in-progress" onClick={closeMenu}>
+          <LinkTag href="/pricing" onClick={closeMenu}>
             Pricing
           </LinkTag>
           <LinkTag href="/work-in-progress" onClick={closeMenu}>

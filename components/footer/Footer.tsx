@@ -53,29 +53,29 @@ export const Footer = () => {
           <FooterBrand>
             <FooterTitle>Product</FooterTitle>
             <FooterColumn>
-            <FooterLink href="/admin">Dashboard</FooterLink>
-            <FooterLink href="/admin/bots">My Bots</FooterLink>
-            <FooterLink href="/pricing">Pricing</FooterLink>
-            <FooterLink href="/documentation">Documentation</FooterLink>
+              <FooterLink href="/admin">Dashboard</FooterLink>
+              <FooterLink href="/admin/bots">My Bots</FooterLink>
+              <FooterLink href="/pricing">Pricing</FooterLink>
+              <FooterLink href="/work-in-progress">Documentation</FooterLink>
             </FooterColumn>
           </FooterBrand>
 
           <FooterBrand>
             <FooterTitle>Company</FooterTitle>
             <FooterColumn>
-            <FooterLink href="/about">About Us</FooterLink>
-            <FooterLink href="/careers">Careers</FooterLink>
-            <FooterLink href="/blog">Blog</FooterLink>
-            <FooterLink href="/contact">Contact</FooterLink>
+              <FooterLink href="/work-in-progress">About Us</FooterLink>
+              <FooterLink href="/work-in-progress">Careers</FooterLink>
+              <FooterLink href="/work-in-progress">Blog</FooterLink>
+              <FooterLink href="/work-in-progress">Contact</FooterLink>
             </FooterColumn>
           </FooterBrand>
 
           <FooterBrand>
             <FooterTitle>Legal</FooterTitle>
             <FooterColumn>
-            <FooterLink href="/privacy">Privacy Policy</FooterLink>
-            <FooterLink href="/terms">Terms of Service</FooterLink>
-            <FooterLink href="/security">Security</FooterLink>
+              <FooterLink href="/work-in-progress">Privacy Policy</FooterLink>
+              <FooterLink href="/work-in-progress">Terms of Service</FooterLink>
+              <FooterLink href="/work-in-progress">Security</FooterLink>
             </FooterColumn>
           </FooterBrand>
         </FooterGrid>

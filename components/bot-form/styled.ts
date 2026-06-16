@@ -399,3 +399,118 @@ export const RemoveButton = styled.button`
     background: rgba(168, 225, 11, 0.75);
   }
 `;
+
+export const CatalogHeaderWrapper = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  width: 100%;
+`;
+
+export const AddProductButton = styled(Button)`
+  padding: 8px 16px;
+  font-size: 13px;
+  width: auto;
+  margin-top: 0;
+  border-radius: 8px;
+`;
+
+export const CatalogProductCard = styled.div`
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  position: relative;
+  transition: all 0.2s ease;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+    border-color: ${COLOR.PRIMARY};
+  }
+`;
+
+export const DeleteProductButton = styled.button`
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: none;
+  border: none;
+  color: #ef4444;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 16px;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s;
+
+  &:hover {
+    transform: scale(1.15);
+  }
+`;
+
+export const ProductFieldsRow = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+`;
+
+export const ProductImageWrapper = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+`;
+
+export const ProductImageThumbnail = styled.img`
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid ${COLOR.BORDER};
+  flex-shrink: 0;
+`;
+
+export const ProductFileInput = styled.input`
+  font-size: 13px;
+  width: 100%;
+  padding: 8px 0;
+  cursor: pointer;
+
+  &::file-selector-button {
+    background: ${COLOR.WHITE};
+    border: 1px solid ${COLOR.BORDER};
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-right: 8px;
+    transition: all 0.2s;
+
+    &:hover {
+      background: ${COLOR.LIGHT};
+      border-color: ${COLOR.PRIMARY};
+    }
+  }
+`;
+
+export const SmallLabel = styled(Label)`
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 2px;
+`;
+

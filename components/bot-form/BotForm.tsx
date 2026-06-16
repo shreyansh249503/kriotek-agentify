@@ -23,6 +23,15 @@ import {
   RemoveButton,
   LeftContainer,
   ContactGrid,
+  CatalogHeaderWrapper,
+  AddProductButton,
+  CatalogProductCard,
+  DeleteProductButton,
+  ProductFieldsRow,
+  ProductImageWrapper,
+  ProductImageThumbnail,
+  ProductFileInput,
+  SmallLabel,
 } from "./styled";
 import { CreateBotInput } from "@/types/bot";
 import { CustomSelect } from "../custom-select";
@@ -377,31 +386,29 @@ export const BotForm = ({
                 <ContactGrid>
                   <div style={{ gridColumn: "1 / -1" }}>
                     <Field>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                        <Label style={{ margin: 0 }}>Products Catalog</Label>
-                        <Button 
+                      <CatalogHeaderWrapper>
+                        <Label>Products Catalog</Label>
+                        <AddProductButton 
                           type="button" 
                           onClick={() => update("ecommerceProducts", [...(form.ecommerceProducts || []), { name: '', price: '', image: '', url: '' }])} 
                           disabled={!form.ecommerceEnabled} 
-                          style={{ padding: '6px 12px', fontSize: '12px', width: 'auto' }}
                         >
                           + Add Product
-                        </Button>
-                      </div>
+                        </AddProductButton>
+                      </CatalogHeaderWrapper>
                       
                       {(form.ecommerceProducts || []).map((product, idx) => (
-                        <div key={idx} style={{ background: '#f9fafb', border: '1px solid #e5e7eb', padding: '16px', borderRadius: '8px', marginBottom: '16px', position: 'relative' }}>
-                          <button 
+                        <CatalogProductCard key={idx}>
+                          <DeleteProductButton 
                             type="button" 
                             onClick={() => update("ecommerceProducts", form.ecommerceProducts!.filter((_, i) => i !== idx))} 
-                            style={{ position: 'absolute', top: '12px', right: '12px', background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontWeight: 600, fontSize: '14px' }}
                           >
                             ✕
-                          </button>
+                          </DeleteProductButton>
                           
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-                            <Field style={{ marginBottom: 0 }}>
-                              <Label style={{ fontSize: '12px' }}>Product Name</Label>
+                          <ProductFieldsRow>
+                            <Field>
+                              <SmallLabel>Product Name</SmallLabel>
                               <Input 
                                 disabled={!form.ecommerceEnabled} 
                                 value={product.name} 
@@ -413,8 +420,8 @@ export const BotForm = ({
                                 placeholder="e.g. Myaxyl Balm" 
                               />
                             </Field>
-                            <Field style={{ marginBottom: 0 }}>
-                              <Label style={{ fontSize: '12px' }}>Price</Label>
+                            <Field>
+                              <SmallLabel>Price</SmallLabel>
                               <Input 
                                 disabled={!form.ecommerceEnabled} 
                                 value={product.price} 
@@ -426,11 +433,11 @@ export const BotForm = ({
                                 placeholder="e.g. 60.00 INR" 
                               />
                             </Field>
-                          </div>
+                          </ProductFieldsRow>
                           
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                            <Field style={{ marginBottom: 0 }}>
-                              <Label style={{ fontSize: '12px' }}>Product Link</Label>
+                          <ProductFieldsRow>
+                            <Field>
+                              <SmallLabel>Product Link</SmallLabel>
                               <Input 
                                 disabled={!form.ecommerceEnabled} 
                                 value={product.url} 
@@ -442,13 +449,13 @@ export const BotForm = ({
                                 placeholder="https://example.com/product" 
                               />
                             </Field>
-                            <Field style={{ marginBottom: 0 }}>
-                              <Label style={{ fontSize: '12px' }}>Product Image</Label>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Field>
+                              <SmallLabel>Product Image</SmallLabel>
+                              <ProductImageWrapper>
                                 {product.image && (
-                                  <img src={product.image} alt="" style={{ width: '36px', height: '36px', objectFit: 'cover', borderRadius: '4px', border: '1px solid #ddd' }} />
+                                  <ProductImageThumbnail src={product.image} alt="" />
                                 )}
-                                <input 
+                                <ProductFileInput 
                                   type="file" 
                                   accept="image/*" 
                                   disabled={!form.ecommerceEnabled || uploading} 
@@ -471,18 +478,17 @@ export const BotForm = ({
                                       } else {
                                         alert(data.error || "Upload failed");
                                       }
-                                    } catch (err) {
+                                    } catch {
                                       alert("Upload failed");
                                     } finally {
                                       setUploading(false);
                                     }
                                   }} 
-                                  style={{ fontSize: '12px', width: '100%' }} 
                                 />
-                              </div>
+                              </ProductImageWrapper>
                             </Field>
-                          </div>
-                        </div>
+                          </ProductFieldsRow>
+                        </CatalogProductCard>
                       ))}
                     </Field>
 
@@ -494,7 +500,6 @@ export const BotForm = ({
                         value={form.ecommercePrompt || ""}
                         onChange={(e) => update("ecommercePrompt", e.target.value)}
                         rows={4}
-                        style={{ minHeight: "80px" }}
                       />
                       <HelperText>
                         These instructions will be given to the bot along with the product catalog.

@@ -8,6 +8,7 @@ import {
   BotPreviewWrapper,
   BubbleBotContainer,
   BubbleUserContainer,
+  ChatBotConatiner,
 } from "./styled";
 
 export const BotPreview = ({
@@ -21,28 +22,91 @@ export const BotPreview = ({
   return (
     <BotPreviewContainer>
       <BotPreviewTitle>Live Preview</BotPreviewTitle>
-
       <BotPreviewWrapper>
-        <BotPreviewHeader $color={color}>{name || "Your Bot"}</BotPreviewHeader>
+        <BotPreviewHeader $color={color}>
+          {logoUrl ? (
+            <img
+              src={logoUrl}
+              alt={name || "User"}
+              style={{
+                width: "32px",
+                height: "32px",
+                borderRadius: "50%",
+                objectFit: "contain",
+                background: "white",
+              }}
+            />
+          ) : (
+            <div
+              style={{
+                width: "32px",
+                height: "32px",
+                borderRadius: "50%",
+                background: "rgba(255, 255, 255, 0.2)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "Black",
+                fontSize: "12px",
+                fontWeight: "bold",
+                flexShrink: 0,
+              }}
+            >
+              AI
+            </div>
+          )}
+          {name || "Your Bot"}
+        </BotPreviewHeader>
 
         <BotPreviewBody>
-          <BubbleBot logoUrl={logoUrl}>Hello 👋 I&apos;m here to help!</BubbleBot>
+          <BubbleBot>Hello 👋 I&apos;m here to help!</BubbleBot>
 
           <BubbleUser color={color}>Tell me about your services</BubbleUser>
 
-          <BubbleBot logoUrl={logoUrl}>
+          <BubbleBot>
             Sure! I&apos;d be happy to help.
             <br />
             <small style={{ opacity: 0.6 }}>Tone: {tone}</small>
           </BubbleBot>
 
           {contactEnabled && (
-            <BubbleBot logoUrl={logoUrl}>
+            <BubbleBot>
               {contactPrompt || "Would you like us to contact you?"}
             </BubbleBot>
           )}
         </BotPreviewBody>
       </BotPreviewWrapper>
+      <ChatBotConatiner>
+        {logoUrl ? (
+          <img
+            src={logoUrl}
+            alt={name || "User"}
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "contain",
+            }}
+          />
+        ) : (
+          <div
+            style={{
+              width: "50px",
+              height: "50px",
+              borderRadius: "50%",
+              background: "rgba(255, 255, 255, 0.651)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "Black",
+              fontSize: "20px",
+              fontWeight: "bold",
+              flexShrink: 0,
+            }}
+          >
+            AI
+          </div>
+        )}
+      </ChatBotConatiner>
     </BotPreviewContainer>
   );
 };
@@ -52,35 +116,8 @@ interface BubbleBotProps {
   logoUrl?: string;
 }
 
-function BubbleBot({ children, logoUrl }: BubbleBotProps) {
-  return (
-    <div style={{ display: "flex", gap: "8px", alignItems: "flex-end" }}>
-      {logoUrl ? (
-        <img
-          src={logoUrl}
-          alt="Bot Avatar"
-          style={{ width: "32px", height: "32px", borderRadius: "50%", objectFit: "cover" }}
-        />
-      ) : (
-        <div
-          style={{
-            width: "32px",
-            height: "32px",
-            borderRadius: "50%",
-              background: "#4F46E5",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-              color: "white",
-            fontSize: "12px",
-          }}
-        >
-          AI
-        </div>
-      )}
-      <BubbleBotContainer>{children}</BubbleBotContainer>
-    </div>
-  );
+function BubbleBot({ children }: BubbleBotProps) {
+  return <BubbleBotContainer>{children}</BubbleBotContainer>;
 }
 
 interface BubbleUserProps {

@@ -114,7 +114,6 @@ export const SalesShowcase = () => {
   const chatBodyRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Auto-scroll chat to bottom
   useEffect(() => {
     if (chatBodyRef.current) {
       chatBodyRef.current.scrollTop = chatBodyRef.current.scrollHeight;
@@ -133,7 +132,6 @@ export const SalesShowcase = () => {
 
     const runStep = () => {
       if (currentStep >= demoScript.length) {
-        // Restart after a brief delay
         timerRef.current = setTimeout(() => {
           resetDemo();
         }, 5000);
@@ -143,13 +141,11 @@ export const SalesShowcase = () => {
       const nextMsg = demoScript[currentStep];
 
       if (nextMsg.sender === "user") {
-        // User messages appear with brief delay
         timerRef.current = setTimeout(() => {
           setMessages((prev) => [...prev, nextMsg]);
           setCurrentStep((prev) => prev + 1);
         }, 1200);
       } else {
-        // Bot messages show typing indicator first
         timerRef.current = setTimeout(() => {
           setIsTyping(true);
 
@@ -157,8 +153,8 @@ export const SalesShowcase = () => {
             setIsTyping(false);
             setMessages((prev) => [...prev, nextMsg]);
             setCurrentStep((prev) => prev + 1);
-          }, 1800); // Simulated typing duration
-        }, 800); // Pause before starting to type
+          }, 1800); 
+        }, 800); 
       }
     };
 
