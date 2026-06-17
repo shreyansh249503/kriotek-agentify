@@ -41,23 +41,13 @@
     return div;
   }
 
-  function createBotMessage(messages, logoUrl) {
+  function createBotMessage(messages) {
     const wrapper = document.createElement("div");
     wrapper.style.cssText = `
       display: flex;
       align-items: flex-end;
       gap: 8px;
       margin: 6px 0;
-    `;
-
-    const avatar = document.createElement("img");
-    avatar.src = logoUrl;
-    avatar.style.cssText = `
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      object-fit: cover;
-      flex-shrink: 0;
     `;
 
     const bubble = document.createElement("div");
@@ -71,31 +61,18 @@
       line-height: 1.4;
     `;
 
-    wrapper.appendChild(avatar);
     wrapper.appendChild(bubble);
     messages.appendChild(wrapper);
     return bubble;
   }
 
-  function createTypingIndicator(logoUrl) {
+  function createTypingIndicator() {
     const wrapper = document.createElement("div");
     wrapper.style.cssText = `
       display: flex;
       align-items: center;
       gap: 8px;
       margin: 6px 0;
-    `;
-
-    const avatar = document.createElement("img");
-    avatar.src = logoUrl;
-    avatar.alt = "bot";
-    avatar.style.cssText = `
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      object-fit: cover;
-      background: #fff;
-      flex-shrink: 0;
     `;
 
     const bubble = document.createElement("div");
@@ -112,7 +89,6 @@
       <span class="typing-dot"></span>
     `;
 
-    wrapper.appendChild(avatar);
     wrapper.appendChild(bubble);
     return wrapper;
   }
@@ -135,20 +111,21 @@
           if (!Array.isArray(products) || products.length === 0) return "";
           const carouselId =
             "carousel-" + Math.random().toString(36).substr(2, 9);
+          const fallbackSvg = "data:image/svg+xml;utf8,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20width=%22100%25%22%20height=%22100%25%22%20viewBox=%220%200%2024%2024%22%20fill=%22none%22%20stroke=%22%23ccc%22%20stroke-width=%221%22%20stroke-linecap=%22round%22%20stroke-linejoin=%22round%22%3E%3Crect%20x=%223%22%20y=%223%22%20width=%2218%22%20height=%2218%22%20rx=%222%22%20ry=%222%22%3E%3C/rect%3E%3Ccircle%20cx=%228.5%22%20cy=%228.5%22%20r=%221.5%22%3E%3C/circle%3E%3Cpolyline%20points=%2221%2015%2016%2010%205%2021%22%3E%3C/polyline%3E%3C/svg%3E";
+
           let html = `<div class="carousel-wrapper" style="position: relative; display: flex; align-items: center; margin: 8px 0;">`;
           html += `<button onclick="document.getElementById('${carouselId}').scrollBy({left: -220, behavior: 'smooth'})" style="position: absolute; left: -14px; z-index: 2; border-radius: 50%; width: 28px; height: 28px; background: white; border: 1px solid #e5e7eb; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; font-size: 18px; color: #333; padding-bottom: 2px;">&#8249;</button>`;
           html += `<div id="${carouselId}" class="product-carousel">`;
           products.forEach((p) => {
-            const imgUrl =
-              p.image ||
-              'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="%23ccc" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>';
+            const imgUrl = p.image || fallbackSvg;
+            const safeName = (p.name || "Product").replace(/"/g, '&quot;');
             html += `
             <div class="product-card">
-              <img src="${imgUrl}" class="product-image" alt="${p.name || "Product"}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'100%\\' height=\\'100%\\' viewBox=\\'0 0 24 24\\' fill=\\'none\\' stroke=\\'%23ccc\\' stroke-width=\\'1\\' stroke-linecap=\\'round\\' stroke-linejoin=\\'round\\'><rect x=\\'3\\' y=\\'3\\' width=\\'18\\' height=\\'18\\' rx=\\'2\\' ry=\\'2\\'></rect><circle cx=\\'8.5\\' cy=\\'8.5\\' r=\\'1.5\\'></circle><polyline points=\\'21 15 16 10 5 21\\'></polyline></svg>'"/>
+              <img src="${imgUrl}" class="product-image" alt="${safeName}" onerror="this.src='${fallbackSvg}'"/>
               <div class="product-info">
                 <div class="product-name">${p.name || "Unnamed Product"}</div>
                 <div class="product-price">${p.price || ""}</div>
-                <button class="product-action" onclick="window.open('${p.url || "#"}', '_blank')">View Details</button>
+                <a class="product-action" href="${p.url || "#"}" target="_blank">View Details</a>
               </div>
             </div>
           `;
@@ -482,6 +459,7 @@
       cursor: pointer;
       text-align: center;
       transition: opacity 0.2s;
+      text-decoration: none;
     }
     .product-action:hover {
       opacity: 0.9;

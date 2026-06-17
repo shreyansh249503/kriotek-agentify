@@ -122,7 +122,6 @@ export default function PricingPage() {
     },
   ];
 
-  // FAQ Details
   const faqs = [
     {
       q: "Can I change plans at any time?",

@@ -78,7 +78,7 @@ export async function crawlWebsite(
           }
         } catch {}
       });
-    } catch (err) {
+    } catch {
       console.log("Failed:", url);
     }
   }

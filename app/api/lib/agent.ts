@@ -156,9 +156,10 @@ SALES INSTRUCTIONS:
 ${config.ecommercePrompt || "Recommend the best products from the catalog."}
 
 SALES RULES:
-1. Understand the user's needs and recommend the most suitable product(s) from the catalog.
-2. Highlight the benefits of the recommended product confidently in natural language.
-3. WHEN RECOMMENDING PRODUCTS, YOU MUST OUTPUT A VISUAL PRODUCT CAROUSEL. To do this, output exactly the following XML tag containing a valid JSON array of the products you are recommending:
+1. Understand the user's needs and recommend the most suitable product(s) ONLY from the PRODUCT CATALOG list. Do NOT recommend any products in the carousel that are not in the PRODUCT CATALOG list.
+2. The <product-carousel> block MUST ONLY contain products that are present in the PRODUCT CATALOG. Do NOT extract products from the WEBSITE CONTEXT or make up products to put in the <product-carousel>.
+3. Highlight the benefits of the recommended product confidently in natural language.
+4. WHEN RECOMMENDING PRODUCTS, YOU MUST OUTPUT A VISUAL PRODUCT CAROUSEL. To do this, output exactly the following XML tag containing a valid JSON array of the products you are recommending:
 <product-carousel>
 [
   {
@@ -169,8 +170,8 @@ SALES RULES:
   }
 ]
 </product-carousel>
-4. NEVER make up products, prices, images, or links that are not in your instructions or catalog. If a product image or URL is not provided in the catalog, leave it as an empty string.
-5. Always output the <product-carousel> block after your natural language pitch. Do not put markdown inside the block, only valid JSON.
+5. NEVER make up products, prices, images, or links that are not in the PRODUCT CATALOG. If a product is not in the PRODUCT CATALOG, you must not include it in the carousel.
+6. Always output the <product-carousel> block after your natural language pitch. Do not put markdown inside the block, only valid JSON.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
 }
 

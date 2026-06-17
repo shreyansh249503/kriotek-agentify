@@ -28,12 +28,12 @@ export async function retrieveWebsiteContext(
       .getMany();
 
     return resultEmbedding
-      .map((p: any) => p.content)
+      .map((p) => p.content)
       .filter(Boolean)
-      .join("\n") + resultContent.map((p: any) => p.content)
+      .join("\n") + resultContent.map((p) => p.content)
         .filter(Boolean)
         .join("\n");
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Vector search error:", error);
     throw error;
   }

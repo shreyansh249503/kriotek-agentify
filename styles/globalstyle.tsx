@@ -40,7 +40,6 @@ html {
     height: 100%;
     font-family: poppins, sans-serif;
     overflow-x: hidden;
-    /* background-color: #9FCD6B; */
   }
 
     * {
@@ -71,7 +70,6 @@ textarea:-webkit-autofill {
 
   ::-webkit-scrollbar-track {
     background: transparent;
-   
   }
   ::-webkit-scrollbar-thumb {
     background-color: rgba(168, 225, 12, 0.4); 

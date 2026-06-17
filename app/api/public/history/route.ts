@@ -2,6 +2,8 @@ import { getDb } from "@/app/api/lib/db";
 import { Conversation, Bot } from "@/app/api/lib/entities";
 import { In } from "typeorm";
 
+type Message = { role: string; content: string };
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST,OPTIONS",
@@ -36,9 +38,9 @@ export async function POST(req: Request) {
     const summaries = conversations.map(c => {
       let firstMessage = "";
       try {
-        const msgs = typeof c.messages === 'string' ? JSON.parse(c.messages) : c.messages;
+        const msgs = (typeof c.messages === 'string' ? JSON.parse(c.messages) : c.messages) as Message[];
         if (msgs && msgs.length > 0) {
-          const userMsg = msgs.find((m: any) => m.role === 'user');
+          const userMsg = msgs.find((m) => m.role === 'user');
           firstMessage = userMsg ? userMsg.content : msgs[0].content;
         }
       } catch (e) {

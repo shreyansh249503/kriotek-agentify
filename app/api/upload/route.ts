@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
       .getPublicUrl(filePath);
 
     return NextResponse.json({ url: publicUrl });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Upload error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }

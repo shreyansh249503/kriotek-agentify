@@ -9,6 +9,11 @@ import {
   BubbleBotContainer,
   BubbleUserContainer,
   ChatBotConatiner,
+  HeaderAvatarImage,
+  HeaderAvatarPlaceholder,
+  SmallToneText,
+  LauncherAvatarImage,
+  LauncherAvatarPlaceholder,
 } from "./styled";
 
 export const BotPreview = ({
@@ -25,35 +30,9 @@ export const BotPreview = ({
       <BotPreviewWrapper>
         <BotPreviewHeader $color={color}>
           {logoUrl ? (
-            <img
-              src={logoUrl}
-              alt={name || "User"}
-              style={{
-                width: "32px",
-                height: "32px",
-                borderRadius: "50%",
-                objectFit: "contain",
-                background: "white",
-              }}
-            />
+            <HeaderAvatarImage src={logoUrl} alt={name || "User"} />
           ) : (
-            <div
-              style={{
-                width: "32px",
-                height: "32px",
-                borderRadius: "50%",
-                background: "rgba(255, 255, 255, 0.2)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "Black",
-                fontSize: "12px",
-                fontWeight: "bold",
-                flexShrink: 0,
-              }}
-            >
-              AI
-            </div>
+            <HeaderAvatarPlaceholder>AI</HeaderAvatarPlaceholder>
           )}
           {name || "Your Bot"}
         </BotPreviewHeader>
@@ -66,7 +45,7 @@ export const BotPreview = ({
           <BubbleBot>
             Sure! I&apos;d be happy to help.
             <br />
-            <small style={{ opacity: 0.6 }}>Tone: {tone}</small>
+            <SmallToneText>Tone: {tone}</SmallToneText>
           </BubbleBot>
 
           {contactEnabled && (
@@ -78,33 +57,9 @@ export const BotPreview = ({
       </BotPreviewWrapper>
       <ChatBotConatiner>
         {logoUrl ? (
-          <img
-            src={logoUrl}
-            alt={name || "User"}
-            style={{
-              width: "100%",
-              height: "100%",
-              objectFit: "contain",
-            }}
-          />
+          <LauncherAvatarImage src={logoUrl} alt={name || "User"} />
         ) : (
-          <div
-            style={{
-              width: "50px",
-              height: "50px",
-              borderRadius: "50%",
-              background: "rgba(255, 255, 255, 0.651)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "Black",
-              fontSize: "20px",
-              fontWeight: "bold",
-              flexShrink: 0,
-            }}
-          >
-            AI
-          </div>
+          <LauncherAvatarPlaceholder>AI</LauncherAvatarPlaceholder>
         )}
       </ChatBotConatiner>
     </BotPreviewContainer>

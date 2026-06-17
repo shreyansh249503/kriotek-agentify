@@ -92,3 +92,49 @@ export const ChatBotConatinerImage = styled(Image)`
   height: 100%;
   object-fit: cover;
 `;
+
+export const HeaderAvatarImage = styled.img`
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: contain;
+  background: white;
+`;
+
+export const HeaderAvatarPlaceholder = styled.div`
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: black;
+  font-size: 12px;
+  font-weight: bold;
+  flex-shrink: 0;
+`;
+
+export const SmallToneText = styled.small`
+  opacity: 0.6;
+`;
+
+export const LauncherAvatarImage = styled.img`
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+`;
+
+export const LauncherAvatarPlaceholder = styled.div`
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.651);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: black;
+  font-size: 20px;
+  font-weight: bold;
+  flex-shrink: 0;
+`;
