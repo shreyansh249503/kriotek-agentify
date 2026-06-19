@@ -63,10 +63,10 @@ export const Footer = () => {
           <FooterBrand>
             <FooterTitle>Company</FooterTitle>
             <FooterColumn>
-              <FooterLink href="/work-in-progress">About Us</FooterLink>
+              <FooterLink href="/about">About Us</FooterLink>
               <FooterLink href="/work-in-progress">Careers</FooterLink>
               <FooterLink href="/work-in-progress">Blog</FooterLink>
-              <FooterLink href="/work-in-progress">Contact</FooterLink>
+              <FooterLink href="/contact">Contact</FooterLink>
             </FooterColumn>
           </FooterBrand>
 
