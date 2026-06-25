@@ -26,7 +26,7 @@ export async function GET(req: Request) {
   }
 
   const db = await getDb();
-  const bots = await db.getRepository(Bot).find({ where: { user_id: user.id } });
+  const bots = await db.getRepository("Bot").find({ where: { user_id: user.id } });
 
   return new Response(JSON.stringify(bots), {
     headers: corsHeaders,
@@ -61,7 +61,7 @@ export async function POST(req: Request) {
   const publicKey = nanoid(16);
 
   const db = await getDb();
-  const botRepo = db.getRepository(Bot);
+  const botRepo = db.getRepository("Bot");
   
   const newBot = botRepo.create({
     public_key: publicKey,

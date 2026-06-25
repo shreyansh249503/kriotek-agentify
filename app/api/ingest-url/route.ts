@@ -15,7 +15,7 @@ export async function POST(req: Request) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { publicKey, url } = await req.json();
+  const { publicKey, url, extractProducts } = await req.json();
 
   if (!publicKey || !url) {
     return Response.json(
@@ -25,15 +25,15 @@ export async function POST(req: Request) {
   }
 
   const db = await getDb();
-  const botExists = await db.getRepository(Bot).exists({
+  const bot = await db.getRepository("Bot").findOne({
     where: { public_key: publicKey, user_id: user.id },
-  });
+  }) as any;
 
-  if (!botExists) {
+  if (!bot) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const existing = await db.getRepository(CrawledPage).exists({
+  const existing = await db.getRepository("CrawledPage").exists({
     where: { bot_public_key: publicKey, page_url: url },
   });
 
@@ -47,16 +47,36 @@ export async function POST(req: Request) {
     );
   }
 
-  const text = await crawlWebsite(url, publicKey);
+  const { collectedText, products } = await crawlWebsite(url, publicKey, 40, !!extractProducts);
 
-  if (!text || text.length < 200) {
+  if (!collectedText || collectedText.length < 200) {
     return Response.json(
       { error: "No readable content found on this page" },
       { status: 400 },
     );
   }
 
-  const chunks = chunkText(text);
+  let productsExtractedCount = 0;
+  if (extractProducts && products && products.length > 0) {
+    const existingProducts = bot.ecommerce_products || [];
+    const mergedProducts = [...existingProducts];
+    for (const newProduct of products) {
+      const isDup = mergedProducts.some(
+        (p) =>
+          (p.url && p.url === newProduct.url) ||
+          (p.name.toLowerCase() === newProduct.name.toLowerCase())
+      );
+      if (!isDup) {
+        mergedProducts.push(newProduct);
+        productsExtractedCount++;
+      }
+    }
+    bot.ecommerce_products = mergedProducts;
+    bot.ecommerce_enabled = true;
+    await db.getRepository("Bot").save(bot);
+  }
+
+  const chunks = chunkText(collectedText);
 
   console.log("CHUNKS COUNT:", chunks.length);
 
@@ -67,5 +87,6 @@ export async function POST(req: Request) {
   return Response.json({
     success: true,
     chunksIngested: chunks.length,
+    productsExtractedCount,
   });
 }

@@ -2,6 +2,7 @@
 
 import { COLOR, BREAKPOINTS } from "@/styles";
 import styled from "styled-components";
+import { TextField } from "@mui/material";
 
 export const Form = styled.form`
   width: 100%;
@@ -74,7 +75,7 @@ export const TextArea = styled.textarea`
   border: 2px solid ${COLOR.BORDER};
   border-radius: 12px;
   font-size: 15px;
-  min-height: 120px;
+  min-height: 160px;
   transition: all 0.3s ease;
   background: ${COLOR.LIGHT};
   color: ${COLOR.DARK};
@@ -159,10 +160,9 @@ export const TopRow = styled.div`
   grid-template-columns: 2fr 1fr;
   gap: 24px;
 
-@media(max-width: 1600px) {
-  grid-template-columns: 1fr;
-}
-
+  @media (max-width: 1600px) {
+    grid-template-columns: 1fr;
+  }
 `;
 
 export const SectionHeader = styled.div`
@@ -387,7 +387,7 @@ export const UploadButton = styled.label`
 export const RemoveButton = styled.button`
   background: #a8e10b6b;
   border: 1px solid #a8e10b;
-  color: #2E2E2E;
+  color: #2e2e2e;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -416,72 +416,217 @@ export const AddProductButton = styled(Button)`
   border-radius: 8px;
 `;
 
-export const CatalogProductCard = styled.div`
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  padding: 20px;
-  border-radius: 12px;
-  margin-bottom: 20px;
+export const CatalogProductCardContainer = styled.div`
   position: relative;
+  width: 100%;
+  height: fit-content;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 12px;
+`;
+
+export const CatalogProductCard = styled.div`
+  width: 49%;
+  height: 280px;
+  display: flex;
+  justify-content: center;
+  background: #f9fafb;
+  border: 1px solid ${COLOR.BORDER};
+  border-radius: 16px;
+  transition: all 0.3s ease;
+  overflow: hidden;
+  position: relative;
+  padding: 12px;
+
+  &:hover {
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+    border-color: ${COLOR.PRIMARY};
+  }
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+  }
+`;
+
+export const ProductImageContainer = styled.div`
+  position: relative;
+  width: 200px;
+  height: 100%;
+  background: ${COLOR.LIGHT};
+  border: 1px solid ${COLOR.BORDER};
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+
+  @media (max-width: 768px) {
+    width: 100%;
+    height: 220px;
+    border-right: none;
+    border-bottom: 1px solid ${COLOR.BORDER};
+  }
+`;
+
+export const ProductImageThumbnail = styled.img`
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+`;
+
+export const ProductImageOverlay = styled.label`
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  cursor: pointer;
+
+  ${ProductImageContainer}:hover & {
+    opacity: 1;
+  }
+`;
+
+export const UploadOverlayLabel = styled.span`
+  color: ${COLOR.WHITE};
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid ${COLOR.WHITE};
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.2);
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+`;
+
+export const ProductImageUploadPlaceholder = styled.label`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: calc(100% - 24px);
+  height: calc(100% - 24px);
+  margin: 12px;
+  cursor: pointer;
+  color: ${COLOR.TEXT_SECONDARY};
+  font-size: 13px;
+  font-weight: 600;
+  border: 2px dashed ${COLOR.BORDER};
+  border-radius: 12px;
+  box-sizing: border-box;
   transition: all 0.2s ease;
 
   &:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+    background: rgba(168, 225, 12, 0.05);
+    color: ${COLOR.PRIMARY};
     border-color: ${COLOR.PRIMARY};
+  }
+
+  svg {
+    stroke: currentColor;
   }
 `;
 
 export const DeleteProductButton = styled.button`
   position: absolute;
-  top: 14px;
-  right: 14px;
-  background: none;
-  border: none;
-  color: #ef4444;
+  top: 12px;
+  right: 12px;
+  background: ${COLOR.WHITE};
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  color: #6b7280;
   cursor: pointer;
-  font-weight: 700;
-  font-size: 16px;
-  padding: 4px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.2s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 10;
 
   &:hover {
-    transform: scale(1.15);
+    transform: scale(1.08);
+    background: #ef4444;
+    color: ${COLOR.WHITE};
+    border-color: #ef4444;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
+  }
+
+  &:active {
+    transform: scale(0.95);
   }
 `;
 
 export const ProductFieldsRow = styled.div`
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  margin-bottom: 16px;
-
-  &:last-child {
-    margin-bottom: 0;
-  }
-
-  @media (max-width: ${BREAKPOINTS.TABLET}) {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-`;
-
-export const ProductImageWrapper = styled.div`
   display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
+  flex-direction: column;
+  gap: 20px;
+  padding: 26px 12px 20px 12px;
 `;
 
-export const ProductImageThumbnail = styled.img`
-  width: 44px;
-  height: 44px;
-  object-fit: cover;
-  border-radius: 8px;
-  border: 1px solid ${COLOR.BORDER};
-  flex-shrink: 0;
+export const ProductTextField = styled(TextField)`
+  width: 100%;
+
+  .MuiOutlinedInput-root {
+    border-radius: 8px;
+    background-color: ${COLOR.LIGHT};
+    font-size: 14px;
+    transition: all 0.3s ease;
+    color: ${COLOR.DARK};
+
+    fieldset {
+      border: 1px solid ${COLOR.BORDER};
+      transition: border-color 0.2s ease;
+    }
+
+    &:hover fieldset {
+      border-color: ${COLOR.PRIMARY};
+    }
+
+    &.Mui-focused {
+      background-color: ${COLOR.WHITE};
+      fieldset {
+        border-color: ${COLOR.PRIMARY};
+        border-width: 1px;
+      }
+      box-shadow: 0 0 0 4px rgba(168, 225, 12, 0.1);
+    }
+
+    input {
+      padding: 11px 14px;
+    }
+  }
+
+  .MuiInputLabel-root {
+    font-size: 14px;
+    color: ${COLOR.TEXT_SECONDARY};
+    transform: translate(14px, 11px) scale(1);
+
+    &.MuiInputLabel-shrink {
+      transform: translate(14px, -9px) scale(0.75);
+    }
+
+    &.Mui-focused {
+      color: ${COLOR.DARK};
+    }
+  }
 `;
 
 export const ProductFileInput = styled.input`
@@ -514,3 +659,258 @@ export const SmallLabel = styled(Label)`
   margin-bottom: 2px;
 `;
 
+export const GridFullWidth = styled.div`
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 16px;
+`;
+
+export const AutoExtractContainer = styled.div`
+  background: rgba(255, 255, 255, 0.4);
+  border: 2px dashed ${COLOR.PRIMARY};
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+`;
+
+export const AutoExtractTitleRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+
+export const AutoExtractIcon = styled.svg`
+  stroke: ${COLOR.DARK};
+`;
+
+export const AutoExtractTitle = styled.span`
+  font-weight: 700;
+  font-size: 15px;
+  color: ${COLOR.DARK};
+`;
+
+export const AutoExtractDescription = styled.div`
+  font-size: 13px;
+  color: ${COLOR.TEXT_SECONDARY};
+  line-height: 1.4;
+`;
+
+export const AutoExtractInputRow = styled.div`
+  display: flex;
+  gap: 12px;
+  margin-top: 4px;
+`;
+
+export const CrawlInput = styled(Input)`
+  flex: 1;
+  padding: 12px 16px;
+  border-radius: 10px;
+`;
+
+export const CrawlButton = styled(Button)`
+  margin: 0;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  height: fit-content;
+`;
+
+export const CrawlStatusMessage = styled.div<{ $isError?: boolean }>`
+  font-size: 13px;
+  font-weight: 600;
+  margin-top: 4px;
+  color: ${({ $isError }) => ($isError ? "#ef4444" : "#10b981")};
+`;
+
+export const ProductDetailsSection = styled.div`
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 12px;
+  gap: 16px;
+`;
+
+export const ProductDetailsHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  width: 100%;
+  min-width: 0;
+`;
+
+export const ProductCardTitle = styled.h4`
+  font-size: 16px;
+  font-weight: 700;
+  color: ${COLOR.DARK};
+  margin: 0;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+`;
+
+export const CardActionButtons = styled.div`
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding-top: 10px;
+`;
+
+export const CardIconButton = styled.button<{
+  $variant?: "danger" | "primary";
+}>`
+  background: ${COLOR.WHITE};
+  border: 1px solid ${COLOR.BORDER};
+  color: ${({ $variant }) => ($variant === "danger" ? "#ef4444" : "#6b7280")};
+  cursor: pointer;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  transition: all 0.2s ease;
+
+  &:hover {
+    transform: scale(1.08);
+    background: ${({ $variant }) =>
+      $variant === "danger" ? "#ef4444" : COLOR.PRIMARY};
+    color: ${COLOR.WHITE};
+    border-color: ${({ $variant }) =>
+      $variant === "danger" ? "#ef4444" : COLOR.PRIMARY};
+    box-shadow: ${({ $variant }) =>
+      $variant === "danger"
+        ? "0 4px 12px rgba(239, 68, 68, 0.2)"
+        : "0 4px 12px rgba(168, 225, 12, 0.2)"};
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+`;
+
+export const PriceRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid ${COLOR.BORDER};
+`;
+
+export const PriceLabel = styled.span`
+  font-size: 14px;
+  color: ${COLOR.TEXT_SECONDARY};
+  font-weight: 500;
+`;
+
+export const PriceValue = styled.span`
+  font-size: 18px;
+  font-weight: 700;
+  color: #4c6b36;
+`;
+
+export const LinkRow = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+`;
+
+export const LinkLabel = styled.span`
+  font-size: 13px;
+  color: ${COLOR.TEXT_SECONDARY};
+  font-weight: 500;
+`;
+
+export const LinkContent = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+`;
+
+export const LinkUrl = styled.span`
+  font-size: 14px;
+  color: ${COLOR.DARK};
+  font-weight: 400;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+`;
+
+export const LinkIconWrapper = styled.div`
+  color: ${COLOR.TEXT_SECONDARY};
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+`;
+
+export const ViewProductButton = styled.a`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: fit-content;
+  padding: 10px 24px;
+  background: #5d7e48;
+  color: ${COLOR.WHITE};
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: 24px;
+  text-decoration: none;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 12px rgba(93, 126, 72, 0.2);
+
+  &:hover {
+    background: #4c693a;
+    box-shadow: 0 6px 18px rgba(93, 126, 72, 0.35);
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+`;
+
+export const SaveProductButton = styled.button`
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 10px;
+  font-size: 14px;
+  font-weight: 700;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  background: ${COLOR.PRIMARY};
+  color: ${COLOR.DARK};
+  transition: all 0.3s ease;
+
+  &:hover {
+    background: ${COLOR.PRIMARY_HOVER};
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+`;

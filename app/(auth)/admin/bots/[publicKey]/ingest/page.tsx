@@ -27,6 +27,8 @@ import {
   UrlSectionWrapper,
   ResultSectionWrapper,
   SourceSectionWrapper,
+  ToggleContainer,
+  ToggleSwitch,
 } from "./styled";
 import {
   CloudArrowUpIcon,
@@ -46,6 +48,7 @@ export default function IngestPage() {
   const { setBreadcrumbMeta } = useBreadcrumb();
   const [content, setContent] = useState("");
   const [url, setUrl] = useState("");
+  const [extractProducts, setExtractProducts] = useState(false);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -54,7 +57,7 @@ export default function IngestPage() {
 
   const [results, setResults] = useState<{
     text?: { success: boolean; chunks?: number; error?: string };
-    url?: { success: boolean; chunks?: number; error?: string };
+    url?: { success: boolean; chunks?: number; productsCount?: number; error?: string };
     pdf?: { success: boolean; chunks?: number; error?: string };
   }>({});
 
@@ -128,7 +131,7 @@ export default function IngestPage() {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${accessToken}`,
                   },
-                  body: JSON.stringify({ publicKey, url }),
+                  body: JSON.stringify({ publicKey, url, extractProducts }),
                 },
               );
               const data = await res.json();
@@ -136,7 +139,11 @@ export default function IngestPage() {
               if (!res.ok) throw new Error(data.error || "URL ingest failed");
               setResults((prev) => ({
                 ...prev,
-                url: { success: true, chunks: data.chunksIngested },
+                url: { 
+                  success: true, 
+                  chunks: data.chunksIngested,
+                  productsCount: data.productsExtractedCount
+                },
               }));
             } catch (err) {
               const errorMessage = err instanceof Error ? err.message : "URL ingest failed";
@@ -302,6 +309,21 @@ export default function IngestPage() {
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
               />
+              
+              <ToggleContainer style={{ marginTop: "16px" }}>
+                <ToggleSwitch
+                  checked={extractProducts}
+                  onClick={() => setExtractProducts(!extractProducts)}
+                />
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: "14px", color: COLOR.DARK }}>
+                    Extract products from website during crawl
+                  </div>
+                  <div style={{ fontSize: "12px", color: COLOR.TEXT_SECONDARY, marginTop: "2px" }}>
+                    Automatically discover products (names, prices, images, checkout links) and turn on E-Commerce Sales Mode for your chatbot.
+                  </div>
+                </div>
+              </ToggleContainer>
             </UrlSectionWrapper>
 
 
@@ -405,7 +427,11 @@ export default function IngestPage() {
                   <span>
                     URL Crawl:{" "}
                     {results.url.success
-                      ? `Learned from ${results.url.chunks} chunks`
+                      ? `Learned from ${results.url.chunks} chunks${
+                          results.url.productsCount
+                            ? `, extracted ${results.url.productsCount} products and enabled Sales mode`
+                            : ""
+                        }`
                       : results.url.error}
                   </span>
                 </ResultItem>

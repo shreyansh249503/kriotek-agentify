@@ -348,3 +348,35 @@ export const ErrorText = styled.div`
   color: #ef4444;
   font-size: 14px;
 `;
+
+export const ToggleContainer = styled.label`
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  cursor: pointer;
+  user-select: none;
+  margin-top: 12px;
+`;
+
+export const ToggleSwitch = styled.div<{ checked: boolean }>`
+  position: relative;
+  width: 52px;
+  height: 28px;
+  background-color: ${({ checked }) =>
+    checked ? COLOR.PRIMARY : COLOR.BORDER};
+  border-radius: 999px;
+  transition: all 0.3s ease;
+
+  &::after {
+    content: "";
+    position: absolute;
+    top: 4px;
+    left: ${({ checked }) => (checked ? "28px" : "4px")};
+    width: 20px;
+    height: 20px;
+    background-color: ${COLOR.WHITE};
+    border-radius: 50%;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+`;
