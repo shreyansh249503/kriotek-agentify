@@ -41,12 +41,12 @@ import {
   ProductDetails,
   ProductTitle,
   ProductPrice,
-  BuyButton,
   TypingContainer,
   TypingDot,
   DemoControl,
   DemoButton,
 } from "./styled";
+import { PrimaryButton } from "@/components";
 
 interface DemoMessage {
   sender: "user" | "bot";
@@ -70,7 +70,8 @@ const demoScript: DemoMessage[] = [
     product: {
       name: "Myaxyl Balm (50g)",
       price: "120.00 INR",
-      image: "https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?w=400&auto=format&fit=crop",
+      image:
+        "https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?w=400&auto=format&fit=crop",
       url: "/signup",
     },
   },
@@ -100,7 +101,8 @@ const demoScript: DemoMessage[] = [
     product: {
       name: "Myaxyl Balm (Pack of 2) + Discount",
       price: "204.00 INR (15% Off)",
-      image: "https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?w=400&auto=format&fit=crop",
+      image:
+        "https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?w=400&auto=format&fit=crop",
       url: "/signup",
     },
   },
@@ -153,8 +155,8 @@ export const SalesShowcase = () => {
             setIsTyping(false);
             setMessages((prev) => [...prev, nextMsg]);
             setCurrentStep((prev) => prev + 1);
-          }, 1800); 
-        }, 800); 
+          }, 1800);
+        }, 800);
       }
     };
 
@@ -172,8 +174,9 @@ export const SalesShowcase = () => {
           <Badge>Featured Capability</Badge>
           <ShowcaseTitle>Increase Sales with AI Agents</ShowcaseTitle>
           <ShowcaseSubtitle>
-            Convert casual store visitors into paying customers. Train your agent to pitch
-            products, share checkout links, and collect warm leads in real time.
+            Convert casual store visitors into paying customers. Train your
+            agent to pitch products, share checkout links, and collect warm
+            leads in real time.
           </ShowcaseSubtitle>
         </HeaderWrapper>
 
@@ -186,8 +189,9 @@ export const SalesShowcase = () => {
               <TextContainer>
                 <CardTitle>Interactive Catalog Embeds</CardTitle>
                 <CardDesc>
-                  Upload your products and prices. The bot automatically embeds visual
-                  cards with prices, descriptions, and checkout buttons directly in the chat.
+                  Upload your products and prices. The bot automatically embeds
+                  visual cards with prices, descriptions, and checkout buttons
+                  directly in the chat.
                 </CardDesc>
               </TextContainer>
             </ShowcaseCard>
@@ -199,8 +203,9 @@ export const SalesShowcase = () => {
               <TextContainer>
                 <CardTitle>Advanced Pitch Playbooks</CardTitle>
                 <CardDesc>
-                  Define custom sales instructions, special offers, and discount codes.
-                  The agent acts as an expert salesperson, pitching at the perfect moment.
+                  Define custom sales instructions, special offers, and discount
+                  codes. The agent acts as an expert salesperson, pitching at
+                  the perfect moment.
                 </CardDesc>
               </TextContainer>
             </ShowcaseCard>
@@ -212,8 +217,9 @@ export const SalesShowcase = () => {
               <TextContainer>
                 <CardTitle>Automated Lead Capture</CardTitle>
                 <CardDesc>
-                  Seamlessly collect client names and emails before or during purchasing
-                  intent. Instantly routes leads to your inbox or CRM of choice.
+                  Seamlessly collect client names and emails before or during
+                  purchasing intent. Instantly routes leads to your inbox or CRM
+                  of choice.
                 </CardDesc>
               </TextContainer>
             </ShowcaseCard>
@@ -236,7 +242,14 @@ export const SalesShowcase = () => {
 
               <ChatBody ref={chatBodyRef}>
                 {messages.length === 0 && !isTyping && (
-                  <div style={{ textAlign: "center", color: "#a8a29e", fontSize: "13px", margin: "auto 0" }}>
+                  <div
+                    style={{
+                      textAlign: "center",
+                      color: "#a8a29e",
+                      fontSize: "13px",
+                      margin: "auto 0",
+                    }}
+                  >
                     Demo conversation starting...
                   </div>
                 )}
@@ -247,13 +260,19 @@ export const SalesShowcase = () => {
                     </MessageBubble>
                     {msg.product && (
                       <ProductCard>
-                        <ProductImage src={msg.product.image} alt={msg.product.name} />
+                        <ProductImage
+                          src={msg.product.image}
+                          alt={msg.product.name}
+                        />
                         <ProductDetails>
                           <ProductTitle>{msg.product.name}</ProductTitle>
                           <ProductPrice>{msg.product.price}</ProductPrice>
-                          <BuyButton href={msg.product.url}>
+                          <PrimaryButton
+                            style={{ padding: "8px 24px", fontSize: "12px" }}
+                            href={msg.product.url}
+                          >
                             Buy Now <ArrowRightIcon size={12} weight="bold" />
-                          </BuyButton>
+                          </PrimaryButton>
                         </ProductDetails>
                       </ProductCard>
                     )}

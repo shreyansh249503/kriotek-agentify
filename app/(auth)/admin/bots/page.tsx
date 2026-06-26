@@ -7,6 +7,8 @@ import {
   EmptyState,
   Pagination,
   StatusBadge,
+  PrimaryButton,
+  SecondaryButton,
 } from "@/components";
 import {
   TableContainer,
@@ -19,8 +21,6 @@ import {
   BotName,
   BotDescription,
   ActionCellWrapper,
-  EditBotButton,
-  IngestButton,
   ControlsContainer,
   BotsContainer,
   LoadingContainer,
@@ -89,92 +89,92 @@ export default function BotsPage() {
       {filteredBots.length > 0 ? (
         <TableContainer>
           <TableWrapper>
-          <StyledTable>
-            <TableHead>
-              <TableRow>
-                <TableHeader>Name</TableHeader>
-                <TableHeader>Description</TableHeader>
-                <TableHeader>Contact Lead</TableHeader>
-                <TableHeader style={{ textAlign: "center" }}>
-                  Actions
-                </TableHeader>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {currentBots.map((bot) => {
-                const isEditLoading =
-                  loadingAction?.botId === bot.id &&
-                  loadingAction?.type === "edit";
-                const isIngestLoading =
-                  loadingAction?.botId === bot.id &&
-                  loadingAction?.type === "ingest";
+            <StyledTable>
+              <TableHead>
+                <TableRow>
+                  <TableHeader>Name</TableHeader>
+                  <TableHeader>Description</TableHeader>
+                  <TableHeader>Contact Lead</TableHeader>
+                  <TableHeader style={{ textAlign: "center" }}>
+                    Actions
+                  </TableHeader>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {currentBots.map((bot) => {
+                  const isEditLoading =
+                    loadingAction?.botId === bot.id &&
+                    loadingAction?.type === "edit";
+                  const isIngestLoading =
+                    loadingAction?.botId === bot.id &&
+                    loadingAction?.type === "ingest";
 
-                return (
-                  <TableRow key={bot.id}>
-                    <TableCell>
-                      <BotName>
-                        <BotIconWrapper $color={bot.primary_color}>
-                          <RobotIcon size={20} />
-                        </BotIconWrapper>
-                        {bot.name}
-                      </BotName>
-                    </TableCell>
-                    <TableCell>
-                      <BotDescription>{bot.description}</BotDescription>
-                    </TableCell>
-                    <TableCell>
-                      {bot.contact_enabled ? (
-                        <StatusBadge status="active">Enabled</StatusBadge>
-                      ) : (
-                        <StatusBadge status="inactive">Disabled</StatusBadge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <ActionCellWrapper>
-                        <EditBotButton
-                          as="button"
-                          type="button"
-                          disabled={!!loadingAction}
-                          onClick={() =>
-                            handleNavigate(
-                              `/admin/bot/${bot.id}/edit-bot`,
-                              bot.id,
-                              "edit",
-                            )
-                          }
-                        >
-                          {isEditLoading ? (
-                            <SpinnerIcon size={14} className="spin" />
-                          ) : (
-                            "Edit"
-                          )}
-                        </EditBotButton>
-                        <IngestButton
-                          as="button"
-                          type="button"
-                          disabled={!!loadingAction}
-                          onClick={() =>
-                            handleNavigate(
-                              `/admin/bots/${bot.public_key}/ingest`,
-                              bot.id,
-                              "ingest",
-                            )
-                          }
-                        >
-                          {isIngestLoading ? (
-                            <SpinnerIcon size={14} className="spin" />
-                          ) : (
-                            "Ingest"
-                          )}
-                        </IngestButton>
-                      </ActionCellWrapper>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
+                  return (
+                    <TableRow key={bot.id}>
+                      <TableCell>
+                        <BotName>
+                          <BotIconWrapper $color={bot.primary_color}>
+                            <RobotIcon size={20} />
+                          </BotIconWrapper>
+                          {bot.name}
+                        </BotName>
+                      </TableCell>
+                      <TableCell>
+                        <BotDescription>{bot.description}</BotDescription>
+                      </TableCell>
+                      <TableCell>
+                        {bot.contact_enabled ? (
+                          <StatusBadge status="active">Enabled</StatusBadge>
+                        ) : (
+                          <StatusBadge status="inactive">Disabled</StatusBadge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <ActionCellWrapper>
+                          <SecondaryButton
+                            type="button"
+                            style={{ padding: "9px 26px" }}
+                            disabled={!!loadingAction}
+                            onClick={() =>
+                              handleNavigate(
+                                `/admin/bot/${bot.id}/edit-bot`,
+                                bot.id,
+                                "edit",
+                              )
+                            }
+                          >
+                            {isEditLoading ? (
+                              <SpinnerIcon size={14} className="spin" />
+                            ) : (
+                              "Edit"
+                            )}
+                          </SecondaryButton>
+                          <PrimaryButton
+                            type="button"
+                            style={{ padding: "10px 20px" }}
+                            disabled={!!loadingAction}
+                            onClick={() =>
+                              handleNavigate(
+                                `/admin/bots/${bot.public_key}/ingest`,
+                                bot.id,
+                                "ingest",
+                              )
+                            }
+                          >
+                            {isIngestLoading ? (
+                              <SpinnerIcon size={14} className="spin" />
+                            ) : (
+                              "Ingest"
+                            )}
+                          </PrimaryButton>
+                        </ActionCellWrapper>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
             </StyledTable>
-            </TableWrapper>
+          </TableWrapper>
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}

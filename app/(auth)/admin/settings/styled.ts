@@ -232,40 +232,6 @@ export const SaveButtonWrap = styled.div`
   margin-top: 16px;
 `;
 
-export const SaveButton = styled.button`
-  width: fit-content;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  padding: 14px 28px;
-  background: ${COLOR.PRIMARY};
-  color: #ffffff;
-  border: none;
-  border-radius: 12px;
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-  box-shadow: 0 8px 24px ${COLOR.PRIMARY}44;
-
-  &:hover {
-    background: ${COLOR.PRIMARY_HOVER};
-    transform: translateY(-2px);
-    box-shadow: 0 12px 28px ${COLOR.PRIMARY}66;
-  }
-
-  &:active {
-    transform: translateY(0);
-  }
-
-  &:disabled {
-    background: ${COLOR.BORDER};
-    color: ${COLOR.TEXT_SECONDARY};
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
-  }
-`;
 export const SuccessMessage = styled.div`
   background-color: #d4edda;
   color: #155724;

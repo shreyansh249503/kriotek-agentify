@@ -27,6 +27,9 @@ export const LeftContainer = styled.div`
   flex: 1;
   width: 100%;
   max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 `;
 
 export const Field = styled.div`
@@ -218,42 +221,6 @@ export const ToggleSwitch = styled.div<{ checked: boolean }>`
   }
 `;
 
-export const Button = styled.button`
-  width: fit-content;
-  padding: 12px 32px;
-  font-size: 17px;
-  font-weight: 700;
-  border: none;
-  border-radius: 999px;
-  cursor: pointer;
-  background: ${COLOR.PRIMARY};
-  color: ${COLOR.DARK};
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(168, 225, 12, 0.3);
-  margin-top: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-
-  &:hover {
-    background: ${COLOR.PRIMARY_HOVER};
-    transform: translateY(-3px);
-    box-shadow: 0 8px 20px rgba(168, 225, 12, 0.4);
-  }
-
-  &:active {
-    transform: translateY(-1px);
-  }
-
-  &:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
-  }
-`;
-
 export const EmbedSection = styled.div`
   padding: 20px;
   background-color: ${COLOR.CREAM};
@@ -406,14 +373,6 @@ export const CatalogHeaderWrapper = styled.div`
   align-items: center;
   margin-bottom: 12px;
   width: 100%;
-`;
-
-export const AddProductButton = styled(Button)`
-  padding: 8px 16px;
-  font-size: 13px;
-  width: auto;
-  margin-top: 0;
-  border-radius: 8px;
 `;
 
 export const CatalogProductCardContainer = styled.div`
@@ -709,15 +668,6 @@ export const CrawlInput = styled(Input)`
   flex: 1;
   padding: 12px 16px;
   border-radius: 10px;
-`;
-
-export const CrawlButton = styled(Button)`
-  margin: 0;
-  padding: 12px 24px;
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 600;
-  height: fit-content;
 `;
 
 export const CrawlStatusMessage = styled.div<{ $isError?: boolean }>`

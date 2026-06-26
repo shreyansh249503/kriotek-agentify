@@ -11,13 +11,13 @@ import { ContactSettingsSection } from "./ContactSettingsSection";
 import { EcommerceSettingsSection } from "./EcommerceSettingsSection";
 import {
   Form,
-  Button,
   FormGrid,
   TopRow,
   FormContainer,
   SideContainer,
   LeftContainer,
 } from "./styled";
+import { PrimaryButton } from "../buttons";
 
 export const BotForm = ({
   initialData,
@@ -60,7 +60,7 @@ export const BotForm = ({
           ecommercePrompt: initialData.ecommerce_prompt ?? "",
           ecommerceProducts: initialData.ecommerce_products ?? [],
         }
-      : defaultValues
+      : defaultValues,
   );
 
   const [prevId, setPrevId] = useState(initialData?.id);
@@ -92,7 +92,7 @@ export const BotForm = ({
 
   function update<K extends keyof CreateBotInput>(
     key: K,
-    value: CreateBotInput[K]
+    value: CreateBotInput[K],
   ) {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
@@ -100,7 +100,7 @@ export const BotForm = ({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const cleanProducts = (form.ecommerceProducts || []).filter(
-      (p) => p.name?.trim() && p.price?.trim() && p.url?.trim()
+      (p) => p.name?.trim() && p.price?.trim() && p.url?.trim(),
     );
     await onSubmit({
       ...form,
@@ -127,9 +127,9 @@ export const BotForm = ({
             />
           </FormGrid>
 
-          <Button type="submit" disabled={loading}>
+          <PrimaryButton type="submit" disabled={loading}>
             {loading ? "Saving..." : submitLabel}
-          </Button>
+          </PrimaryButton>
         </LeftContainer>
         <SideContainer>
           <BotPreview

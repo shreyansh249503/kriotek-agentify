@@ -17,12 +17,11 @@ import {
   FormGroup,
   Label,
   Input,
-  SaveButton,
   DashboardWrapper,
   ProfileEmailWrapper,
 } from "./styled";
 import { useCurrentUser } from "@/hooks/useAuth";
-import { Loader } from "@/components";
+import { Loader, PrimaryButton } from "@/components";
 import { supabase } from "@/lib/supabase";
 import type { User, UserAttributes } from "@supabase/supabase-js";
 import {
@@ -218,7 +217,7 @@ function ProfileForm({ user }: ProfileFormProps) {
       </FormSection>
       
 
-      <SaveButton onClick={handleSave} disabled={isSaving}>
+      <PrimaryButton onClick={handleSave} disabled={isSaving}>
         {isSaving ? (
           <>
             <CircleNotchIcon size={18} className="animate-spin" />
@@ -227,7 +226,7 @@ function ProfileForm({ user }: ProfileFormProps) {
         ) : (
           "Save Changes"
         )}
-      </SaveButton>
+      </PrimaryButton>
     </DashboardWrapper>
   );
 }

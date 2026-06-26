@@ -8,7 +8,6 @@ import {
   NewBotWrapper,
   TextArea,
   Input,
-  SubmitButton,
   FileUploadZone,
   ProgressWrapper,
   CircularProgressBox,
@@ -37,7 +36,7 @@ import {
   CheckCircleIcon,
   XCircleIcon,
 } from "@phosphor-icons/react";
-import { EmbedSuccess } from "@/components";
+import { EmbedSuccess, PrimaryButton } from "@/components";
 import { useBreadcrumb } from "@/context/BreadcrumbContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { COLOR } from "@/styles";
@@ -328,9 +327,9 @@ export default function IngestPage() {
 
 
 
-            <SubmitButton onClick={ingest} disabled={loading}>
+            <PrimaryButton onClick={ingest} disabled={loading}>
               Ingest All Selected Sources
-            </SubmitButton>
+            </PrimaryButton>
           </>
         )}
 

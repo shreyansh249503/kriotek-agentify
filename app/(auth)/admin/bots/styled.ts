@@ -202,32 +202,6 @@ export const ActionCellWrapper = styled.div`
   align-items: center;
 `;
 
-export const IngestButton = styled.button`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 8px 20px;
-  background-color: ${COLOR.PRIMARY};
-  border: none;
-  color: ${COLOR.DARK};
-  border-radius: 999px;
-  text-align: center;
-  font-size: 13px;
-  font-weight: 700;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 2px 4px ${COLOR.PRIMARY}44;
-
-  &:hover {
-    background-color: ${COLOR.PRIMARY_HOVER};
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px ${COLOR.PRIMARY}66;
-  }
-
-  &:active {
-    transform: translateY(0);
-  }
-`;
-
 export const EditBotButton = styled.button`
   display: flex;
   justify-content: center;

@@ -19,14 +19,13 @@ import {
   AutoExtractDescription,
   AutoExtractInputRow,
   CrawlInput,
-  CrawlButton,
   CrawlStatusMessage,
   CatalogHeaderWrapper,
   Label,
-  AddProductButton,
   CatalogProductCardContainer,
   TextArea,
 } from "./styled";
+import { PrimaryButton } from "../buttons";
 
 interface EcommerceSettingsSectionProps {
   form: CreateBotInput;
@@ -218,13 +217,13 @@ export const EcommerceSettingsSection = ({
                     onChange={(e) => setCrawlUrl(e.target.value)}
                     disabled={crawlingProducts}
                   />
-                  <CrawlButton
+                  <PrimaryButton
                     type="button"
                     onClick={handleCrawlProducts}
                     disabled={crawlingProducts || !crawlUrl.trim()}
                   >
                     {crawlingProducts ? "Extracting..." : "Extract Products"}
-                  </CrawlButton>
+                  </PrimaryButton>
                 </AutoExtractInputRow>
                 {crawlStatus && (
                   <CrawlStatusMessage
@@ -237,13 +236,13 @@ export const EcommerceSettingsSection = ({
 
               <CatalogHeaderWrapper>
                 <Label>Products Catalog</Label>
-                <AddProductButton
+                <PrimaryButton
                   type="button"
                   onClick={handleAddProduct}
                   disabled={isAddDisabled}
                 >
                   + Add Product
-                </AddProductButton>
+                </PrimaryButton>
               </CatalogHeaderWrapper>
               <CatalogProductCardContainer>
                 {(form.ecommerceProducts || []).map((product, idx) => (

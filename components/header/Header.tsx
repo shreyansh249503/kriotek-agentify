@@ -47,6 +47,7 @@ export const Header = () => {
           <LinkTag href="/#features">Features</LinkTag>
           <LinkTag href="/#benefits">Benefits</LinkTag>
           <LinkTag href="/pricing">Pricing</LinkTag>
+          <LinkTag href="/demo">Live Demo</LinkTag>
           <LinkTag href="/work-in-progress">Docs</LinkTag>
         </NavLinks>
 
@@ -81,6 +82,9 @@ export const Header = () => {
           </LinkTag>
           <LinkTag href="/pricing" onClick={closeMenu}>
             Pricing
+          </LinkTag>
+          <LinkTag href="/demo" onClick={closeMenu}>
+            Live Demo
           </LinkTag>
           <LinkTag href="/work-in-progress" onClick={closeMenu}>
             Docs

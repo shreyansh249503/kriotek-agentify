@@ -11,3 +11,4 @@ export * from "./embed-success";
 export * from "./footer";
 export * from "./bot-preview";
 export * from "./pagination";
+export * from "./buttons";

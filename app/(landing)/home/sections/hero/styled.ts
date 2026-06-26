@@ -1,7 +1,5 @@
 import styled, { keyframes } from "styled-components";
 import { BREAKPOINTS, COLOR } from "@/styles";
-import Link from "next/link";
-
 
 const fadeIn = keyframes`
   from { opacity: 0; transform: translateY(20px); }
@@ -129,24 +127,6 @@ export const CTAContainer = styled.div`
     width: 100%;
   }
 `;
-
-export const SecondaryButton = styled(Link)`
-  padding: 16px 32px;
-  background: white;
-  color: ${COLOR.DARK};
-  font-weight: 700;
-  border-radius: 10px;
-  text-decoration: none;
-  border: 2px solid ${COLOR.BORDER};
-  transition: all 0.3s ease;
-
-  &:hover {
-    border-color: ${COLOR.PRIMARY};
-    background: ${COLOR.LIGHT};
-    transform: translateY(-2px);
-  }
-`;
-
 
 export const AnimatedBackground = styled.div`
   position: absolute;
@@ -310,21 +290,5 @@ export const NeuralLine = styled.div<{
     background: ${COLOR.PRIMARY};
     border-radius: 50%;
     box-shadow: 0 0 15px ${COLOR.PRIMARY};
-  }
-`;
-
-export const PrimaryButton = styled(Link)`
-  padding: 16px 32px;
-  background: ${COLOR.PRIMARY};
-  color: ${COLOR.DARK};
-  font-weight: 700;
-  border-radius: 10px;
-  text-decoration: none;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 12px ${COLOR.SHADOW};
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(168, 225, 12, 0.4);
   }
 `;

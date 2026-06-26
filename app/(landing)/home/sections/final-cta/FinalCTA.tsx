@@ -1,5 +1,4 @@
 import { CreditCardIcon } from "lucide-react";
-import { PrimaryButton } from "../hero/styled";
 import {
   CTAButtonWrapper,
   CTADescription,
@@ -8,6 +7,7 @@ import {
   NoCardText,
   NoCardWrapper,
 } from "./styled";
+import { PrimaryButton } from "@/components";
 
 export const FinalCTA = () => {
   return (

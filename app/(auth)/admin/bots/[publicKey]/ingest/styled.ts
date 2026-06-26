@@ -216,41 +216,6 @@ export const Input = styled.input`
   }
 `;
 
-export const SubmitButton = styled.button`
-  width: fit-content;
-  padding: 16px 32px;
-  background-color: ${COLOR.PRIMARY};
-  color: #2e2e2e;
-  border: none;
-  border-radius: 16px;
-  font-size: 16px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(168, 225, 12, 0.3);
-
-  &:hover {
-    background-color: ${COLOR.PRIMARY_HOVER};
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(168, 225, 12, 0.4);
-  }
-
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
-  }
-
-  &:active {
-    transform: translateY(-1px);
-  }
-
-  @media (max-width: ${BREAKPOINTS.MOBILE}) {
-    width: 100%;
-  }
-`;
-
 export const ResultSummary = styled.div`
   background: ${COLOR.LIGHT};
   padding: 24px;

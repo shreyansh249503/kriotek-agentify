@@ -1,3 +1,4 @@
+import { PrimaryButton, SecondaryButton } from "@/components";
 import {
   AICircle,
   AINode,
@@ -10,8 +11,6 @@ import {
   HeroSection,
   MainHeading,
   NeuralLine,
-  PrimaryButton,
-  SecondaryButton,
   SubHeading,
 } from "./styled";
 

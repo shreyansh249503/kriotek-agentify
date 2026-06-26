@@ -320,25 +320,6 @@ export const ProductPrice = styled.span`
   color: #047857;
 `;
 
-export const BuyButton = styled.a`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 8px;
-  background: ${COLOR.PRIMARY};
-  color: ${COLOR.DARK};
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 700;
-  margin-top: 8px;
-  text-decoration: none;
-  transition: background 0.2s;
-
-  &:hover {
-    background: ${COLOR.PRIMARY_HOVER};
-  }
-`;
 
 export const TypingContainer = styled.div`
   display: flex;

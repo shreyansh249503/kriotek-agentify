@@ -1,5 +1,6 @@
 "use client";
 
+import { PrimaryButton } from "@/components";
 import {
   WIPSection,
   AnimatedBackground,
@@ -12,7 +13,6 @@ import {
   WIPContent,
   MainHeading,
   SubHeading,
-  BackButton,
   IconContainer,
 } from "./styled";
 import { HammerIcon } from "lucide-react";
@@ -80,9 +80,9 @@ export default function WorkInProgress() {
           We&apos;re currently building something amazing for you. 
           This feature is under active development and will be available soon.
         </SubHeading>
-        <BackButton href="/">
+        <PrimaryButton href="/">
           Back to Home
-        </BackButton>
+        </PrimaryButton>
       </WIPContent>
     </WIPSection>
   );

@@ -1,5 +1,4 @@
 import styled, { keyframes } from "styled-components";
-import Link from "next/link";
 import { COLOR } from "@/styles";
 
 const fadeIn = keyframes`
@@ -268,25 +267,6 @@ export const SubHeading = styled.p`
   line-height: 1.6;
   margin: 0;
   animation: ${fadeIn} 0.8s ease-out 0.2s backwards;
-`;
-
-export const BackButton = styled(Link)`
-  padding: 16px 32px;
-  background: ${COLOR.PRIMARY};
-  color: ${COLOR.DARK};
-  font-weight: 700;
-  border-radius: 9999px;
-  text-decoration: none;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 12px ${COLOR.SHADOW};
-  margin-top: 16px;
-  animation: ${fadeIn} 0.8s ease-out 0.4s backwards;
-
-  &:hover {
-    background: ${COLOR.PRIMARY_HOVER};
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(168, 225, 12, 0.4);
-  }
 `;
 
 export const IconContainer = styled.div`
