@@ -1,4 +1,4 @@
-import styled, { keyframes} from "styled-components";
+import styled, { keyframes } from "styled-components";
 
 const slideUp = keyframes`
   from { opacity: 0; transform: translateY(30px); }
@@ -31,7 +31,7 @@ export const StoreContainer = styled.div`
   min-height: 100vh;
   background: #fdfdfc;
   color: #1b4332;
-  font-family: 'Outfit', sans-serif;
+  font-family: "Outfit", sans-serif;
   overflow-x: hidden;
   padding-top: 80px; // Offset for header
 `;
@@ -66,7 +66,7 @@ export const StoreBrand = styled.div`
   align-items: center;
   gap: 8px;
   cursor: pointer;
-  
+
   span {
     color: #40916c;
   }
@@ -335,7 +335,7 @@ export const RatingWrapper = styled.div`
   gap: 6px;
   color: #ffb703;
   font-size: 14px;
-  
+
   span {
     color: #52b788;
     font-size: 13px;
@@ -460,22 +460,32 @@ export const StoreFooter = styled.footer`
 // CART ADDED TOAST
 export const ToastMessage = styled.div<{ $visible: boolean }>`
   position: fixed;
-  top: 96px;
-  right: 40px;
-  background: #1b4332;
-  color: white;
-  padding: 16px 24px;
-  border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  top: 100px;
+  right: 32px;
+  background: #ffffff;
+  color: #1b4332;
+  padding: 12px 18px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   z-index: 1100;
-  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  transform: ${props => props.$visible ? "translateX(0) scale(1)" : "translateX(150%) scale(0.9)"};
-  opacity: ${props => props.$visible ? 1 : 0};
-  font-weight: 600;
-  border-left: 5px solid #52b788;
+  font-family: 'Outfit', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  transform: ${(props) =>
+    props.$visible ? "translateY(0)" : "translateY(-20px)"};
+  opacity: ${(props) => (props.$visible ? 1 : 0)};
+  pointer-events: ${(props) => (props.$visible ? "auto" : "none")};
+
+  span {
+    color: #52b788;
+    font-size: 16px;
+    font-weight: bold;
+  }
 
   @media (max-width: 768px) {
     right: 20px;
@@ -535,9 +545,12 @@ export const ChatWindow = styled.div<{ $isOpen: boolean }>`
   z-index: 9999;
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   transform-origin: bottom right;
-  transform: ${props => props.$isOpen ? "scale(1) translate(0, 0)" : "scale(0.8) translate(20px, 20px)"};
-  opacity: ${props => props.$isOpen ? 1 : 0};
-  pointer-events: ${props => props.$isOpen ? "all" : "none"};
+  transform: ${(props) =>
+    props.$isOpen
+      ? "scale(1) translate(0, 0)"
+      : "scale(0.8) translate(20px, 20px)"};
+  opacity: ${(props) => (props.$isOpen ? 1 : 0)};
+  pointer-events: ${(props) => (props.$isOpen ? "all" : "none")};
 
   @media (max-width: 480px) {
     width: calc(100vw - 32px);
@@ -590,7 +603,7 @@ export const StatusIndicator = styled.div`
   gap: 5px;
   font-size: 11px;
   color: #a7d8c3;
-  
+
   &::before {
     content: "";
     width: 6px;
@@ -633,7 +646,7 @@ export const ChatBody = styled.div`
 export const MessageWrapper = styled.div<{ $isBot: boolean }>`
   display: flex;
   flex-direction: column;
-  align-items: ${props => props.$isBot ? "flex-start" : "flex-end"};
+  align-items: ${(props) => (props.$isBot ? "flex-start" : "flex-end")};
   animation: ${scaleIn} 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   width: 100%;
 `;
@@ -645,12 +658,16 @@ export const MessageBubble = styled.div<{ $isBot: boolean }>`
   font-size: 14px;
   line-height: 1.45;
   white-space: pre-line;
-  background: ${props => props.$isBot ? "white" : "#1b4332"};
-  color: ${props => props.$isBot ? "#1b4332" : "white"};
-  border: ${props => props.$isBot ? "1px solid rgba(45, 106, 79, 0.1)" : "none"};
-  border-top-left-radius: ${props => props.$isBot ? "4px" : "16px"};
-  border-bottom-right-radius: ${props => props.$isBot ? "16px" : "4px"};
-  box-shadow: ${props => props.$isBot ? "0 2px 8px rgba(0,0,0,0.02)" : "0 4px 12px rgba(27,67,50,0.15)"};
+  background: ${(props) => (props.$isBot ? "white" : "#1b4332")};
+  color: ${(props) => (props.$isBot ? "#1b4332" : "white")};
+  border: ${(props) =>
+    props.$isBot ? "1px solid rgba(45, 106, 79, 0.1)" : "none"};
+  border-top-left-radius: ${(props) => (props.$isBot ? "4px" : "16px")};
+  border-bottom-right-radius: ${(props) => (props.$isBot ? "16px" : "4px")};
+  box-shadow: ${(props) =>
+    props.$isBot
+      ? "0 2px 8px rgba(0,0,0,0.02)"
+      : "0 4px 12px rgba(27,67,50,0.15)"};
 `;
 
 export const PresetsContainer = styled.div`
@@ -746,7 +763,7 @@ export const ChatProductCard = styled.div`
   overflow: hidden;
   width: 200px;
   margin-top: 8px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.03);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
   display: flex;
   flex-direction: column;
   animation: ${scaleIn} 0.4s ease forwards;
@@ -841,7 +858,7 @@ export const ChatSendButton = styled.button`
     background: #2d6a4f;
     transform: scale(1.05);
   }
-  
+
   &:disabled {
     background: #eaeaea;
     color: #a0a0a0;
@@ -860,7 +877,7 @@ export const TypingIndicatorContainer = styled.div`
   border-top-left-radius: 4px;
   width: fit-content;
   align-items: center;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
 `;
 
 export const TypingIndicatorDot = styled.div<{ $delay: string }>`
@@ -870,5 +887,5 @@ export const TypingIndicatorDot = styled.div<{ $delay: string }>`
   border-radius: 50%;
   opacity: 0.6;
   animation: ${bounce} 1s infinite ease-in-out;
-  animation-delay: ${props => props.$delay};
+  animation-delay: ${(props) => props.$delay};
 `;

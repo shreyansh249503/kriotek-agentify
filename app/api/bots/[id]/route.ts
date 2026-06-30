@@ -9,7 +9,11 @@ export async function GET(
   console.log("Fetching bot with ID:", id);
   console.log("ID type:", typeof id);
   const db = await getDb();
-  const bot = await db.getRepository("Bot").findOne({ where: { id } });
+  
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+  const bot = await db.getRepository("Bot").findOne({
+    where: isUuid ? { id } : { public_key: id },
+  });
 
   console.log("Query result:", bot);
 

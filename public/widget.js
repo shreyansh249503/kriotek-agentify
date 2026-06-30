@@ -3,6 +3,11 @@
   const publicKey = scriptTag?.getAttribute("bot-id");
   if (!publicKey) return;
 
+  if (window[`__bot_initialized_${publicKey}`]) {
+    return;
+  }
+  window[`__bot_initialized_${publicKey}`] = true;
+
   const scriptSrc = scriptTag.src;
   const ASSET_BASE_URL = scriptSrc.substring(0, scriptSrc.lastIndexOf("/"));
   const API_BASE_URL = ASSET_BASE_URL.replace("/public", "");

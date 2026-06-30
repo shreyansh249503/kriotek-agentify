@@ -5,3 +5,4 @@ export async function GET() {
   const res = await db.query("SELECT NOW()");
   return Response.json({ time: res[0] });
 }
+
