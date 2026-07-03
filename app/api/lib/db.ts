@@ -1,6 +1,6 @@
 import "reflect-metadata";
 import { DataSource } from "typeorm";
-import { Bot, Conversation, Lead, CrawledPage, BotDocument } from "./entities";
+import { Bot, Conversation, Lead, CrawledPage, BotDocument, ShopifyStore } from "./entities";
 
 const globalForTypeorm = globalThis as unknown as {
   AppDataSource: DataSource;
@@ -13,7 +13,7 @@ export const AppDataSource =
     url: process.env.SUPABASE_DATABASE_URL,
     synchronize: true,
     logging: false,
-    entities: [Bot, Conversation, Lead, CrawledPage, BotDocument],
+    entities: [Bot, Conversation, Lead, CrawledPage, BotDocument, ShopifyStore],
     ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : undefined,
   });
 

@@ -63,6 +63,9 @@ export class Bot {
 
   @OneToMany(() => Conversation, (convo) => convo.bot)
   conversations!: Conversation[];
+
+  @OneToMany(() => ShopifyStore, (store) => store.bot)
+  shopify_stores!: ShopifyStore[];
 }
 
 @Entity("conversations")
@@ -156,3 +159,29 @@ export class BotDocument {
   @Column({ type: "vector" as unknown as ColumnType, length: 768, nullable: true, select: false })
   embedding!: string | number[];
 }
+
+@Entity("shopify_stores")
+export class ShopifyStore {
+  @PrimaryGeneratedColumn("uuid")
+  id!: string;
+
+  @Column({ unique: true })
+  shop!: string;
+
+  @Column({ name: "access_token" })
+  access_token!: string;
+
+  @Column({ name: "bot_id", type: "uuid", nullable: true })
+  bot_id!: string | null;
+
+  @ManyToOne(() => Bot, (bot) => bot.shopify_stores, { onDelete: "SET NULL", nullable: true })
+  @JoinColumn({ name: "bot_id" })
+  bot!: Bot | null;
+
+  @Column({ nullable: true })
+  scopes!: string;
+
+  @CreateDateColumn({ name: "installed_at" })
+  installed_at!: Date;
+}
+

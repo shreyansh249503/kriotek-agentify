@@ -15,7 +15,11 @@
 
   async function fetchBotConfig(publicKey) {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/public/bot/${publicKey}`);
+      const res = await fetch(`${API_BASE_URL}/api/public/bot/${publicKey}`, {
+        headers: {
+          "ngrok-skip-browser-warning": "true",
+        },
+      });
       if (!res.ok) throw new Error("Bot config not found");
       return await res.json();
     } catch (e) {
@@ -170,14 +174,31 @@
 
   const bot = await fetchBotConfig(publicKey);
   const THEME = {
-    color: bot.primary_color,
-    botName: bot.name,
+    color: bot.primary_color || "#4f46e5",
+    botName: bot.name || "AI Assistant",
     logoUrl: bot.logo_url
       ? bot.logo_url.trim().startsWith("http")
         ? bot.logo_url.trim()
         : `${API_BASE_URL}${bot.logo_url.trim()}`
       : DEFAULT_BOT_ICON,
   };
+
+  function applyTheme() {
+    const nameEl = widget.querySelector("#bot-name");
+    if (nameEl) nameEl.textContent = THEME.botName;
+
+    widget.querySelectorAll(".bot-logo").forEach((img) => {
+      img.src = THEME.logoUrl;
+    });
+
+    widget.style.setProperty("--bot-theme-color", THEME.color);
+    const header = widget.querySelector("#bot-header");
+    if (header) header.style.background = THEME.color;
+    const sendBtn = widget.querySelector("#bot-send-btn");
+    if (sendBtn) sendBtn.style.background = THEME.color;
+    const launcherImg = launcher.querySelector("img");
+    if (launcherImg) launcherImg.src = THEME.logoUrl;
+  }
 
   const launcher = document.createElement("button");
   launcher.innerHTML = `
@@ -235,7 +256,7 @@
   `;
 
   widget.innerHTML = `
-    <div style="
+    <div id="bot-header" style="
       background: ${THEME.color};
       color: white;
       padding: 10px 16px;
@@ -247,6 +268,7 @@
       <div style="display: flex; align-items: center; gap: 8px;">
         <img 
           src="${THEME.logoUrl}"
+          class="bot-logo"
           alt="chat"
           style="
             width: 30px;
@@ -257,7 +279,7 @@
             background-color: white;
           "
         />
-        <span>${THEME.botName}</span>
+        <span id="bot-name">${THEME.botName}</span>
       </div>
       <div style="display: flex; align-items: center; gap: 8px;">
         <button id="ai-menu-btn" style="background:none; border:none; color:white; font-size:24px; font-weight: 700; cursor:pointer; padding: 4px 4px 10px 4px; display: flex; align-items: center; justify-content: center; align-content: center;">...</button>
@@ -375,13 +397,14 @@
     <form id="ai-form" style="display:flex; border-top:1px solid #eee; padding: 8px; background: #f9fafb;">
       <input id="ai-input" placeholder="Type your message..."
         style="flex:1; padding: 12px; border: 1px solid #e5e7eb; border-radius: 8px; outline:none; font-size: 14px;"/>
-      <button style="background:${THEME.color}; color:white; border:none; padding: 0 16px; margin-left: 8px; border-radius: 8px; cursor: pointer; font-weight: 500;">
+      <button id="bot-send-btn" style="background:${THEME.color}; color:white; border:none; padding: 0 16px; margin-left: 8px; border-radius: 8px; cursor: pointer; font-weight: 500;">
         Send
       </button>
     </form>
   `;
 
   document.body.appendChild(widget);
+  applyTheme();
 
   const style = document.createElement("style");
   style.textContent = `

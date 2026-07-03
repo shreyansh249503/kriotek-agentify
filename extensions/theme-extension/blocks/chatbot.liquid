@@ -1,0 +1,34 @@
+{% comment %}
+  Render Agentify Chatbot Widget
+{% endcomment %}
+
+{% assign bot_key = block.settings.bot_public_key_override %}
+
+{% if bot_key != blank %}
+  <script
+    src="https://drew-thirteen-heroism.ngrok-free.dev/widget.js"
+    bot-id="{{ bot_key }}"
+    defer
+  ></script>
+{% else %}
+  {% if request.design_mode %}
+    <div style="padding: 16px; border: 2px dashed #ccc; border-radius: 8px; font-family: sans-serif; color: #666; text-align: center;">
+      ⚠️ Agentify: Enter your Bot Public Key in the App Embeds settings panel.
+    </div>
+  {% endif %}
+{% endif %}
+
+{% schema %}
+{
+  "name": "Agentify Chatbot",
+  "target": "body",
+  "settings": [
+    {
+      "type": "text",
+      "id": "bot_public_key_override",
+      "label": "Bot Public Key Override",
+      "info": "Paste your bot public key here. Find it in your Supabase bots table."
+    }
+  ]
+}
+{% endschema %}

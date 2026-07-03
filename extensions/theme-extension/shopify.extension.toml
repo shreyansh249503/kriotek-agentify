@@ -1,0 +1,12 @@
+# shopify.extension.toml
+api_version = "2024-01"
+
+[[extensions]]
+name = "Agentify Chatbot"
+handle = "agentify-chatbot"
+uid = "75555961-059c-c2e2-a606-a5c648f7071355566687"
+type = "theme"
+
+[[extensions.metafields]]
+namespace = "agentify"
+key = "bot_public_key"

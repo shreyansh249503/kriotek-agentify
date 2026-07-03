@@ -25,15 +25,15 @@ export async function POST(req: Request) {
   }
 
   const db = await getDb();
-  const bot = await db.getRepository("Bot").findOne({
+  const bot = await db.getRepository(Bot).findOne({
     where: { public_key: publicKey, user_id: user.id },
-  }) as any;
+  });
 
   if (!bot) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const existing = await db.getRepository("CrawledPage").exists({
+  const existing = await db.getRepository(CrawledPage).exists({
     where: { bot_public_key: publicKey, page_url: url },
   });
 
