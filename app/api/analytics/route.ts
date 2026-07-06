@@ -23,7 +23,7 @@ export async function GET(req: Request) {
 
   const db = await getDb();
 
-  const convoPerBot = await db.getRepository(Bot)
+  const convoPerBot = await db.getRepository<Bot>("Bot")
     .createQueryBuilder("b")
     .leftJoin("b.conversations", "c")
     .select([
@@ -40,7 +40,7 @@ export async function GET(req: Request) {
     .orderBy("total_conversations", "DESC")
     .getRawMany();
 
-  const leadsPerBot = await db.getRepository(Bot)
+  const leadsPerBot = await db.getRepository<Bot>("Bot")
     .createQueryBuilder("b")
     .leftJoin("b.leads", "l")
     .select([

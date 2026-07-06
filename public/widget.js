@@ -1,21 +1,18 @@
 (async function () {
-  const scriptTag = document.querySelector("script[bot-id]");
-  const publicKey = scriptTag?.getAttribute("bot-id");
-  if (!publicKey) return;
+  const scriptTag = document.currentScript || document.querySelector("script[bot-id]") || document.querySelector("script[shop-domain]");
+  let publicKey = scriptTag?.getAttribute("bot-id");
+  const shopDomain = scriptTag?.getAttribute("shop-domain") || window.Shopify?.shop;
 
-  if (window[`__bot_initialized_${publicKey}`]) {
-    return;
-  }
-  window[`__bot_initialized_${publicKey}`] = true;
+  if (!publicKey && !shopDomain) return;
 
-  const scriptSrc = scriptTag.src;
-  const ASSET_BASE_URL = scriptSrc.substring(0, scriptSrc.lastIndexOf("/"));
-  const API_BASE_URL = ASSET_BASE_URL.replace("/public", "");
-  const DEFAULT_BOT_ICON = `${ASSET_BASE_URL}/2-bot-icon.png`;
+  const scriptSrc = scriptTag ? scriptTag.src : "";
+  const ASSET_BASE_URL = scriptSrc ? scriptSrc.substring(0, scriptSrc.lastIndexOf("/")) : "";
+  const API_BASE_URL = ASSET_BASE_URL ? ASSET_BASE_URL.replace("/public", "") : "";
+  const DEFAULT_BOT_ICON = ASSET_BASE_URL ? `${ASSET_BASE_URL}/2-bot-icon.png` : "";
 
-  async function fetchBotConfig(publicKey) {
+  async function fetchBotConfig(pubKey) {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/public/bot/${publicKey}`, {
+      const res = await fetch(`${API_BASE_URL}/api/public/bot/${pubKey}`, {
         headers: {
           "ngrok-skip-browser-warning": "true",
         },
@@ -30,6 +27,45 @@
       };
     }
   }
+
+  async function fetchBotConfigByShop(shop) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/public/bot-by-shop?shop=${encodeURIComponent(shop)}`, {
+        headers: {
+          "ngrok-skip-browser-warning": "true",
+        },
+      });
+      if (!res.ok) throw new Error("Bot config by shop not found");
+      return await res.json();
+    } catch (e) {
+      console.error("Failed to load bot config by shop", e);
+      return null;
+    }
+  }
+
+  let resolvedBotConfig = null;
+
+  if (publicKey) {
+    if (window[`__bot_initialized_${publicKey}`]) {
+      return;
+    }
+    window[`__bot_initialized_${publicKey}`] = true;
+    resolvedBotConfig = await fetchBotConfig(publicKey);
+  } else if (shopDomain) {
+    const botByShop = await fetchBotConfigByShop(shopDomain);
+    if (!botByShop || !botByShop.publicKey) {
+      console.error("Agentify: Could not retrieve bot configuration for shop domain:", shopDomain);
+      return;
+    }
+    publicKey = botByShop.publicKey;
+    if (window[`__bot_initialized_${publicKey}`]) {
+      return;
+    }
+    window[`__bot_initialized_${publicKey}`] = true;
+    resolvedBotConfig = botByShop;
+  }
+
+  if (!resolvedBotConfig || !publicKey) return;
 
   function createUserMessage(text, themeColor) {
     const div = document.createElement("div");
@@ -172,7 +208,7 @@
     localStorage.setItem(historyKey, JSON.stringify(historyIds));
   }
 
-  const bot = await fetchBotConfig(publicKey);
+  const bot = resolvedBotConfig || await fetchBotConfig(publicKey);
   const THEME = {
     color: bot.primary_color || "#4f46e5",
     botName: bot.name || "AI Assistant",

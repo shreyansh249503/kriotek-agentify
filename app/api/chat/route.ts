@@ -37,7 +37,7 @@ export async function POST(req: Request) {
   const finalConversationId = conversationId || crypto.randomUUID();
 
   const dbInstance = await getDb();
-  const convoRepo = dbInstance.getRepository(Conversation);
+  const convoRepo = dbInstance.getRepository<Conversation>("Conversation");
 
   // ── 1. Load or create conversation ─────────────────────────────────────────
   let convo = await convoRepo.findOne({
@@ -135,7 +135,7 @@ export async function POST(req: Request) {
       phone,
     });
 
-    const leadRepo = dbInstance.getRepository(Lead);
+    const leadRepo = dbInstance.getRepository<Lead>("Lead");
     Promise.all([
       leadRepo.save(
         leadRepo.create({
@@ -295,6 +295,6 @@ async function saveAssistantMessage(
   ];
 
   const dbInstance = await getDb();
-  const convoRepo = dbInstance.getRepository(Conversation);
+  const convoRepo = dbInstance.getRepository<Conversation>("Conversation");
   await convoRepo.update(conversationId, { messages: JSON.stringify(updated) });
 }

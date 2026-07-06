@@ -23,10 +23,10 @@ export async function POST(req: Request) {
     }
 
     const dbInstance = await getDb();
-    const bot = await dbInstance.getRepository(Bot).findOne({ where: { public_key: publicKey } });
+    const bot = await dbInstance.getRepository<Bot>("Bot").findOne({ where: { public_key: publicKey } });
     if (!bot) return new Response(JSON.stringify({ error: "Bot not found" }), { status: 404, headers: corsHeaders });
 
-    const conversations = await dbInstance.getRepository(Conversation).find({
+    const conversations = await dbInstance.getRepository<Conversation>("Conversation").find({
       where: { 
         id: In(conversationIds),
         bot_id: bot.id

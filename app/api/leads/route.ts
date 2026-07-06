@@ -23,7 +23,7 @@ export async function GET(req: Request) {
 
   try {
     const dataSource = await getDb();
-    const leads = await dataSource.getRepository(Lead).find({
+    const leads = await dataSource.getRepository<Lead>("Lead").find({
       relations: ["bot"],
       where: {
         bot: {

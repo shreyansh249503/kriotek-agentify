@@ -1,7 +1,8 @@
-// app/api/shopify/admin/dashboard/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
+import { getDb } from "@/app/api/lib/db";
+import { Conversation, Lead } from "@/app/api/lib/entities";
 import {
   verifySessionToken,
   getShopFromSession,
@@ -103,6 +104,63 @@ export async function GET(req: NextRequest) {
         .eq("bot_id", bot_id),
     ]);
 
+    const db = await getDb();
+    
+    // Generate the last 6 months programmatically
+    const trends: { month: string; monthDate: Date; conversations: number; leads: number }[] = [];
+    const now = new Date();
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const monthStr = d.toLocaleDateString("en-US", { month: "short", year: "2-digit" });
+      trends.push({
+        month: monthStr,
+        monthDate: d,
+        conversations: 0,
+        leads: 0,
+      });
+    }
+
+    // Query conversation stats grouped by month
+    const convoTrend = await db.getRepository<Conversation>("Conversation")
+      .createQueryBuilder("c")
+      .select("TO_CHAR(c.created_at, 'Mon YY')", "month")
+      .addSelect("COUNT(c.id)", "count")
+      .where("c.bot_id = :botId", { botId: bot_id })
+      .andWhere("c.created_at >= :startDate", { startDate: trends[0].monthDate })
+      .groupBy("TO_CHAR(c.created_at, 'Mon YY')")
+      .getRawMany();
+
+    // Query lead stats grouped by month
+    const leadTrend = await db.getRepository<Lead>("Lead")
+      .createQueryBuilder("l")
+      .select("TO_CHAR(l.created_at, 'Mon YY')", "month")
+      .addSelect("COUNT(l.id)", "count")
+      .where("l.bot_id = :botId", { botId: bot_id })
+      .andWhere("l.created_at >= :startDate", { startDate: trends[0].monthDate })
+      .groupBy("TO_CHAR(l.created_at, 'Mon YY')")
+      .getRawMany();
+
+    // Map query results to JS generated trend months
+    convoTrend.forEach(row => {
+      const match = trends.find(t => t.month.toLowerCase() === row.month.toLowerCase());
+      if (match) {
+        match.conversations = parseInt(row.count, 10) || 0;
+      }
+    });
+
+    leadTrend.forEach(row => {
+      const match = trends.find(t => t.month.toLowerCase() === row.month.toLowerCase());
+      if (match) {
+        match.leads = parseInt(row.count, 10) || 0;
+      }
+    });
+
+    const finalTrend = trends.map(t => ({
+      month: t.month,
+      conversations: t.conversations,
+      leads: t.leads,
+    }));
+
     return NextResponse.json({
       bot: botRes.data,
       stats: {
@@ -110,6 +168,7 @@ export async function GET(req: NextRequest) {
         total_leads: leadsRes.count ?? 0,
         products_synced: botRes.data?.ecommerce_products?.length ?? 0,
       },
+      trend: finalTrend,
       shop,
     });
   } catch (e) {

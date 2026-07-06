@@ -8,6 +8,50 @@ import { generateObject } from "ai";
 import { google } from "@ai-sdk/google";
 import { z } from "zod";
 
+// A generic recursive type for arbitrary JSON-LD structures
+type JsonLdValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonLdValue[]
+  | { [key: string]: JsonLdValue };
+
+type JsonLdNode = { [key: string]: JsonLdValue };
+
+function isJsonLdNode(value: JsonLdValue): value is JsonLdNode {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function findProduct(obj: JsonLdValue): JsonLdNode | null {
+  if (!obj || typeof obj !== "object") return null;
+
+  if (Array.isArray(obj)) {
+    for (const item of obj) {
+      const found = findProduct(item);
+      if (found) return found;
+    }
+    return null;
+  }
+
+  const type = obj["@type"];
+  const isProductType =
+    type === "Product" ||
+    (Array.isArray(type) && type.includes("Product")) ||
+    (typeof type === "string" && type.includes("Product"));
+
+  if (isProductType) {
+    return obj;
+  }
+
+  for (const key in obj) {
+    const found = findProduct(obj[key]);
+    if (found) return found;
+  }
+
+  return null;
+}
+
 async function extractProductFromPage(
   html: string,
   text: string,
@@ -17,50 +61,41 @@ async function extractProductFromPage(
     const $ = cheerio.load(html);
     
     // 1. Check for JSON-LD Product schemas
-    let jsonLdProduct: any = null;
+    let jsonLdProduct: JsonLdNode | null = null;
     $("script[type='application/ld+json']").each((_, el) => {
       try {
         const content = $(el).html();
         if (!content) return;
-        const json = JSON.parse(content);
-        
-        function findProduct(obj: any): any {
-          if (!obj || typeof obj !== "object") return null;
-          if (Array.isArray(obj)) {
-            for (const item of obj) {
-              const found = findProduct(item);
-              if (found) return found;
-            }
-            return null;
-          }
-          if (obj["@type"] === "Product" || obj["@type"]?.includes?.("Product")) {
-            return obj;
-          }
-          for (const key in obj) {
-            const found = findProduct(obj[key]);
-            if (found) return found;
-          }
-          return null;
-        }
+        const json = JSON.parse(content) as JsonLdValue;
         
         const p = findProduct(json);
         if (p) jsonLdProduct = p;
       } catch {}
     });
 
-    if (jsonLdProduct) {
-      const name = jsonLdProduct.name;
+    const productNode = jsonLdProduct as JsonLdNode | null;
+    if (productNode) {
+      const name = typeof productNode.name === "string" ? productNode.name : undefined;
+
       let price = "";
-      if (jsonLdProduct.offers) {
-        const offers = Array.isArray(jsonLdProduct.offers) ? jsonLdProduct.offers[0] : jsonLdProduct.offers;
-        if (offers.price) {
-          price = `${offers.price} ${offers.priceCurrency || ""}`.trim();
+      if (productNode.offers) {
+        const offersRaw = productNode.offers;
+        const offers = Array.isArray(offersRaw) ? offersRaw[0] : offersRaw;
+        if (isJsonLdNode(offers) && typeof offers.price !== "undefined") {
+          const currency = typeof offers.priceCurrency === "string" ? offers.priceCurrency : "";
+          price = `${offers.price} ${currency}`.trim();
         }
       }
+
       let image = "";
-      if (jsonLdProduct.image) {
-        const rawImg = Array.isArray(jsonLdProduct.image) ? jsonLdProduct.image[0] : (typeof jsonLdProduct.image === "object" ? jsonLdProduct.image.url : jsonLdProduct.image);
-        if (rawImg) {
+      if (productNode.image) {
+        const imageRaw = productNode.image;
+        const rawImg = Array.isArray(imageRaw)
+          ? imageRaw[0]
+          : isJsonLdNode(imageRaw)
+            ? imageRaw.url
+            : imageRaw;
+        if (typeof rawImg === "string") {
           try {
             image = new URL(rawImg, url).href;
           } catch {
@@ -68,14 +103,16 @@ async function extractProductFromPage(
           }
         }
       }
-      const description = jsonLdProduct.description || "";
+
+      const description = typeof productNode.description === "string" ? productNode.description : "";
+
       if (name) {
         return {
-          name: String(name).trim(),
+          name: name.trim(),
           price: price || "Price on request",
           image: image || "",
           url,
-          description: typeof description === "string" ? String(description).substring(0, 200).trim() : "",
+          description: description.substring(0, 200).trim(),
         };
       }
     }
@@ -190,7 +227,7 @@ export async function crawlWebsite(
     if (!url) continue;
 
     const db = await getDb();
-    const existing = await db.getRepository("CrawledPage").exists({
+    const existing = await db.getRepository<CrawledPage>("CrawledPage").exists({
       where: { bot_public_key: publicKey, page_url: url }
     });
 
@@ -212,7 +249,7 @@ export async function crawlWebsite(
 
       visited.add(url);
 
-      const crawledRepo = db.getRepository("CrawledPage");
+      const crawledRepo = db.getRepository<CrawledPage>("CrawledPage");
       const newCrawled = crawledRepo.create({
         bot_public_key: publicKey,
         page_url: url

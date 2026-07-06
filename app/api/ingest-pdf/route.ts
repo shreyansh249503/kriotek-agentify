@@ -9,12 +9,19 @@ function extractTextFromPdf(buffer: Buffer): Promise<string> {
     const parser = new PDFParser(null, true);
 
     parser.on("pdfParser_dataReady", () => {
-      const text = (parser as any).getRawTextContent();
+      const text = parser.getRawTextContent();
       resolve(text);
     });
 
-    parser.on("pdfParser_dataError", (err: any) => {
-      reject(new Error(err?.parserError || "PDF parsing failed"));
+    parser.on("pdfParser_dataError", (err) => {
+      let errMsg = "PDF parsing failed";
+      if (err instanceof Error) {
+        errMsg = err.message;
+      } else {
+        const parserErr = err.parserError;
+        errMsg = parserErr instanceof Error ? parserErr.message : String(parserErr);
+      }
+      reject(new Error(errMsg));
     });
 
     parser.parseBuffer(buffer);
@@ -40,7 +47,7 @@ export async function POST(req: Request) {
   const chunks = text.match(/(.|[\r\n]){1,800}/g) || [];
 
   const db = await getDb();
-  const repo = db.getRepository(BotDocument);
+  const repo = db.getRepository<BotDocument>("BotDocument");
 
   await Promise.all(
     chunks.map(async (chunk) => {

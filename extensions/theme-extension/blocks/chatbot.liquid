@@ -1,22 +1,17 @@
 {% comment %}
   Render Agentify Chatbot Widget
 {% endcomment %}
-
 {% assign bot_key = block.settings.bot_public_key_override %}
 
-{% if bot_key != blank %}
-  <script
-    src="https://drew-thirteen-heroism.ngrok-free.dev/widget.js"
+<script
+  src="https://drew-thirteen-heroism.ngrok-free.dev/widget.js"
+  {% if bot_key != blank %}
     bot-id="{{ bot_key }}"
-    defer
-  ></script>
-{% else %}
-  {% if request.design_mode %}
-    <div style="padding: 16px; border: 2px dashed #ccc; border-radius: 8px; font-family: sans-serif; color: #666; text-align: center;">
-      ⚠️ Agentify: Enter your Bot Public Key in the App Embeds settings panel.
-    </div>
+  {% else %}
+    shop-domain="{{ shop.permanent_domain }}"
   {% endif %}
-{% endif %}
+  defer
+></script>
 
 {% schema %}
 {

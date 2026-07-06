@@ -1,4 +1,3 @@
-// app/api/shopify/admin/bot/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import {
@@ -91,7 +90,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     // 2. Perform bot updates
-    const { id, name, description, tone, primary_color, contact_enabled, contact_email, contact_prompt, ecommerce_enabled, ecommerce_prompt } = body;
+    const { id, name, description, tone, primary_color, contact_enabled, contact_email, contact_prompt, ecommerce_enabled, ecommerce_prompt, logo_url } = body;
     const { data: updatedBot, error: updateError } = await supabase
       .from("bots")
       .update({
@@ -104,6 +103,7 @@ export async function PATCH(req: NextRequest) {
         contact_prompt,
         ecommerce_enabled,
         ecommerce_prompt,
+        logo_url,
       })
       .eq("id", id)
       .select()

@@ -1,4 +1,3 @@
-// app/admin/shopify/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -16,6 +15,16 @@ import {
   Spinner,
 } from "@shopify/polaris";
 import { useSessionToken } from "./lib/useSessionToken";
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+} from "recharts";
 
 interface ShopifyProduct {
   shopify_id: string;
@@ -40,6 +49,11 @@ interface DashboardData {
     total_leads: number;
     products_synced: number;
   };
+  trend?: {
+    month: string;
+    conversations: number;
+    leads: number;
+  }[];
   shop: string;
 }
 
@@ -193,6 +207,61 @@ export default function ShopifyDashboard() {
             </Card>
           </Layout.Section>
         </Layout>
+
+        {/* Performance trends chart */}
+        {data?.trend && data.trend.length > 0 && (
+          <Layout>
+            <Layout.Section>
+              <Card>
+                <BlockStack gap="400">
+                  <Text variant="headingMd" as="h2">Performance trends</Text>
+                  <div style={{ height: "300px", marginTop: "16px" }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart
+                        data={data.trend}
+                        margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                      >
+                        <defs>
+                          <linearGradient id="colorConvos" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.2}/>
+                            <stop offset="95%" stopColor="#4f46e5" stopOpacity={0}/>
+                          </linearGradient>
+                          <linearGradient id="colorLeads" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.2}/>
+                            <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                        <XAxis dataKey="month" tick={{ fontSize: 12, fill: "#6b7280" }} />
+                        <YAxis tick={{ fontSize: 12, fill: "#6b7280" }} />
+                        <Tooltip />
+                        <Legend />
+                        <Area
+                          type="monotone"
+                          dataKey="conversations"
+                          name="Conversations"
+                          stroke="#4f46e5"
+                          fillOpacity={1}
+                          fill="url(#colorConvos)"
+                          strokeWidth={2}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="leads"
+                          name="Leads Captured"
+                          stroke="#10b981"
+                          fillOpacity={1}
+                          fill="url(#colorLeads)"
+                          strokeWidth={2}
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                </BlockStack>
+              </Card>
+            </Layout.Section>
+          </Layout>
+        )}
 
         {/* Bot status card */}
         {data?.bot && (

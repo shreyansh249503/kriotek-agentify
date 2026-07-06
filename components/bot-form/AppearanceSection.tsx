@@ -12,6 +12,7 @@ import {
   RemoveButton,
   UploadButton,
 } from "./styled";
+import Image from "next/image";
 
 interface AppearanceSectionProps {
   form: CreateBotInput;
@@ -83,12 +84,24 @@ export const AppearanceSection = ({ form, update }: AppearanceSectionProps) => {
                 gap: "12px",
               }}
             >
-              <img
+              {/* <img
                 src={form.logoUrl}
                 alt="Bot Avatar"
                 style={{
                   width: "58px",
                   height: "58px",
+                  borderRadius: "50%",
+                  objectFit: "cover",
+                  border: "1px solid #ddd",
+                }}
+              /> */}
+              <Image
+                src={form.logoUrl}
+                alt="Bot Avatar"
+                width={58}
+                height={58}
+                quality={100}
+                style={{
                   borderRadius: "50%",
                   objectFit: "cover",
                   border: "1px solid #ddd",

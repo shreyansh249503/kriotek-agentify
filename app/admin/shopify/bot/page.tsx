@@ -1,4 +1,3 @@
-// app/admin/shopify/bot/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -16,8 +15,12 @@ import {
   Spinner,
   InlineStack,
   Text,
+  Button,
+  DropZone,
+  Thumbnail,
 } from "@shopify/polaris";
 import { useSessionToken } from "../lib/useSessionToken";
+import { BotPreview } from "../../../../components/bot-preview";
 
 interface BotConfig {
   id: string;
@@ -30,6 +33,8 @@ interface BotConfig {
   contact_prompt: string;
   ecommerce_enabled: boolean;
   ecommerce_prompt: string;
+  logo_url?: string;
+  public_key?: string;
 }
 
 const TONE_OPTIONS = [
@@ -46,6 +51,7 @@ export default function BotConfigPage() {
   const [loading, setLoading] = useState(true);
   const [unauthorized, setUnauthorized] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
   const [banner, setBanner] = useState<{
     tone: "success" | "critical";
     message: string;
@@ -71,6 +77,42 @@ export default function BotConfigPage() {
 
   function update<K extends keyof BotConfig>(field: K, value: BotConfig[K]) {
     setConfig((prev) => prev ? { ...prev, [field]: value } : prev);
+  }
+
+  async function handleLogoUpload(_dropFiles: File[], acceptedFiles: File[], _rejectedFiles: File[]) {
+    const file = acceptedFiles[0];
+    if (!file) return;
+
+    if (file.size > 1024 * 1024) {
+      setBanner({ tone: "critical", message: "File is too large. Max size is 1MB." });
+      return;
+    }
+
+    setUploadingLogo(true);
+    setBanner(null);
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (res.ok && data.url) {
+        update("logo_url", data.url);
+        setBanner({ tone: "success", message: "Logo uploaded successfully." });
+      } else {
+        setBanner({ tone: "critical", message: data.error || "Upload failed. Try again." });
+      }
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      setBanner({ tone: "critical", message: `Upload error: ${message}` });
+    } finally {
+      setUploadingLogo(false);
+    }
   }
 
   async function handleSave() {
@@ -163,105 +205,161 @@ export default function BotConfigPage() {
         )}
 
         <Layout>
-          {/* General settings */}
+          {/* Settings Section (Left Side) */}
           <Layout.Section>
-            <Card>
-              <BlockStack gap="400">
-                <Text variant="headingMd" as="h2">General</Text>
-                <FormLayout>
-                  <TextField
-                    label="Bot name"
-                    value={config.name}
-                    onChange={(v) => update("name", v)}
-                    autoComplete="off"
-                  />
-                  <TextField
-                    label="Description"
-                    value={config.description || ""}
-                    onChange={(v) => update("description", v)}
-                    multiline={3}
-                    helpText="Tell the bot what your store sells and how it should help customers."
-                    autoComplete="off"
-                  />
-                  <Select
-                    label="Tone"
-                    options={TONE_OPTIONS}
-                    value={config.tone}
-                    onChange={(v) => update("tone", v)}
-                  />
-                  <TextField
-                    label="Brand color"
-                    value={config.primary_color}
-                    onChange={(v) => update("primary_color", v)}
-                    helpText="Hex code e.g. #6C47FF"
-                    autoComplete="off"
-                    prefix="#"
-                  />
-                </FormLayout>
-              </BlockStack>
-            </Card>
-          </Layout.Section>
-
-          {/* Lead capture settings */}
-          <Layout.Section>
-            <Card>
-              <BlockStack gap="400">
-                <Text variant="headingMd" as="h2">Lead capture</Text>
-                <FormLayout>
-                  <Checkbox
-                    label="Enable lead capture"
-                    checked={config.contact_enabled}
-                    onChange={(v) => update("contact_enabled", v)}
-                  />
-                  {config.contact_enabled && (
-                    <>
+            <BlockStack gap="500">
+              {/* General settings */}
+              <Card>
+                <BlockStack gap="400">
+                  <Text variant="headingMd" as="h2">General</Text>
+                  <FormLayout>
+                    {config.public_key && (
                       <TextField
-                        label="Notification email"
-                        value={config.contact_email || ""}
-                        onChange={(v) => update("contact_email", v)}
-                        helpText="You'll receive an email when a lead is captured."
-                        type="email"
-                        autoComplete="email"
-                      />
-                      <TextField
-                        label="Lead capture prompt"
-                        value={config.contact_prompt || ""}
-                        onChange={(v) => update("contact_prompt", v)}
-                        helpText="What the bot says when asking for the customer's details."
-                        multiline={2}
+                        label="Bot Public Key"
+                        value={config.public_key}
+                        readOnly
                         autoComplete="off"
                       />
-                    </>
-                  )}
-                </FormLayout>
-              </BlockStack>
-            </Card>
-          </Layout.Section>
-
-          {/* E-commerce settings */}
-          <Layout.Section>
-            <Card>
-              <BlockStack gap="400">
-                <Text variant="headingMd" as="h2">E-commerce</Text>
-                <FormLayout>
-                  <Checkbox
-                    label="Enable product recommendations"
-                    checked={config.ecommerce_enabled}
-                    onChange={(v) => update("ecommerce_enabled", v)}
-                  />
-                  {config.ecommerce_enabled && (
+                    )}
                     <TextField
-                      label="Sales prompt"
-                      value={config.ecommerce_prompt || ""}
-                      onChange={(v) => update("ecommerce_prompt", v)}
-                      helpText="Instructions for how the bot should recommend products."
-                      multiline={3}
+                      label="Bot name"
+                      value={config.name}
+                      onChange={(v) => update("name", v)}
                       autoComplete="off"
                     />
-                  )}
-                </FormLayout>
-              </BlockStack>
-            </Card>
+                    <TextField
+                      label="Description"
+                      value={config.description || ""}
+                      onChange={(v) => update("description", v)}
+                      multiline={3}
+                      helpText="Tell the bot what your store sells and how it should help customers."
+                      autoComplete="off"
+                    />
+                    <Select
+                      label="Tone"
+                      options={TONE_OPTIONS}
+                      value={config.tone}
+                      onChange={(v) => update("tone", v)}
+                    />
+                    <TextField
+                      label="Brand color"
+                      value={config.primary_color}
+                      onChange={(v) => update("primary_color", v)}
+                      helpText="Hex code e.g. #6C47FF"
+                      autoComplete="off"
+                      prefix="#"
+                    />
+                    <div>
+                      <Text as="p" variant="bodyMd">
+                        Bot Avatar
+                      </Text>
+                      <div style={{ marginTop: "8px" }}>
+                        {config.logo_url ? (
+                          <InlineStack gap="400" align="start">
+                            <Thumbnail
+                              source={config.logo_url}
+                              alt="Bot Avatar"
+                              size="large"
+                            />
+                            <BlockStack gap="200">
+                              <Text as="p" variant="bodySm" tone="subdued">
+                                Recommended: Square image, max 1MB.
+                              </Text>
+                              <Button
+                                tone="critical"
+                                variant="plain"
+                                onClick={() => update("logo_url", "")}
+                              >
+                                Remove Logo
+                              </Button>
+                            </BlockStack>
+                          </InlineStack>
+                        ) : (
+                          <DropZone
+                            accept="image/*"
+                            type="file"
+                            onDrop={handleLogoUpload}
+                            disabled={uploadingLogo}
+                          >
+                            <DropZone.FileUpload actionTitle={uploadingLogo ? "Uploading logo..." : "Upload logo"} actionHint="Accepts .png, .jpg, .svg, .webp" />
+                          </DropZone>
+                        )}
+                      </div>
+                    </div>
+                  </FormLayout>
+                </BlockStack>
+              </Card>
+
+              {/* Lead capture settings */}
+              <Card>
+                <BlockStack gap="400">
+                  <Text variant="headingMd" as="h2">Lead capture</Text>
+                  <FormLayout>
+                    <Checkbox
+                      label="Enable lead capture"
+                      checked={config.contact_enabled}
+                      onChange={(v) => update("contact_enabled", v)}
+                    />
+                    {config.contact_enabled && (
+                      <>
+                        <TextField
+                          label="Notification email"
+                          value={config.contact_email || ""}
+                          onChange={(v) => update("contact_email", v)}
+                          helpText="You'll receive an email when a lead is captured."
+                          type="email"
+                          autoComplete="email"
+                        />
+                        <TextField
+                          label="Lead capture prompt"
+                          value={config.contact_prompt || ""}
+                          onChange={(v) => update("contact_prompt", v)}
+                          helpText="What the bot says when asking for the customer's details."
+                          multiline={2}
+                          autoComplete="off"
+                        />
+                      </>
+                    )}
+                  </FormLayout>
+                </BlockStack>
+              </Card>
+
+              {/* E-commerce settings */}
+              <Card>
+                <BlockStack gap="400">
+                  <Text variant="headingMd" as="h2">E-commerce</Text>
+                  <FormLayout>
+                    <Checkbox
+                      label="Enable product recommendations"
+                      checked={config.ecommerce_enabled}
+                      onChange={(v) => update("ecommerce_enabled", v)}
+                    />
+                    {config.ecommerce_enabled && (
+                      <TextField
+                        label="Sales prompt"
+                        value={config.ecommerce_prompt || ""}
+                        onChange={(v) => update("ecommerce_prompt", v)}
+                        helpText="Instructions for how the bot should recommend products."
+                        multiline={3}
+                        autoComplete="off"
+                      />
+                    )}
+                  </FormLayout>
+                </BlockStack>
+              </Card>
+            </BlockStack>
+          </Layout.Section>
+
+          {/* Live Preview (Right Side) */}
+          <Layout.Section variant="oneThird">
+            <BotPreview
+              name={config.name}
+              color={config.primary_color.startsWith("#") ? config.primary_color : `#${config.primary_color}`}
+              tone={config.tone}
+              contactEnabled={config.contact_enabled}
+              contactPrompt={config.contact_prompt}
+              logoUrl={config.logo_url || ""}
+            />
           </Layout.Section>
         </Layout>
       </BlockStack>

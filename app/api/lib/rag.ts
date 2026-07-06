@@ -12,7 +12,7 @@ export async function retrieveWebsiteContext(
   try {
     const db = await getDb();
 
-    const resultEmbedding = await db.getRepository(BotDocument)
+    const resultEmbedding = await db.getRepository<BotDocument>("BotDocument")
       .createQueryBuilder("doc")
       .select(["doc.content"])
       .where("doc.public_key = :publicKey", { publicKey })
@@ -21,18 +21,10 @@ export async function retrieveWebsiteContext(
       .limit(3)
       .getMany();
 
-    const resultContent = await db.getRepository(BotDocument)
-      .createQueryBuilder("doc")
-      .select(["doc.content"])
-      .where("doc.public_key = :publicKey", { publicKey })
-      .getMany();
-
     return resultEmbedding
       .map((p) => p.content)
       .filter(Boolean)
-      .join("\n") + resultContent.map((p) => p.content)
-        .filter(Boolean)
-        .join("\n");
+      .join("\n");
   } catch (error: unknown) {
     console.error("Vector search error:", error);
     throw error;

@@ -8,7 +8,7 @@ export async function ingestDocument(publicKey: string, content: string) {
 
   const db = await getDb();
   
-  const repo = db.getRepository(BotDocument);
+  const repo = db.getRepository<BotDocument>("BotDocument");
   const doc = repo.create({
     public_key: publicKey,
     content: content,

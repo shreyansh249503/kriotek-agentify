@@ -25,10 +25,10 @@ export async function GET(
     }
 
     const dbInstance = await getDb();
-    const bot = await dbInstance.getRepository(Bot).findOne({ where: { public_key: publicKey } });
+    const bot = await dbInstance.getRepository<Bot>("Bot").findOne({ where: { public_key: publicKey } });
     if (!bot) return new Response(JSON.stringify({ error: "Bot not found" }), { status: 404, headers: corsHeaders });
 
-    const convo = await dbInstance.getRepository(Conversation).findOne({
+    const convo = await dbInstance.getRepository<Conversation>("Conversation").findOne({
       where: { id, bot_id: bot.id }
     });
 

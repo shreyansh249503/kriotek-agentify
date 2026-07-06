@@ -29,7 +29,7 @@ export async function POST(req: Request) {
   }
 
   const db = await getDb();
-  const botExists = await db.getRepository(Bot).exists({
+  const botExists = await db.getRepository<Bot>("Bot").exists({
     where: { public_key: publicKey, user_id: user.id },
   });
 

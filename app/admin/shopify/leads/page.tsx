@@ -1,4 +1,3 @@
-// app/admin/shopify/leads/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";

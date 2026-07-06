@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
     }
 
     const db = await getDb();
-    const bot = await db.getRepository(Bot).findOne({
+    const bot = await db.getRepository<Bot>("Bot").findOne({
       where: { id: storeData.bot_id },
     });
 
@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
     const publicKey = bot.public_key;
 
     // 3. Check if page is already crawled
-    const existing = await db.getRepository(CrawledPage).exists({
+    const existing = await db.getRepository<CrawledPage>("CrawledPage").exists({
       where: { bot_public_key: publicKey, page_url: url },
     });
 
@@ -90,8 +90,10 @@ export async function POST(req: NextRequest) {
     const chunks = chunkText(collectedText);
     console.log("Shopify Ingest Chunks Count:", chunks.length);
 
-    for (const chunk of chunks) {
-      await ingestDocument(publicKey, chunk);
+    const batchSize = 10;
+    for (let i = 0; i < chunks.length; i += batchSize) {
+      const batch = chunks.slice(i, i + batchSize);
+      await Promise.all(batch.map((chunk) => ingestDocument(publicKey, chunk)));
     }
 
     return NextResponse.json({
