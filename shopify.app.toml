@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "1a44dc7edd7e9d3a3f3a7b060696a2d6"
-name = "Agenify"
+name = "Agentify"
 application_url = "https://drew-thirteen-heroism.ngrok-free.dev/api/shopify/install"
 embedded = true
 
