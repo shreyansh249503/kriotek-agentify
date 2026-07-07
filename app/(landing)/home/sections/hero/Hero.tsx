@@ -1,4 +1,4 @@
-import { PrimaryButton, SecondaryButton } from "@/components";
+import { BlackButton } from "@/components";
 import {
   AICircle,
   AINode,
@@ -7,12 +7,21 @@ import {
   DataStream,
   FloatingParticle,
   GridBackground,
+  HeroChatBotContainer,
+  HeroChatBotMainWrapper,
   HeroContent,
+  HeroContentContainer,
   HeroSection,
   MainHeading,
   NeuralLine,
   SubHeading,
+  TagButton,
+  TagContainer,
+  UnderlineImage,
+  WatchDemoButton,
 } from "./styled";
+import Underline from "@/assets/images/undeline2.svg";
+import { FaCircleCheck } from "react-icons/fa6";
 
 export const Hero = () => {
   return (
@@ -65,21 +74,50 @@ export const Hero = () => {
         <FloatingParticle $top="60%" $left="20%" $delay="0.5s" />
         <FloatingParticle $top="25%" $left="45%" $delay="3.2s" />
       </AnimatedBackground>
-      <HeroContent>
-        <MainHeading>
-          Build Intelligent
-          <br />
-          AI Agents
-        </MainHeading>
-        <SubHeading>
-          Create powerful, customizable AI chatbots that understand your
-          business and engage your customers 24/7. No coding required.
-        </SubHeading>
-        <CTAContainer>
-          <PrimaryButton href="/signup">Get Started Free</PrimaryButton>
-          <SecondaryButton href="#demo">Watch Demo</SecondaryButton>
-        </CTAContainer>
-      </HeroContent>
+
+      <HeroContentContainer>
+        <HeroContent>
+          <MainHeading>
+            Build AI Agents.
+            <br />
+            That Delivers{" "}
+            <span>
+              Results.
+              <UnderlineImage
+                src={Underline}
+                width={100}
+                height={100}
+                alt="UnderLine Image"
+              />
+            </span>
+          </MainHeading>
+          <SubHeading>
+            Agentify AI agents engage visitors, qualify leads, answer questions.
+            and book appointments - 24/7. No coding Just Results.
+          </SubHeading>
+          <TagContainer>
+            <TagButton>
+              <FaCircleCheck className="check-icon" />
+              Capture Leads
+            </TagButton>
+            <TagButton>
+              <FaCircleCheck className="check-icon" />
+              Qualify Instantly
+            </TagButton>
+            <TagButton>
+              <FaCircleCheck className="check-icon" />
+              Close more Deals
+            </TagButton>
+          </TagContainer>
+          <CTAContainer>
+            <BlackButton href="/signup">Built Your Free Agent</BlackButton>
+            <WatchDemoButton>Watch Demo</WatchDemoButton>
+          </CTAContainer>
+        </HeroContent>
+        <HeroChatBotContainer>
+          <HeroChatBotMainWrapper></HeroChatBotMainWrapper>
+        </HeroChatBotContainer>
+      </HeroContentContainer>
     </HeroSection>
   );
 };

@@ -44,18 +44,17 @@ export const Header = () => {
         </LogoContainer>
 
         <NavLinks>
-          <LinkTag href="/#features">Features</LinkTag>
-          <LinkTag href="/#benefits">Benefits</LinkTag>
+          <LinkTag href="/work-in-progress">Products</LinkTag>
+          <LinkTag href="/work-in-progress">Solution</LinkTag>
           <LinkTag href="/pricing">Pricing</LinkTag>
-          <LinkTag href="/demo">Live Demo</LinkTag>
-          <LinkTag href="/work-in-progress">Docs</LinkTag>
+          <LinkTag href="/work-in-progress">Enterprise</LinkTag>
         </NavLinks>
 
         <LoginSignupContainer>
           {user ? (
-
-            <DashboardButton onClick={() => router.push("/admin")}>Dashboard</DashboardButton>
-            
+            <DashboardButton onClick={() => router.push("/admin")}>
+              Dashboard
+            </DashboardButton>
           ) : (
             <>
               <AuthButton href="/login">Sign in</AuthButton>

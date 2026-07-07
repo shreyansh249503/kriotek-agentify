@@ -1,4 +1,3 @@
-// app/api/shopify/admin/leads/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import {
@@ -26,7 +25,6 @@ export async function GET(req: NextRequest) {
   );
 
   try {
-    // 1. Get linked bot_id
     const { data: storeData } = await supabase
       .from("shopify_stores")
       .select("bot_id")
@@ -37,7 +35,6 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ leads: [] });
     }
 
-    // 2. Fetch leads
     const { data: leads, error } = await supabase
       .from("leads")
       .select("*")

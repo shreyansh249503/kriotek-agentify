@@ -11,7 +11,6 @@ import {
 const { NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = process.env;
 
 export async function GET(req: NextRequest) {
-  // 1. Verify session token from App Bridge
   let session;
   try {
     session = verifySessionToken(req.headers.get("authorization"));
@@ -27,7 +26,6 @@ export async function GET(req: NextRequest) {
   );
 
   try {
-    // 2. Get the store + linked bot
     const { data: storeData, error: storeError } = await supabase
       .from("shopify_stores")
       .select("bot_id")
@@ -41,7 +39,6 @@ export async function GET(req: NextRequest) {
 
     let bot_id = storeData?.bot_id;
 
-    // 3. Auto-create a bot if none is linked
     if (!bot_id) {
       const newBotId = crypto.randomUUID();
       const publicKey = `pk_${crypto.randomBytes(16).toString("hex")}`;
@@ -74,7 +71,6 @@ export async function GET(req: NextRequest) {
         );
       }
 
-      // Link store to the bot
       const { error: linkError } = await supabase
         .from("shopify_stores")
         .update({ bot_id: newBotId })
@@ -87,7 +83,6 @@ export async function GET(req: NextRequest) {
       bot_id = newBotId;
     }
 
-    // 4. Fetch bot, conversations, leads in parallel
     const [botRes, convoRes, leadsRes] = await Promise.all([
       supabase
         .from("bots")
@@ -106,7 +101,6 @@ export async function GET(req: NextRequest) {
 
     const db = await getDb();
     
-    // Generate the last 6 months programmatically
     const trends: { month: string; monthDate: Date; conversations: number; leads: number }[] = [];
     const now = new Date();
     for (let i = 5; i >= 0; i--) {
@@ -120,7 +114,6 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // Query conversation stats grouped by month
     const convoTrend = await db.getRepository<Conversation>("Conversation")
       .createQueryBuilder("c")
       .select("TO_CHAR(c.created_at, 'Mon YY')", "month")
@@ -130,7 +123,6 @@ export async function GET(req: NextRequest) {
       .groupBy("TO_CHAR(c.created_at, 'Mon YY')")
       .getRawMany();
 
-    // Query lead stats grouped by month
     const leadTrend = await db.getRepository<Lead>("Lead")
       .createQueryBuilder("l")
       .select("TO_CHAR(l.created_at, 'Mon YY')", "month")
@@ -140,7 +132,6 @@ export async function GET(req: NextRequest) {
       .groupBy("TO_CHAR(l.created_at, 'Mon YY')")
       .getRawMany();
 
-    // Map query results to JS generated trend months
     convoTrend.forEach(row => {
       const match = trends.find(t => t.month.toLowerCase() === row.month.toLowerCase());
       if (match) {

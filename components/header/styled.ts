@@ -16,7 +16,7 @@ export const HeaderContainer = styled.header`
 `;
 
 export const InnerHeaderwrapper = styled.div`
-  width: 75%;
+  width: 80%;
   margin: 0 auto;
   padding: 8px 24px;
   display: flex;
@@ -183,10 +183,11 @@ width: fit-content;
   ${({ $variant }) =>
     $variant === "primary"
       ? `
-    background: ${COLOR.PRIMARY};
-    color: ${COLOR.DARK};
+    background: ${COLOR.DARK};
+    color: ${COLOR.WHITE};
     &:hover {
-      background: ${COLOR.PRIMARY_HOVER};
+      background: ${COLOR.PRIMARY};
+      color: ${COLOR.DARK};
       transform: translateY(-1px);
       box-shadow: 0 4px 12px ${COLOR.SHADOW};
     }
@@ -195,7 +196,8 @@ width: fit-content;
     background: transparent;
     color: ${COLOR.DARK};
     &:hover {
-      color: ${COLOR.PRIMARY};
+      color: ${COLOR.DARK};
+      background-color: ${COLOR.PRIMARY};
     }
   `}
 `;

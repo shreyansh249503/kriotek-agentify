@@ -1,10 +1,13 @@
+import { FaArrowRight } from "react-icons/fa6";
 import { BlackButtonStyle, BlackLinkStyle } from "./styled";
 
 interface BlackButtonProps {
   href?: string;
   type?: "button" | "submit" | "reset";
   disabled?: boolean;
-  onClick?: (e: React.MouseEvent<HTMLButtonElement | HTMLAnchorElement>) => void;
+  onClick?: (
+    e: React.MouseEvent<HTMLButtonElement | HTMLAnchorElement>,
+  ) => void;
   style?: React.CSSProperties;
   children?: React.ReactNode;
 }
@@ -21,6 +24,7 @@ export const BlackButton = ({
     return (
       <BlackLinkStyle href={href} style={style} onClick={onClick}>
         {children}
+        <FaArrowRight className="arrow-icon" />
       </BlackLinkStyle>
     );
   }
@@ -33,7 +37,7 @@ export const BlackButton = ({
       onClick={onClick}
     >
       {children}
+      <FaArrowRight className="arrow-icon" />
     </BlackButtonStyle>
   );
 };
-

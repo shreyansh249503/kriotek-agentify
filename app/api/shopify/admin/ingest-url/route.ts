@@ -1,4 +1,3 @@
-// app/api/shopify/admin/ingest-url/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { setupCollection } from "../../../lib/vector-db-setup";
@@ -21,7 +20,6 @@ const {
 export async function POST(req: NextRequest) {
   await setupCollection();
 
-  // 1. Verify session token from App Bridge
   let session;
   try {
     session = verifySessionToken(req.headers.get("authorization"));
@@ -36,7 +34,6 @@ export async function POST(req: NextRequest) {
   );
 
   try {
-    // 2. Get the bot linked to this store
     const { data: storeData } = await supabase
       .from("shopify_stores")
       .select("bot_id")
@@ -64,7 +61,6 @@ export async function POST(req: NextRequest) {
 
     const publicKey = bot.public_key;
 
-    // 3. Check if page is already crawled
     const existing = await db.getRepository<CrawledPage>("CrawledPage").exists({
       where: { bot_public_key: publicKey, page_url: url },
     });
@@ -76,7 +72,6 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 4. Crawl website
     const { collectedText } = await crawlWebsite(url, publicKey, 40, false);
 
     if (!collectedText || collectedText.length < 200) {
@@ -86,7 +81,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 5. Chunk and ingest
     const chunks = chunkText(collectedText);
     console.log("Shopify Ingest Chunks Count:", chunks.length);
 

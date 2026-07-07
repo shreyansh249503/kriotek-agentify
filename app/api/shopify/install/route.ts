@@ -1,4 +1,3 @@
-// app/api/shopify/install/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
@@ -25,7 +24,6 @@ export async function GET(req: NextRequest) {
   );
 
   try {
-    // 1. Check if the store is already installed (has an access token)
     const { data: storeData } = await supabase
       .from("shopify_stores")
       .select("access_token")
@@ -34,13 +32,11 @@ export async function GET(req: NextRequest) {
 
     const isInstalled = !!storeData?.access_token;
 
-    // 2. If installed and embedded in Shopify iframe, go directly to our dashboard
     if (isInstalled && isEmbedded) {
       const dashboardUrl = new URL(`/admin/shopify?${req.nextUrl.searchParams.toString()}`, SHOPIFY_APP_URL!);
       return NextResponse.redirect(dashboardUrl);
     }
 
-    // 3. Prepare the OAuth URL
     const state = crypto.randomBytes(16).toString("hex");
     const redirectUri = `${SHOPIFY_APP_URL}/api/shopify/callback`;
     const installUrl =
@@ -50,7 +46,6 @@ export async function GET(req: NextRequest) {
       `&redirect_uri=${encodeURIComponent(redirectUri)}` +
       `&state=${state}`;
 
-    // 4. If request is inside an iframe, we MUST break out to authorize
     if (isEmbedded) {
       const html = `
         <!DOCTYPE html>
@@ -87,24 +82,22 @@ export async function GET(req: NextRequest) {
         headers: { "Content-Type": "text/html" },
       });
 
-      // Store state in a short-lived cookie to verify in callback
       response.cookies.set("shopify_state", state, {
         httpOnly: true,
         secure: true,
-        sameSite: "none", // Must be none for iframe cookies
-        maxAge: 60 * 10,  // 10 minutes
+        sameSite: "none", 
+        maxAge: 60 * 10, 
       });
 
       return response;
     }
 
-    // 5. Standard non-embedded redirect
     const response = NextResponse.redirect(installUrl);
     response.cookies.set("shopify_state", state, {
       httpOnly: true,
       secure: true,
       sameSite: "lax",
-      maxAge: 60 * 10, // 10 minutes
+      maxAge: 60 * 10, 
     });
 
     return response;

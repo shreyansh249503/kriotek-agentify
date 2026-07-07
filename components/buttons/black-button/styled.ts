@@ -3,6 +3,7 @@ import Link from "next/link";
 import styled, { css } from "styled-components";
 
 const buttonStyles = css`
+  width: fit-content;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -34,9 +35,27 @@ const buttonStyles = css`
 
 export const BlackLinkStyle = styled(Link)`
   ${buttonStyles}
+
+  .arrow-icon {
+    color: ${COLOR.PRIMARY};
+  }
+
+  &:hover {
+    .arrow-icon {
+      color: ${COLOR.DARK};
+    }
+  }
 `;
 
 export const BlackButtonStyle = styled.button`
   ${buttonStyles}
-`;
 
+  .arrow-icon {
+    color: ${COLOR.PRIMARY};
+  }
+  &:hover {
+    .arrow-icon {
+      color: ${COLOR.DARK};
+    }
+  }
+`;

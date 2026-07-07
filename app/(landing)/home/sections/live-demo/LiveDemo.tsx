@@ -1,6 +1,5 @@
 import { IoStorefrontOutline } from "react-icons/io5";
 import { GoCheckCircleFill } from "react-icons/go";
-import { FaArrowRight } from "react-icons/fa6";
 import {
   DemoTeaserSection,
   TeaserContainer,
@@ -98,7 +97,7 @@ export const LiveDemo = () => {
             </BenefitList>
 
             <BlackButton href="/demo">
-              Launch Live Demo Store <FaArrowRight />
+              Launch Live Demo Store 
             </BlackButton>
           </DetailsColumn>
         </InteractiveShowcase>

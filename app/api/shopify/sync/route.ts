@@ -1,4 +1,3 @@
-// app/api/shopify/sync/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
@@ -59,7 +58,6 @@ const {
   SUPABASE_SERVICE_ROLE_KEY,
 } = process.env;
 
-// Shopify GraphQL query — fetches up to 250 products with images + pricing
 const PRODUCTS_QUERY = `
   query getProducts($cursor: String) {
     products(first: 250, after: $cursor) {
@@ -119,7 +117,6 @@ export async function POST(req: NextRequest) {
       SUPABASE_SERVICE_ROLE_KEY!
     );
 
-    // 1. Get the stored access token for this shop
     const { data: storeData, error: storeError } = await supabase
       .from("shopify_stores")
       .select("access_token")
@@ -135,7 +132,6 @@ export async function POST(req: NextRequest) {
 
     const { access_token } = storeData;
 
-    // 2. Fetch all products from Shopify (handles pagination)
     let allProducts: ShopifyProductNode[] = [];
     let cursor: string | null = null;
     let hasNextPage = true;
@@ -179,11 +175,10 @@ export async function POST(req: NextRequest) {
       cursor = products.pageInfo.endCursor;
     }
 
-    // 3. Map Shopify product schema → existing product schema
     const mappedProducts = allProducts
-      .filter((p) => p.status === "ACTIVE") // only sync active products
+      .filter((p) => p.status === "ACTIVE") 
       .map((p) => ({
-        shopify_id: p.id,                          // e.g. gid://shopify/Product/123
+        shopify_id: p.id,                          
         name: p.title,
         description: stripHtml(p.descriptionHtml),
         price: parseFloat(
@@ -197,7 +192,6 @@ export async function POST(req: NextRequest) {
         available: p.variants.edges[0]?.node.availableForSale ?? false,
       }));
 
-    // 4. Save to bots.ecommerce_products and link the store to the bot
     const { error: botError } = await supabase
       .from("bots")
       .update({ ecommerce_products: mappedProducts, ecommerce_enabled: true })
@@ -211,7 +205,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 5. Link this shop to the bot in shopify_stores table
     await supabase
       .from("shopify_stores")
       .update({ bot_id })
@@ -232,7 +225,6 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// Strips HTML tags from Shopify's descriptionHtml field
 function stripHtml(html: string): string {
   return html?.replace(/<[^>]*>/g, "").trim() ?? "";
 }

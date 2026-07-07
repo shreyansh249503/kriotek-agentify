@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import {
-  verifySessionToken,
-  getShopFromSession,
-} from "../../lib/verifySessionToken";
+import { getShopFromSession, verifySessionToken } from "../../lib/verifySessionToken";
 
 const {
   NEXT_PUBLIC_SUPABASE_URL,
@@ -25,7 +22,6 @@ export async function GET(req: NextRequest) {
   );
 
   try {
-    // 1. Get linked bot_id
     const { data: storeData } = await supabase
       .from("shopify_stores")
       .select("bot_id")
@@ -36,7 +32,6 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ bot: null, crawled_pages: [] });
     }
 
-    // 2. Fetch bot config
     const { data: bot, error: botError } = await supabase
       .from("bots")
       .select("*")
@@ -47,7 +42,6 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Bot not found" }, { status: 404 });
     }
 
-    // 3. Fetch crawled pages using bot's public_key
     const { data: crawled_pages } = await supabase
       .from("crawled_pages")
       .select("id, page_url")
@@ -76,7 +70,6 @@ export async function PATCH(req: NextRequest) {
   );
 
   try {
-    // 1. Verify store links to the bot being modified
     const { data: storeData } = await supabase
       .from("shopify_stores")
       .select("bot_id")
@@ -89,7 +82,6 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // 2. Perform bot updates
     const { id, name, description, tone, primary_color, contact_enabled, contact_email, contact_prompt, ecommerce_enabled, ecommerce_prompt, logo_url } = body;
     const { data: updatedBot, error: updateError } = await supabase
       .from("bots")

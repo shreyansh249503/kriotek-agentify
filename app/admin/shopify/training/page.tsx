@@ -114,8 +114,8 @@ export default function TrainingPage() {
     setBanner(null);
 
     const formData = new FormData();
-    formData.append("file", file); // Must match backend expectation of 'file'
-    formData.append("publicKey", publicKey); // Must match backend expectation of 'publicKey'
+    formData.append("file", file);
+    formData.append("publicKey", publicKey);
 
     try {
       const res = await fetch("/api/ingest-pdf", {
@@ -214,7 +214,6 @@ export default function TrainingPage() {
         )}
 
         <Layout>
-          {/* Crawl URL section */}
           <Layout.Section>
             <Card>
               <BlockStack gap="400">
@@ -247,7 +246,6 @@ export default function TrainingPage() {
             </Card>
           </Layout.Section>
 
-          {/* Upload PDF Section */}
           <Layout.Section>
             <Card>
               <BlockStack gap="400">
@@ -260,7 +258,6 @@ export default function TrainingPage() {
             </Card>
           </Layout.Section>
 
-          {/* Crawled Pages Catalog */}
           <Layout.Section>
             <Card>
               <BlockStack gap="400">

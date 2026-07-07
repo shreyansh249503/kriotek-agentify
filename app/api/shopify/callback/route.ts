@@ -1,4 +1,3 @@
-// app/api/shopify/callback/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
@@ -23,7 +22,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Missing shop or code parameters" }, { status: 400 });
   }
 
-  // 1. Validate state matches the cookie (CSRF protection)
   const cookieState = req.cookies.get("shopify_state")?.value;
   if (!state || state !== cookieState) {
     if (process.env.NODE_ENV !== "development") {
@@ -33,12 +31,10 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // 2. Validate HMAC signature (proves request is genuinely from Shopify)
   if (!isValidHmac(searchParams, hmac!)) {
     return NextResponse.json({ error: "Invalid HMAC" }, { status: 403 });
   }
 
-  // 3. Exchange the code for a permanent access token
   const tokenRes = await fetch(`https://${shop}/admin/oauth/access_token`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -58,7 +54,6 @@ export async function GET(req: NextRequest) {
 
   const { access_token, scope } = await tokenRes.json();
 
-  // 4. Save to Supabase (upsert so reinstalls don't break)
   const supabase = createClient(
     NEXT_PUBLIC_SUPABASE_URL!,
     SUPABASE_SERVICE_ROLE_KEY!,
@@ -73,10 +68,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "DB save failed" }, { status: 500 });
   }
 
-  // 4.5. Register webhooks for product sync and uninstall
   await registerWebhooks(shop, access_token);
 
-  // 5. Redirect merchant to your embedded app inside Shopify Admin
   const redirectUrl = `https://${shop}/admin/apps/${SHOPIFY_API_KEY}`;
   
   const html = `
@@ -122,14 +115,12 @@ export async function GET(req: NextRequest) {
     headers: { "Content-Type": "text/html" },
   });
 
-  // Clear the state cookie
   response.cookies.delete("shopify_state");
 
   return response;
 }
 
 function isValidHmac(params: URLSearchParams, hmac: string): boolean {
-  // Build the message: all params except hmac, sorted, joined as key=value pairs
   const message = Array.from(params.entries())
     .filter(([key]) => key !== "hmac")
     .sort(([a], [b]) => a.localeCompare(b))
@@ -141,7 +132,6 @@ function isValidHmac(params: URLSearchParams, hmac: string): boolean {
     .update(message)
     .digest("hex");
 
-  // Use timingSafeEqual to prevent timing attacks
   return crypto.timingSafeEqual(
     Buffer.from(digest, "hex"),
     Buffer.from(hmac, "hex"),

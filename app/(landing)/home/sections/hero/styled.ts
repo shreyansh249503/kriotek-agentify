@@ -1,5 +1,6 @@
 import styled, { keyframes } from "styled-components";
 import { BREAKPOINTS, COLOR } from "@/styles";
+import Image from "next/image";
 
 const fadeIn = keyframes`
   from { opacity: 0; transform: translateY(20px); }
@@ -35,10 +36,8 @@ const blink = keyframes`
   50% { opacity: 0.6; }
 `;
 
-
-
 export const HeroSection = styled.section`
-  /* min-height: 100vh; */
+  width: 100%;
   height: 100vh;
   display: flex;
   align-items: center;
@@ -68,28 +67,38 @@ export const HeroSection = styled.section`
   }
 `;
 
-export const HeroContent = styled.div`
+export const HeroContentContainer = styled.div`
+  width: 80%;
   height: 100vh;
-  justify-content: center;
-  position: relative;
-  z-index: 10;
-  max-width: 1200px;
-  padding: 0 24px;
-  text-align: center;
   display: flex;
-  flex-direction: column;
+  justify-content: space-between;
   align-items: center;
   gap: 42px;
+  z-index: 2;
+`;
+
+export const HeroContent = styled.div`
+  width: 50%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 52px;
 `;
 
 export const MainHeading = styled.h1`
-  font-size: 72px;
+  font-size: 66px;
   font-weight: 800;
   line-height: 1.1;
-  letter-spacing: -0.02em;
   color: ${COLOR.DARK};
-  margin: 0;
   animation: ${fadeIn} 0.8s ease-out;
+
+  span {
+    position: relative;
+    font-weight: 700;
+    color: ${COLOR.PRIMARY};
+    z-index: 2;
+  }
 
   @media (max-width: ${BREAKPOINTS.TABLET}) {
     font-size: 42px;
@@ -100,10 +109,20 @@ export const MainHeading = styled.h1`
   }
 `;
 
+export const UnderlineImage = styled(Image)`
+  position: absolute;
+  bottom: -10px;
+  left: 5px;
+  width: 250px;
+  height: auto;
+  z-index: 2;
+  object-fit: contain;
+`;
+
 export const SubHeading = styled.p`
-  font-size: 20px;
+  font-size: 18px;
   color: ${COLOR.TEXT_SECONDARY};
-  max-width: 600px;
+  max-width: 710px;
   line-height: 1.6;
   margin: 0;
   animation: ${fadeIn} 0.8s ease-out 0.2s backwards;
@@ -117,14 +136,81 @@ export const SubHeading = styled.p`
   }
 `;
 
-export const CTAContainer = styled.div`
+export const TagContainer = styled.div`
   display: flex;
   gap: 16px;
+  animation: ${fadeIn} 0.8s ease-out 0.6s backwards;
+`;
+
+export const TagButton = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border-radius: 12px;
+  background-color: ${COLOR.WHITE};
+  color: ${COLOR.DARK};
+  font-size: 14px;
+  font-weight: 600;
+  animation: ${fadeIn} 0.8s ease-out 0.6s backwards;
+  cursor: pointer;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+  .check-icon {
+    font-size: 16px;
+    color: ${COLOR.DARK};
+  }
+`;
+
+export const HeroChatBotContainer = styled.div`
+  width: 50%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+`;
+
+export const HeroChatBotMainWrapper = styled.div`
+  width: 460px;
+  height: 650px;
+  background-color: ${COLOR.WHITE};
+  border-radius: 20px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.07);
+`;
+
+export const CTAContainer = styled.div`
+  display: flex;
+  gap: 24px;
   animation: ${fadeIn} 0.8s ease-out 0.4s backwards;
 
   @media (max-width: 640px) {
     flex-direction: column;
     width: 100%;
+  }
+`;
+
+export const WatchDemoButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: ${COLOR.WHITE};
+  color: ${COLOR.DARK};
+  padding: 16px 38px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  border: none;
+  font-family: inherit;
+  box-shadow: 0 0px 5px rgba(0, 0, 0, 0.1);
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 `;
 
@@ -170,7 +256,6 @@ export const AICircle = styled.div<{
   left: ${({ $left }) => $left || "50%"};
   width: ${({ $size }) => $size || "200px"};
   height: ${({ $size }) => $size || "200px"};
-  /* border: 2px solid rgba(168, 225, 12, 0.3); */
   border-radius: 50%;
   animation: ${orbit} 20s linear infinite;
   animation-delay: ${({ $delay }) => $delay || "0s"};
@@ -190,7 +275,6 @@ export const AICircle = styled.div<{
       0 0 40px ${COLOR.PRIMARY};
   }
 `;
-
 
 export const FloatingParticle = styled.div<{
   $delay?: string;

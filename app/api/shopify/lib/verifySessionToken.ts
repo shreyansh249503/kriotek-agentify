@@ -20,7 +20,6 @@ export function verifySessionToken(authHeader: string | null): ShopifySession {
 
   const decoded = jwt.verify(token, SHOPIFY_API_SECRET!, { clockTolerance: 300 }) as ShopifySession;
 
-  // dest contains the shop URL e.g. https://my-store.myshopify.com
   if (!decoded.dest) {
     throw new Error("Invalid session token");
   }
@@ -28,7 +27,6 @@ export function verifySessionToken(authHeader: string | null): ShopifySession {
   return decoded;
 }
 
-// Extract clean shop domain from dest
 export function getShopFromSession(session: ShopifySession): string {
   return new URL(session.dest).hostname;
 }

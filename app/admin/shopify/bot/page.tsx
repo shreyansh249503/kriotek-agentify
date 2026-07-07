@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Page,
@@ -19,23 +18,9 @@ import {
   DropZone,
   Thumbnail,
 } from "@shopify/polaris";
-import { useSessionToken } from "../lib/useSessionToken";
-import { BotPreview } from "../../../../components/bot-preview";
-
-interface BotConfig {
-  id: string;
-  name: string;
-  description: string;
-  tone: string;
-  primary_color: string;
-  contact_enabled: boolean;
-  contact_email: string;
-  contact_prompt: string;
-  ecommerce_enabled: boolean;
-  ecommerce_prompt: string;
-  logo_url?: string;
-  public_key?: string;
-}
+import { BotPreview } from "@/components";
+import { useBotConfig } from "./useBotConfig";
+import { useLogoUpload } from "./useLogoUpload";
 
 const TONE_OPTIONS = [
   { label: "Friendly", value: "friendly" },
@@ -46,98 +31,22 @@ const TONE_OPTIONS = [
 
 export default function BotConfigPage() {
   const router = useRouter();
-  const { fetchWithToken } = useSessionToken();
-  const [config, setConfig] = useState<BotConfig | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [unauthorized, setUnauthorized] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [uploadingLogo, setUploadingLogo] = useState(false);
-  const [banner, setBanner] = useState<{
-    tone: "success" | "critical";
-    message: string;
-  } | null>(null);
+  const {
+    config,
+    loading,
+    unauthorized,
+    saving,
+    banner,
+    setBanner,
+    update,
+    handleSave,
+  } = useBotConfig();
 
-  useEffect(() => {
-    fetchWithToken("/api/shopify/admin/bot")
-      .then((r) => {
-        if (r.status === 401) {
-          setUnauthorized(true);
-          return null;
-        }
-        return r.json();
-      })
-      .then((data) => {
-        if (data && data.bot) {
-          setConfig(data.bot);
-        }
-      })
-      .catch((e) => console.error("Error loading bot config:", e))
-      .finally(() => setLoading(false));
-  }, [fetchWithToken]);
+  const { uploadingLogo, handleLogoUpload } = useLogoUpload({
+    update,
+    setBanner,
+  });
 
-  function update<K extends keyof BotConfig>(field: K, value: BotConfig[K]) {
-    setConfig((prev) => prev ? { ...prev, [field]: value } : prev);
-  }
-
-  async function handleLogoUpload(_dropFiles: File[], acceptedFiles: File[], _rejectedFiles: File[]) {
-    const file = acceptedFiles[0];
-    if (!file) return;
-
-    if (file.size > 1024 * 1024) {
-      setBanner({ tone: "critical", message: "File is too large. Max size is 1MB." });
-      return;
-    }
-
-    setUploadingLogo(true);
-    setBanner(null);
-
-    const formData = new FormData();
-    formData.append("file", file);
-
-    try {
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
-
-      const data = await res.json();
-      if (res.ok && data.url) {
-        update("logo_url", data.url);
-        setBanner({ tone: "success", message: "Logo uploaded successfully." });
-      } else {
-        setBanner({ tone: "critical", message: data.error || "Upload failed. Try again." });
-      }
-    } catch (e) {
-      const message = e instanceof Error ? e.message : String(e);
-      setBanner({ tone: "critical", message: `Upload error: ${message}` });
-    } finally {
-      setUploadingLogo(false);
-    }
-  }
-
-  async function handleSave() {
-    if (!config) return;
-    setSaving(true);
-    setBanner(null);
-
-    try {
-      const res = await fetchWithToken("/api/shopify/admin/bot", {
-        method: "PATCH",
-        body: JSON.stringify(config),
-      });
-
-      if (res.ok) {
-        setBanner({ tone: "success", message: "Bot configuration saved successfully." });
-      } else {
-        setBanner({ tone: "critical", message: "Failed to save configuration. Try again." });
-      }
-    } catch (e) {
-      const message = e instanceof Error ? e.message : String(e);
-      setBanner({ tone: "critical", message: `Save error: ${message}` });
-    } finally {
-      setSaving(false);
-    }
-  }
 
   if (loading) {
     return (
@@ -205,10 +114,8 @@ export default function BotConfigPage() {
         )}
 
         <Layout>
-          {/* Settings Section (Left Side) */}
           <Layout.Section>
             <BlockStack gap="500">
-              {/* General settings */}
               <Card>
                 <BlockStack gap="400">
                   <Text variant="headingMd" as="h2">General</Text>
@@ -290,7 +197,6 @@ export default function BotConfigPage() {
                 </BlockStack>
               </Card>
 
-              {/* Lead capture settings */}
               <Card>
                 <BlockStack gap="400">
                   <Text variant="headingMd" as="h2">Lead capture</Text>
@@ -324,7 +230,6 @@ export default function BotConfigPage() {
                 </BlockStack>
               </Card>
 
-              {/* E-commerce settings */}
               <Card>
                 <BlockStack gap="400">
                   <Text variant="headingMd" as="h2">E-commerce</Text>
@@ -350,9 +255,8 @@ export default function BotConfigPage() {
             </BlockStack>
           </Layout.Section>
 
-          {/* Live Preview (Right Side) */}
           <Layout.Section variant="oneThird">
-            <BotPreview
+            <BotPreview  
               name={config.name}
               color={config.primary_color.startsWith("#") ? config.primary_color : `#${config.primary_color}`}
               tone={config.tone}

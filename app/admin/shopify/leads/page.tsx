@@ -51,7 +51,6 @@ export default function LeadsPage() {
   async function handleExport() {
     setExporting(true);
 
-    // Build CSV from leads data
     const headers = ["Name", "Email", "Phone", "Date"];
     const rows = leads.map((l) => [
       l.name || "",

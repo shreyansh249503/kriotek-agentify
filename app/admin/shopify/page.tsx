@@ -106,7 +106,6 @@ export default function ShopifyDashboard() {
       setSyncMessage(`Sync error: ${errorMessage}`);
     } finally {
       setSyncing(false);
-      // Refresh dashboard data
       fetchWithToken("/api/shopify/admin/dashboard")
         .then((r) => r.json())
         .then(setData);
@@ -173,7 +172,6 @@ export default function ShopifyDashboard() {
         )}
 
         <Layout>
-          {/* Stats row */}
           <Layout.Section variant="oneThird">
             <Card>
               <BlockStack gap="200">
@@ -208,7 +206,6 @@ export default function ShopifyDashboard() {
           </Layout.Section>
         </Layout>
 
-        {/* Performance trends chart */}
         {data?.trend && data.trend.length > 0 && (
           <Layout>
             <Layout.Section>
@@ -263,7 +260,6 @@ export default function ShopifyDashboard() {
           </Layout>
         )}
 
-        {/* Bot status card */}
         {data?.bot && (
           <Layout>
             <Layout.Section>
