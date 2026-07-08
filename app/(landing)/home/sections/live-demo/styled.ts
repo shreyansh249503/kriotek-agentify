@@ -13,7 +13,8 @@ export const DemoTeaserSection = styled.section`
   align-items: center;
   justify-content: center;
   padding: 120px 24px;
-  background: linear-gradient(180deg, ${COLOR.LIGHT} 0%, ${COLOR.WHITE} 100%);
+  background-color: #f5f8f8;
+
   position: relative;
   overflow: hidden;
 

@@ -11,7 +11,7 @@ export const WhatAgentigyProvidesMainConatiner = styled.div`
   justify-content: center;
   align-items: center;
   background-color: #f5f8f8;
-  padding: 60px 0px;
+  padding: 110px 0px;
 `;
 
 export const WhatAgentigyProvidesSectionHeader = styled.div`
@@ -35,7 +35,7 @@ export const WhatAgentifyProvidesTitleBtn = styled.div`
   padding: 10px 18px;
   background-color: ${COLOR.WHITE};
   border-radius: 24px;
-  border: 1px solid ${COLOR.BACKGROUND_2};
+  border: 1px solid ${COLOR.BORDER};
   font-size: 15px;
   font-weight: 500;
   color: ${COLOR.PRIMARY_HOVER};

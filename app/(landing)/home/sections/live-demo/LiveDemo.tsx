@@ -27,7 +27,7 @@ import { BlackButton } from "@/components";
 
 export const LiveDemo = () => {
   return (
-    <DemoTeaserSection id="live-demo">
+    <DemoTeaserSection>
       <TeaserContainer>
         <TextBlock>
           <Badge>Interactive Experience</Badge>

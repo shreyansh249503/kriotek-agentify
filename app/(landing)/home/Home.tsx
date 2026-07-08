@@ -1,14 +1,17 @@
 "use client";
 
 import {
-  Features,
+  // Features,
   FinalCTA,
   Hero,
-  HowItWorks,
-  SalesShowcase,
+  // HowItWorks,
+  // SalesShowcase,
   LiveDemo,
   TrustedBy,
   WhatAgentifyProvides,
+  RealTimeInsights,
+  FeaturedCapability,
+  HowItWork,
 } from "./sections";
 
 export const Home = () => {
@@ -17,10 +20,13 @@ export const Home = () => {
       <Hero />
       <TrustedBy />
       <WhatAgentifyProvides />
-      <Features />
-      <SalesShowcase />
+      <RealTimeInsights />
+      <FeaturedCapability />
+      <HowItWork />
+      {/* <Features /> */}
+      {/* <SalesShowcase /> */}
       <LiveDemo />
-      <HowItWorks />
+      {/* <HowItWorks /> */}
       <FinalCTA />
     </>
   );
