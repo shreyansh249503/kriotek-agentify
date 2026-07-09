@@ -20,11 +20,14 @@ const buttonStyles = css`
   border: 2px solid ${COLOR.DARK};
   font-family: inherit;
 
-  &:hover:not(:disabled) {
-    background: ${COLOR.PRIMARY};
-    color: ${COLOR.DARK};
-    border-color: ${COLOR.PRIMARY};
-    box-shadow: 0 10px 25px rgba(168, 225, 12, 0.2);
+  .arrow-icon {
+    transition: transform 0.2s ease;
+  }
+
+  &:hover {
+    .arrow-icon {
+      transform: translateX(4px);
+    }
   }
 
   &:disabled {
@@ -39,12 +42,6 @@ export const BlackLinkStyle = styled(Link)`
   .arrow-icon {
     color: ${COLOR.PRIMARY};
   }
-
-  &:hover {
-    .arrow-icon {
-      color: ${COLOR.DARK};
-    }
-  }
 `;
 
 export const BlackButtonStyle = styled.button`
@@ -52,10 +49,5 @@ export const BlackButtonStyle = styled.button`
 
   .arrow-icon {
     color: ${COLOR.PRIMARY};
-  }
-  &:hover {
-    .arrow-icon {
-      color: ${COLOR.DARK};
-    }
   }
 `;

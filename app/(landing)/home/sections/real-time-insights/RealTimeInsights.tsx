@@ -1,5 +1,4 @@
 import { BlackButton } from "@/components";
-import { CheckCircle } from "@phosphor-icons/react";
 import {
   FlowtingImage,
   RealTimeInsightsDashboardImage,
@@ -15,6 +14,7 @@ import {
 } from "./styled";
 import DashboardImage from "@/assets/images/Dashboard.svg";
 import DashboardMainBg from "@/assets/images/realtimeflowtingimg.svg";
+import { FaRegCircleCheck } from "react-icons/fa6";
 
 export const RealTimeInsights = () => {
   return (
@@ -42,19 +42,19 @@ export const RealTimeInsights = () => {
           </RealTimeInsightsDescription>
           <RealTimeInsightsList>
             <RealTimeInsightsListItem>
-              <CheckCircle size={22} />
+              <FaRegCircleCheck size={22} />
               Live conversations
             </RealTimeInsightsListItem>
             <RealTimeInsightsListItem>
-              <CheckCircle size={22} />
+              <FaRegCircleCheck size={22} />
               Performance metrics
             </RealTimeInsightsListItem>
             <RealTimeInsightsListItem>
-              <CheckCircle size={22} />
+              <FaRegCircleCheck size={22} />
               Lead analytics
             </RealTimeInsightsListItem>
             <RealTimeInsightsListItem>
-              <CheckCircle size={22} />
+              <FaRegCircleCheck size={22} />
               Conversion tracking
             </RealTimeInsightsListItem>
           </RealTimeInsightsList>

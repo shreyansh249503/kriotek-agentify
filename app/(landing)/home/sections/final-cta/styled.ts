@@ -13,6 +13,11 @@ export const CTAWrapper = styled.section`
   position: relative;
   overflow: hidden;
 
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    padding: 80px 24px;
+    gap: 40px;
+  }
+
   &::before {
     content: "";
     position: absolute;
@@ -40,6 +45,10 @@ export const CTATitle = styled.h2`
   @media (max-width: ${BREAKPOINTS.TABLET}) {
     font-size: 32px;
   }
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    font-size: 26px;
+  }
 `;
 
 export const CTADescription = styled.p`
@@ -48,6 +57,10 @@ export const CTADescription = styled.p`
   max-width: 600px;
   position: relative;
   opacity: 0.9;
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    font-size: 16px;
+  }
 `;
 
 export const CTAButtonWrapper = styled.div`

@@ -7,112 +7,39 @@ const float = keyframes`
   100% { transform: translateY(0); }
 `;
 
-export const DemoTeaserSection = styled.section`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 120px 24px;
-  background-color: #f5f8f8;
-
-  position: relative;
-  overflow: hidden;
-
-  @media (max-width: ${BREAKPOINTS.TABLET}) {
-    padding: 80px 20px;
-  }
-`;
-
-export const TeaserContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 48px;
-  max-width: 1100px;
-  width: 100%;
-  position: relative;
-  z-index: 2;
-`;
-
-export const TextBlock = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  text-align: center;
-`;
-
-export const Badge = styled.span`
-  background: ${COLOR.BACKGROUND_2};
-  color: ${COLOR.DARK};
-  padding: 6px 14px;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  border: 1px solid ${COLOR.BORDER};
-`;
-
-export const TeaserTitle = styled.h2`
-  font-size: 40px;
-  font-weight: 800;
-  color: ${COLOR.DARK};
-  letter-spacing: -0.02em;
-  max-width: 800px;
-  line-height: 1.2;
-
-  span {
-    color: ${COLOR.PRIMARY_HOVER};
-  }
-
-  @media (max-width: ${BREAKPOINTS.TABLET}) {
-    font-size: 32px;
-  }
-`;
-
-export const TeaserSubtitle = styled.p`
-  font-size: 18px;
-  color: ${COLOR.TEXT_SECONDARY};
-  max-width: 650px;
-  line-height: 1.6;
-`;
-
-export const InteractiveShowcase = styled.div`
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 48px;
-  align-items: center;
-  width: 100%;
-  margin-top: 20px;
-
-  @media (max-width: ${BREAKPOINTS.TABLET}) {
-    grid-template-columns: 1fr;
-    gap: 40px;
-  }
-`;
-
 export const VisualMockup = styled.div`
+  position: relative;
+  width: 80%;
+  height: 480px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 24px;
   background: #1e1e1e;
   border-radius: 20px;
-  padding: 24px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 30px 60px rgba(0, 0, 0, 0.12);
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  position: relative;
-  min-height: 340px;
-  justify-content: space-between;
   overflow: hidden;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
 
-  &:hover {
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    width: 100%;
+    height: 440px;
+    padding: 16px;
+  }
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    height: 360px;
+    padding: 12px;
+  }
+
+  /* &:hover {
     transform: translateY(-4px);
     box-shadow: 0 40px 85px rgba(168, 225, 12, 0.15);
-  }
+  } */
 `;
 
 export const MockBrowserHeader = styled.div`
@@ -133,9 +60,15 @@ export const Dots = styled.div`
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.2);
 
-    &:first-child { background: #ef4444; }
-    &:nth-child(2) { background: #f59e0b; }
-    &:last-child { background: #10b981; }
+    &:first-child {
+      background: #ef4444;
+    }
+    &:nth-child(2) {
+      background: #f59e0b;
+    }
+    &:last-child {
+      background: #10b981;
+    }
   }
 `;
 
@@ -176,12 +109,16 @@ export const MockProductCard = styled.div`
 
 export const MockImagePlaceholder = styled.div`
   background: rgba(255, 255, 255, 0.05);
-  height: 60px;
+  height: 120px;
   border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: rgba(255, 255, 255, 0.2);
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    height: 70px;
+  }
 `;
 
 export const MockProductTitle = styled.div`
@@ -215,6 +152,13 @@ export const MockBotBubble = styled.div`
   align-items: center;
   gap: 8px;
 
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    bottom: 12px;
+    right: 12px;
+    padding: 8px 12px;
+    font-size: 11px;
+  }
+
   &::after {
     content: "";
     position: absolute;
@@ -228,32 +172,125 @@ export const MockBotBubble = styled.div`
   }
 `;
 
-export const DetailsColumn = styled.div`
+export const LiveDemoMainConatiner = styled.div`
+  position: relative;
+  width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  align-items: flex-start;
-  text-align: left;
+  justify-content: center;
+  align-items: center;
+  padding: 130px 0px;
+  background-color: #f5f8f8;
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    padding: 60px 0px;
+  }
 `;
 
-export const BenefitList = styled.ul`
-  list-style: none;
-  padding: 0;
+export const LiveDemoSectionHeader = styled.div`
+  width: 80%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 40px;
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    width: 90%;
+    flex-direction: column-reverse;
+    gap: 40px;
+  }
+`;
+
+export const LiveDemoPrimarySection = styled.div`
+  width: 40%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 30px;
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    width: 100%;
+    align-items: center;
+    text-align: center;
+    gap: 24px;
+  }
+`;
+
+export const LiveDemoTitleBtn = styled.div`
+  width: fit-content;
+  padding: 10px 18px;
+  background-color: ${COLOR.WHITE};
+  border-radius: 24px;
+  border: 1px solid ${COLOR.BORDER};
+  font-size: 15px;
+  font-weight: 500;
+  color: ${COLOR.PRIMARY_HOVER};
+`;
+
+export const LiveDemoHeading = styled.h2`
+  font-size: 38px;
+  font-weight: 600;
+  color: ${COLOR.DARK};
+  line-height: 1.2;
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    font-size: 32px;
+  }
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    font-size: 26px;
+  }
+`;
+
+export const LiveDemoDescription = styled.p`
+  font-size: 16px;
+  color: ${COLOR.TEXT_SECONDARY};
+  max-width: 85%;
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    max-width: 100%;
+  }
+`;
+
+export const LiveDemoListHeading = styled.h3`
+  font-size: 18px;
+  color: ${COLOR.DARK};
+`;
+
+export const LiveDemoList = styled.div`
   display: flex;
   flex-direction: column;
   gap: 16px;
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    align-items: flex-start;
+    text-align: left;
+  }
 `;
 
-export const BenefitItem = styled.li`
+export const LiveDemoListItem = styled.div`
   display: flex;
   align-items: center;
   gap: 12px;
-  font-size: 16px;
-  color: ${COLOR.TEXT};
+  font-size: 16.5px;
+  color: ${COLOR.TEXT_SECONDARY};
   font-weight: 500;
 
   svg {
     color: ${COLOR.PRIMARY_HOVER};
     flex-shrink: 0;
+  }
+`;
+
+export const LiveDemoSecondarySection = styled.div`
+  width: 55%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    width: 100%;
   }
 `;

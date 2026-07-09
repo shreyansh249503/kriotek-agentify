@@ -27,6 +27,11 @@ export const InnerHeaderwrapper = styled.div`
     width: 90%;
     padding: 16px 0px;
   }
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    width: 95%;
+    padding: 12px 10px;
+  }
 `;
 
 export const LogoContainer = styled.div`
@@ -44,6 +49,10 @@ export const Logo = styled(Image)`
   width: auto;
   height: 50px;
   object-fit: contain;
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    height: 40px;
+  }
 `;
 
 export const NavLinks = styled.nav`

@@ -1,6 +1,6 @@
 "use client";
 
-import { COLOR } from "@/styles";
+import { BREAKPOINTS, COLOR } from "@/styles";
 import Image from "next/image";
 import styled from "styled-components";
 
@@ -13,6 +13,11 @@ export const FeaturedCapabilityMainContainer = styled.div`
   background-color: #f5f8f8;
   padding: 100px 0px;
   gap: 60px;
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    padding: 60px 0px;
+    gap: 40px;
+  }
 `;
 
 export const FeaturedCapabilitySectionHeader = styled.div`
@@ -22,6 +27,11 @@ export const FeaturedCapabilitySectionHeader = styled.div`
   justify-content: center;
   align-items: center;
   gap: 20px;
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    width: 90%;
+    text-align: center;
+  }
 `;
 
 export const FeaturedCapabilityTitleBtn = styled.div`
@@ -40,6 +50,14 @@ export const FeaturedCapabilityHeading = styled.h2`
   font-weight: 600;
   color: ${COLOR.DARK};
   line-height: 1.2;
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    font-size: 32px;
+  }
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    font-size: 26px;
+  }
 `;
 
 export const FeaturedCapabilityDescription = styled.p`
@@ -47,6 +65,10 @@ export const FeaturedCapabilityDescription = styled.p`
   font-size: 16px;
   color: ${COLOR.TEXT_SECONDARY};
   text-align: center;
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    max-width: 100%;
+  }
 `;
 
 export const FeaturedCapabilitySectionConatiner = styled.div`
@@ -56,6 +78,11 @@ export const FeaturedCapabilitySectionConatiner = styled.div`
   align-items: center;
   gap: 30px;
   flex-wrap: wrap;
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    width: 90%;
+    gap: 20px;
+  }
 `;
 
 export const FeaturedCapabilityCardImage = styled(Image)`
@@ -63,6 +90,13 @@ export const FeaturedCapabilityCardImage = styled(Image)`
   height: 300px;
   object-fit: cover;
   border-radius: 20px;
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    width: 100%;
+    max-width: 300px;
+    height: auto;
+    aspect-ratio: 1;
+  }
 `;
 
 export const FeaturedCapabilityCardContainer = styled.div`
@@ -76,6 +110,14 @@ export const FeaturedCapabilityCardContainer = styled.div`
   background-color: ${COLOR.WHITE};
   border: 1px solid #e1e1e1;
   padding: 30px 18px;
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    width: 100%;
+    max-width: 300px;
+    height: auto;
+    min-height: 250px;
+    gap: 16px;
+  }
 `;
 
 export const FeaturedCapabilityCardTitle = styled.h3`

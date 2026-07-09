@@ -1,13 +1,5 @@
 import { IoStorefrontOutline } from "react-icons/io5";
-import { GoCheckCircleFill } from "react-icons/go";
 import {
-  DemoTeaserSection,
-  TeaserContainer,
-  TextBlock,
-  Badge,
-  TeaserTitle,
-  TeaserSubtitle,
-  InteractiveShowcase,
   VisualMockup,
   MockBrowserHeader,
   Dots,
@@ -19,29 +11,25 @@ import {
   MockProductTitle,
   MockProductPrice,
   MockBotBubble,
-  DetailsColumn,
-  BenefitList,
-  BenefitItem,
+  LiveDemoMainConatiner,
+  LiveDemoSectionHeader,
+  LiveDemoSecondarySection,
+  LiveDemoList,
+  LiveDemoListItem,
+  LiveDemoDescription,
+  LiveDemoHeading,
+  LiveDemoTitleBtn,
+  LiveDemoPrimarySection,
+  LiveDemoListHeading,
 } from "./styled";
 import { BlackButton } from "@/components";
+import { FaRegCircleCheck } from "react-icons/fa6";
 
 export const LiveDemo = () => {
   return (
-    <DemoTeaserSection>
-      <TeaserContainer>
-        <TextBlock>
-          <Badge>Interactive Experience</Badge>
-          <TeaserTitle>
-            Test Drive a Live <span>E-commerce Store</span>
-          </TeaserTitle>
-          <TeaserSubtitle>
-            Don&apos;t just read about it. Step into a mock storefront and
-            interact with our sales agent yourself to see how it converts
-            visitors.
-          </TeaserSubtitle>
-        </TextBlock>
-
-        <InteractiveShowcase>
+    <LiveDemoMainConatiner>
+      <LiveDemoSectionHeader>
+        <LiveDemoSecondarySection>
           <VisualMockup>
             <MockBrowserHeader>
               <Dots>
@@ -72,36 +60,38 @@ export const LiveDemo = () => {
               discount!
             </MockBotBubble>
           </VisualMockup>
-
-          <DetailsColumn>
-            <h3 style={{ fontSize: "24px", fontWeight: 700, color: "#2E2E2E" }}>
-              What you can test in the live demo:
-            </h3>
-            <BenefitList>
-              <BenefitItem>
-                <GoCheckCircleFill /> Real-time interactive Q&amp;A about
-                products and usage.
-              </BenefitItem>
-              <BenefitItem>
-                <GoCheckCircleFill />
-                In-chat visual product card checkout.
-              </BenefitItem>
-              <BenefitItem>
-                <GoCheckCircleFill /> Warm lead collection (Name &amp; Email) in
-                exchange for promo codes.
-              </BenefitItem>
-              <BenefitItem>
-                <GoCheckCircleFill /> Keyword-based instant customer service
-                simulation.
-              </BenefitItem>
-            </BenefitList>
-
-            <BlackButton href="/demo">
-              Launch Live Demo Store 
-            </BlackButton>
-          </DetailsColumn>
-        </InteractiveShowcase>
-      </TeaserContainer>
-    </DemoTeaserSection>
+        </LiveDemoSecondarySection>
+        <LiveDemoPrimarySection>
+          <LiveDemoTitleBtn>Interactive Experience</LiveDemoTitleBtn>
+          <LiveDemoHeading>Test Driven Live E-Comm</LiveDemoHeading>
+          <LiveDemoDescription>
+            Don’t just read about it. Step into a mock storefront and interact
+            with our sales agent yourself to see how it converts visitors.
+          </LiveDemoDescription>
+          <LiveDemoListHeading>
+            What you can test in the live demo:
+          </LiveDemoListHeading>
+          <LiveDemoList>
+            <LiveDemoListItem>
+              <FaRegCircleCheck size={22} />
+              Real-time interactive Q&A about product and usage.
+            </LiveDemoListItem>
+            <LiveDemoListItem>
+              <FaRegCircleCheck size={22} />
+              In-chat visual product card checkout.
+            </LiveDemoListItem>
+            <LiveDemoListItem>
+              <FaRegCircleCheck size={22} />
+              Warm lead collection in exchange from promo codes.
+            </LiveDemoListItem>
+            <LiveDemoListItem>
+              <FaRegCircleCheck size={22} />
+              Keyword-based instant customer service simulation.
+            </LiveDemoListItem>
+          </LiveDemoList>
+          <BlackButton>Launch Live Demo Store</BlackButton>
+        </LiveDemoPrimarySection>
+      </LiveDemoSectionHeader>
+    </LiveDemoMainConatiner>
   );
 };

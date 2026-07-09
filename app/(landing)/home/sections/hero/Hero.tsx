@@ -3,6 +3,7 @@ import {
   AICircle,
   AINode,
   AnimatedBackground,
+  ChatBotPriviewImage,
   CTAContainer,
   DataStream,
   FloatingParticle,
@@ -22,6 +23,8 @@ import {
 } from "./styled";
 import Underline from "@/assets/images/undeline2.svg";
 import { FaCircleCheck } from "react-icons/fa6";
+// import ChatBotPreview from "@/assets/images/chat-bot-preview.svg";
+import ChatBotPreview from "@/assets/images/chat-bot-preview.png";
 
 export const Hero = () => {
   return (
@@ -115,7 +118,14 @@ export const Hero = () => {
           </CTAContainer>
         </HeroContent>
         <HeroChatBotContainer>
-          <HeroChatBotMainWrapper></HeroChatBotMainWrapper>
+          <HeroChatBotMainWrapper>
+            <ChatBotPriviewImage
+              src={ChatBotPreview}
+              alt="Chat bot Preview"
+              width={1000}
+              height={1000}
+            />
+          </HeroChatBotMainWrapper>
         </HeroChatBotContainer>
       </HeroContentContainer>
     </HeroSection>

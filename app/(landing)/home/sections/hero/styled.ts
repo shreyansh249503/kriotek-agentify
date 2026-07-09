@@ -75,6 +75,15 @@ export const HeroContentContainer = styled.div`
   align-items: center;
   gap: 42px;
   z-index: 2;
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    width: 90%;
+    height: auto;
+    flex-direction: column;
+    justify-content: center;
+    gap: 50px;
+    padding: 60px 0;
+  }
 `;
 
 export const HeroContent = styled.div`
@@ -84,6 +93,13 @@ export const HeroContent = styled.div`
   justify-content: center;
   align-items: flex-start;
   gap: 52px;
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    width: 100%;
+    align-items: center;
+    text-align: center;
+    gap: 30px;
+  }
 `;
 
 export const MainHeading = styled.h1`
@@ -117,6 +133,16 @@ export const UnderlineImage = styled(Image)`
   height: auto;
   z-index: 2;
   object-fit: contain;
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    width: 180px;
+    bottom: -8px;
+  }
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    width: 140px;
+    bottom: -6px;
+  }
 `;
 
 export const SubHeading = styled.p`
@@ -140,6 +166,12 @@ export const TagContainer = styled.div`
   display: flex;
   gap: 16px;
   animation: ${fadeIn} 0.8s ease-out 0.6s backwards;
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+  }
 `;
 
 export const TagButton = styled.div`
@@ -169,14 +201,35 @@ export const HeroChatBotContainer = styled.div`
   flex-direction: column;
   justify-content: center;
   align-items: center;
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    width: 100%;
+    margin-top: 20px;
+  }
 `;
 
 export const HeroChatBotMainWrapper = styled.div`
   width: 460px;
   height: 650px;
-  background-color: ${COLOR.WHITE};
-  border-radius: 20px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.07);
+  border-radius: 12px;
+  overflow: hidden;
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    display: none;
+    width: 100%;
+    max-width: 460px;
+    height: 520px;
+  }
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    height: 450px;
+  }
+`;
+
+export const ChatBotPriviewImage = styled(Image)`
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 `;
 
 export const CTAContainer = styled.div`
@@ -187,6 +240,11 @@ export const CTAContainer = styled.div`
   @media (max-width: 640px) {
     flex-direction: column;
     width: 100%;
+    align-items: center;
+
+    & > * {
+      width: 100% !important;
+    }
   }
 `;
 

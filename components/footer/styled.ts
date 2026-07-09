@@ -38,6 +38,10 @@ export const FooterContent = styled.div`
   gap: 48px;
   width: 75%;
 
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    width: 90%;
+  }
+
   @media (max-width: ${BREAKPOINTS.MOBILE}) {
     width: 100%;
   }

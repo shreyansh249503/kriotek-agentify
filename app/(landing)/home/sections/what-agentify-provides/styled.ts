@@ -1,6 +1,6 @@
 "use client";
 
-import { COLOR } from "@/styles";
+import { BREAKPOINTS, COLOR } from "@/styles";
 import Image from "next/image";
 import styled from "styled-components";
 
@@ -12,6 +12,10 @@ export const WhatAgentigyProvidesMainConatiner = styled.div`
   align-items: center;
   background-color: #f5f8f8;
   padding: 110px 0px;
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    padding: 60px 0px;
+  }
 `;
 
 export const WhatAgentigyProvidesSectionHeader = styled.div`
@@ -20,6 +24,12 @@ export const WhatAgentigyProvidesSectionHeader = styled.div`
   justify-content: center;
   align-items: center;
   gap: 20px;
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    width: 90%;
+    flex-direction: column;
+    gap: 48px;
+  }
 `;
 
 export const WhatAgentigyProvidesPrimarySection = styled.div`
@@ -28,6 +38,13 @@ export const WhatAgentigyProvidesPrimarySection = styled.div`
   flex-direction: column;
   justify-content: center;
   gap: 38px;
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    width: 100%;
+    align-items: center;
+    text-align: center;
+    gap: 24px;
+  }
 `;
 
 export const WhatAgentifyProvidesTitleBtn = styled.div`
@@ -46,12 +63,24 @@ export const WhatAgentifyProvidesHeading = styled.h2`
   font-weight: 600;
   color: ${COLOR.DARK};
   line-height: 1.2;
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    font-size: 32px;
+  }
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    font-size: 26px;
+  }
 `;
 
 export const WhatAgentifyProvidesDescription = styled.p`
   font-size: 16px;
   color: ${COLOR.TEXT_SECONDARY};
   max-width: 85%;
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    max-width: 100%;
+  }
 `;
 
 export const WhatAgentigyProvidesSecondarySection = styled.div`
@@ -61,6 +90,11 @@ export const WhatAgentigyProvidesSecondarySection = styled.div`
   align-items: center;
   flex-wrap: wrap;
   gap: 20px;
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    width: 100%;
+    gap: 16px;
+  }
 `;
 
 export const WGPCardHoverBg = styled.div`
@@ -110,6 +144,15 @@ export const WhatAgentifyProvidesCardContainer = styled.div`
   cursor: pointer;
   position: relative;
   overflow: hidden;
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    width: 47%;
+  }
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    width: 100%;
+  }
+
 
   &:hover {
     transform: translateY(-5px);

@@ -1,6 +1,6 @@
 "use client";
 
-import { COLOR } from "@/styles";
+import { BREAKPOINTS, COLOR } from "@/styles";
 import Image from "next/image";
 import styled from "styled-components";
 
@@ -17,6 +17,12 @@ export const TrustedByTitle = styled.h3`
   font-size: 18px;
   font-weight: 500;
   color: ${COLOR.DARK};
+  text-align: center;
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    font-size: 14px;
+    padding: 0 16px;
+  }
 `;
 
 export const TrustedByImageContainer = styled.div`
@@ -25,6 +31,12 @@ export const TrustedByImageContainer = styled.div`
   align-items: center;
   justify-content: space-evenly;
   gap: 20px;
+  flex-wrap: wrap;
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    justify-content: center;
+    gap: 30px;
+  }
 `;
 
 export const TrustedByImage = styled(Image)`
@@ -33,4 +45,8 @@ export const TrustedByImage = styled(Image)`
   object-fit: contain;
   filter: grayscale(100%);
   opacity: 0.6;
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    max-height: 30px;
+  }
 `;

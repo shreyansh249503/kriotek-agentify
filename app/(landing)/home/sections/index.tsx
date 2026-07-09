@@ -4,8 +4,8 @@ export * from "./what-agentify-provides";
 export * from "./real-time-insights";
 export * from "./featured-capability";
 export * from "./how-it-work";
+export * from "./live-demo"
 export * from "./features";
 export * from "./final-cta";
 export * from "./how-it-works";
 export * from "./sales-showcase";
-export * from "./live-demo/LiveDemo";

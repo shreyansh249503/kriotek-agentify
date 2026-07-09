@@ -1,6 +1,6 @@
 "use client";
 
-import { COLOR } from "@/styles";
+import { BREAKPOINTS, COLOR } from "@/styles";
 import Image from "next/image";
 import styled from "styled-components";
 
@@ -12,6 +12,10 @@ export const RealTimeInsightsMainConatiner = styled.div`
   justify-content: center;
   align-items: center;
   padding: 130px 0px;
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    padding: 60px 0px;
+  }
 `;
 
 export const RealTimeInsightsSectionHeader = styled.div`
@@ -20,6 +24,12 @@ export const RealTimeInsightsSectionHeader = styled.div`
   justify-content: center;
   align-items: center;
   gap: 40px;
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    width: 90%;
+    flex-direction: column-reverse;
+    gap: 32px;
+  }
 `;
 
 export const RealTimeInsightsPrimarySection = styled.div`
@@ -28,6 +38,13 @@ export const RealTimeInsightsPrimarySection = styled.div`
   flex-direction: column;
   justify-content: center;
   gap: 38px;
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    width: 100%;
+    align-items: center;
+    text-align: center;
+    gap: 24px;
+  }
 `;
 
 export const RealTimeInsightsTitleBtn = styled.div`
@@ -46,12 +63,24 @@ export const RealTimeInsightsHeading = styled.h2`
   font-weight: 600;
   color: ${COLOR.DARK};
   line-height: 1.2;
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    font-size: 32px;
+  }
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    font-size: 26px;
+  }
 `;
 
 export const RealTimeInsightsDescription = styled.p`
   font-size: 16px;
   color: ${COLOR.TEXT_SECONDARY};
   max-width: 85%;
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    max-width: 100%;
+  }
 `;
 
 export const RealTimeInsightsSecondarySection = styled.div`
@@ -61,6 +90,10 @@ export const RealTimeInsightsSecondarySection = styled.div`
   align-items: center;
   flex-wrap: wrap;
   gap: 20px;
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    width: 100%;
+  }
 `;
 
 export const RealTimeInsightsDashboardImage = styled(Image)`
@@ -69,12 +102,20 @@ export const RealTimeInsightsDashboardImage = styled(Image)`
   object-fit: cover;
   border: 1px solid #eaeaea;
   border-radius: 12px;
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    width: 100%;
+  }
 `;
 
 export const RealTimeInsightsList = styled.div`
   display: flex;
   flex-direction: column;
   gap: 16px;
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    align-items: flex-start;
+  }
 `;
 
 export const RealTimeInsightsListItem = styled.div`
@@ -98,4 +139,8 @@ export const FlowtingImage = styled(Image)`
   width: auto;
   height: auto;
   object-fit: contain;
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    display: none;
+  }
 `;
