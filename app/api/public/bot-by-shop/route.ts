@@ -21,6 +21,7 @@ const botCache = new Map<
       name: string;
       primary_color: string;
       logo_url: string | null;
+      ecommerce_enabled: boolean;
     };
     ts: number;
   }
@@ -68,6 +69,7 @@ export async function GET(req: NextRequest) {
       name: bot.name,
       primary_color: bot.primary_color,
       logo_url: bot.logo_url || null,
+      ecommerce_enabled: bot.ecommerce_enabled,
     };
 
     botCache.set(shop, { data: result, ts: Date.now() });

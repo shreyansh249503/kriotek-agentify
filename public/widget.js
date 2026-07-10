@@ -1,14 +1,24 @@
 (async function () {
-  const scriptTag = document.currentScript || document.querySelector("script[bot-id]") || document.querySelector("script[shop-domain]");
+  const scriptTag =
+    document.currentScript ||
+    document.querySelector("script[bot-id]") ||
+    document.querySelector("script[shop-domain]");
   let publicKey = scriptTag?.getAttribute("bot-id");
-  const shopDomain = scriptTag?.getAttribute("shop-domain") || window.Shopify?.shop;
+  const shopDomain =
+    scriptTag?.getAttribute("shop-domain") || window.Shopify?.shop;
 
   if (!publicKey && !shopDomain) return;
 
   const scriptSrc = scriptTag ? scriptTag.src : "";
-  const ASSET_BASE_URL = scriptSrc ? scriptSrc.substring(0, scriptSrc.lastIndexOf("/")) : "";
-  const API_BASE_URL = ASSET_BASE_URL ? ASSET_BASE_URL.replace("/public", "") : "";
-  const DEFAULT_BOT_ICON = ASSET_BASE_URL ? `${ASSET_BASE_URL}/2-bot-icon.png` : "";
+  const ASSET_BASE_URL = scriptSrc
+    ? scriptSrc.substring(0, scriptSrc.lastIndexOf("/"))
+    : "";
+  const API_BASE_URL = ASSET_BASE_URL
+    ? ASSET_BASE_URL.replace("/public", "")
+    : "";
+  const DEFAULT_BOT_ICON = ASSET_BASE_URL
+    ? `${ASSET_BASE_URL}/2-bot-icon.png`
+    : "";
 
   async function fetchBotConfig(pubKey) {
     try {
@@ -30,11 +40,14 @@
 
   async function fetchBotConfigByShop(shop) {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/public/bot-by-shop?shop=${encodeURIComponent(shop)}`, {
-        headers: {
-          "ngrok-skip-browser-warning": "true",
+      const res = await fetch(
+        `${API_BASE_URL}/api/public/bot-by-shop?shop=${encodeURIComponent(shop)}`,
+        {
+          headers: {
+            "ngrok-skip-browser-warning": "true",
+          },
         },
-      });
+      );
       if (!res.ok) throw new Error("Bot config by shop not found");
       return await res.json();
     } catch (e) {
@@ -54,7 +67,10 @@
   } else if (shopDomain) {
     const botByShop = await fetchBotConfigByShop(shopDomain);
     if (!botByShop || !botByShop.publicKey) {
-      console.error("Agentify: Could not retrieve bot configuration for shop domain:", shopDomain);
+      console.error(
+        "Agentify: Could not retrieve bot configuration for shop domain:",
+        shopDomain,
+      );
       return;
     }
     publicKey = botByShop.publicKey;
@@ -139,8 +155,166 @@
   }
 
   function createGreetingMessage(messages, botName, logoUrl) {
-    const bubble = createBotMessage(messages, logoUrl);
-    bubble.innerHTML = `Hi 👋 I'm <strong>${botName}</strong>.<br/>How can I help you today?`;
+    const wrapper = document.createElement("div");
+    wrapper.style.cssText = `
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px;
+      margin: 16px 0;
+      background: linear-gradient(135deg, ${THEME.color}10 0%, #ffffff 100%);
+      border: 1px solid ${THEME.color}20;
+      border-radius: 20px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.04), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+      text-align: center;
+      animation: ai-fade-in-up 0.5s ease-out;
+    `;
+
+    const avatarContainer = document.createElement("div");
+    avatarContainer.style.cssText = `
+      position: relative;
+      margin-bottom: 12px;
+      width: 64px;
+      height: 64px;
+    `;
+
+    const avatarPulse = document.createElement("div");
+    avatarPulse.style.cssText = `
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: ${THEME.color};
+      opacity: 0.15;
+      animation: ai-pulse 2s infinite ease-in-out;
+      z-index: 1;
+    `;
+    avatarContainer.appendChild(avatarPulse);
+
+    const avatar = document.createElement("img");
+    avatar.src =
+      logoUrl ||
+      "https://bhyrxyzokssibgeznojo.supabase.co/storage/v1/object/public/bot-avatars/avatars/OIzZEj7jTSZiY1B5p9b8J.png";
+    avatar.style.cssText = `
+      position: relative;
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      border: 3px solid #ffffff;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      object-fit: cover;
+      z-index: 2;
+    `;
+    avatarContainer.appendChild(avatar);
+    wrapper.appendChild(avatarContainer);
+
+    const title = document.createElement("div");
+    title.style.cssText = `
+      font-size: 18px;
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 6px;
+    `;
+    title.innerHTML = `Hello! 👋 I'm <span style="color: ${THEME.color}">${botName}</span>`;
+    wrapper.appendChild(title);
+
+    const subtitle = document.createElement("div");
+    subtitle.style.cssText = `
+      font-size: 13px;
+      color: #4b5563;
+      margin-bottom: 20px;
+      line-height: 1.5;
+    `;
+    subtitle.textContent = THEME.ecommerceEnabled
+      ? "How can I help you today? Ask me about products, catalog, shipping, or any query."
+      : "How can I help you today? Ask me about our services, company info, or contact our team.";
+    wrapper.appendChild(subtitle);
+
+    const suggestionsContainer = document.createElement("div");
+    suggestionsContainer.style.cssText = `
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      width: 100%;
+    `;
+
+    const suggestions = THEME.ecommerceEnabled
+      ? [
+          {
+            text: "🛍️ Show me the product catalog",
+            action: "Show me the product catalog",
+          },
+          {
+            text: "🚚 What are your shipping policies?",
+            action: "What are your shipping policies?",
+          },
+          {
+            text: "📞 Contact support/team",
+            action: "I'd like to get in touch with support",
+          },
+        ]
+      : [
+          {
+            text: "ℹ️ What services do you offer?",
+            action: "What services do you offer?",
+          },
+          {
+            text: "🏢 Tell me about your company",
+            action: "Tell me about your company",
+          },
+          {
+            text: "📞 Contact support/team",
+            action: "I'd like to get in touch with support",
+          },
+        ];
+
+    suggestions.forEach((item) => {
+      const chip = document.createElement("button");
+      chip.style.cssText = `
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        color: #374151;
+        padding: 10px 14px;
+        border-radius: 12px;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 500;
+        text-align: left;
+        transition: all 0.2s ease;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+        display: flex;
+        align-items: center;
+        width: 100%;
+        outline: none;
+      `;
+      chip.innerHTML = item.text;
+
+      chip.onmouseover = () => {
+        chip.style.background = `${THEME.color}08`;
+        chip.style.borderColor = THEME.color;
+        chip.style.color = THEME.color;
+        chip.style.transform = "translateY(-1px)";
+        chip.style.boxShadow = "0 4px 6px -1px rgba(0, 0, 0, 0.04)";
+      };
+      chip.onmouseout = () => {
+        chip.style.background = "#ffffff";
+        chip.style.borderColor = "#e5e7eb";
+        chip.style.color = "#374151";
+        chip.style.transform = "translateY(0)";
+        chip.style.boxShadow = "0 1px 2px rgba(0, 0, 0, 0.02)";
+      };
+
+      chip.onclick = () => {
+        sendMessageText(item.action);
+      };
+
+      suggestionsContainer.appendChild(chip);
+    });
+
+    wrapper.appendChild(suggestionsContainer);
+    messages.appendChild(wrapper);
   }
 
   function processAnswerText(rawText) {
@@ -156,14 +330,15 @@
           if (!Array.isArray(products) || products.length === 0) return "";
           const carouselId =
             "carousel-" + Math.random().toString(36).substr(2, 9);
-          const fallbackSvg = "data:image/svg+xml;utf8,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20width=%22100%25%22%20height=%22100%25%22%20viewBox=%220%200%2024%2024%22%20fill=%22none%22%20stroke=%22%23ccc%22%20stroke-width=%221%22%20stroke-linecap=%22round%22%20stroke-linejoin=%22round%22%3E%3Crect%20x=%223%22%20y=%223%22%20width=%2218%22%20height=%2218%22%20rx=%222%22%20ry=%222%22%3E%3C/rect%3E%3Ccircle%20cx=%228.5%22%20cy=%228.5%22%20r=%221.5%22%3E%3C/circle%3E%3Cpolyline%20points=%2221%2015%2016%2010%205%2021%22%3E%3C/polyline%3E%3C/svg%3E";
+          const fallbackSvg =
+            "data:image/svg+xml;utf8,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20width=%22100%25%22%20height=%22100%25%22%20viewBox=%220%200%2024%2024%22%20fill=%22none%22%20stroke=%22%23ccc%22%20stroke-width=%221%22%20stroke-linecap=%22round%22%20stroke-linejoin=%22round%22%3E%3Crect%20x=%223%22%20y=%223%22%20width=%2218%22%20height=%2218%22%20rx=%222%22%20ry=%222%22%3E%3C/rect%3E%3Ccircle%20cx=%228.5%22%20cy=%228.5%22%20r=%221.5%22%3E%3C/circle%3E%3Cpolyline%20points=%2221%2015%2016%2010%205%2021%22%3E%3C/polyline%3E%3C/svg%3E";
 
           let html = `<div class="carousel-wrapper" style="position: relative; display: flex; align-items: center; margin: 8px 0;">`;
           html += `<button onclick="document.getElementById('${carouselId}').scrollBy({left: -220, behavior: 'smooth'})" style="position: absolute; left: -14px; z-index: 2; border-radius: 50%; width: 28px; height: 28px; background: white; border: 1px solid #e5e7eb; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; font-size: 18px; color: #333; padding-bottom: 2px;">&#8249;</button>`;
           html += `<div id="${carouselId}" class="product-carousel">`;
           products.forEach((p) => {
             const imgUrl = p.image || fallbackSvg;
-            const safeName = (p.name || "Product").replace(/"/g, '&quot;');
+            const safeName = (p.name || "Product").replace(/"/g, "&quot;");
             html += `
             <div class="product-card">
               <img src="${imgUrl}" class="product-image" alt="${safeName}" onerror="this.src='${fallbackSvg}'"/>
@@ -208,7 +383,7 @@
     localStorage.setItem(historyKey, JSON.stringify(historyIds));
   }
 
-  const bot = resolvedBotConfig || await fetchBotConfig(publicKey);
+  const bot = resolvedBotConfig || (await fetchBotConfig(publicKey));
   const THEME = {
     color: bot.primary_color || "#4f46e5",
     botName: bot.name || "AI Assistant",
@@ -217,6 +392,7 @@
         ? bot.logo_url.trim()
         : `${API_BASE_URL}${bot.logo_url.trim()}`
       : DEFAULT_BOT_ICON,
+    ecommerceEnabled: !!bot.ecommerce_enabled,
   };
 
   function applyTheme() {
@@ -572,6 +748,31 @@
     }
     #ai-confirm-yes:hover { opacity: 0.8; }
     #ai-confirm-cancel:hover { background: #f9fafb; }
+
+    @keyframes ai-fade-in-up {
+      from {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    @keyframes ai-pulse {
+      0% {
+        transform: scale(1);
+        opacity: 0.5;
+      }
+      50% {
+        transform: scale(1.15);
+        opacity: 0.2;
+      }
+      100% {
+        transform: scale(1);
+        opacity: 0.5;
+      }
+    }
   `;
   document.head.appendChild(style);
 
@@ -593,7 +794,7 @@
   let greetingShownInSessions = {};
 
   function updateEndChatStatus() {
-    const hasMessages = messages.children.length > 1; 
+    const hasMessages = messages.children.length > 1;
     const hasInput = input.value.trim().length > 0;
 
     if (hasMessages || hasInput) {
@@ -773,13 +974,8 @@
 
   input.oninput = updateEndChatStatus;
 
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const text = input.value.trim();
-    if (!text) return;
-
+  async function sendMessageText(text) {
     messages.appendChild(createUserMessage(text, THEME.color));
-    input.value = "";
     messages.scrollTop = messages.scrollHeight;
     updateEndChatStatus();
 
@@ -823,8 +1019,17 @@
       typing.remove();
       const bubble = createBotMessage(messages, THEME.logoUrl);
       bubble.textContent = "Sorry, I encountered an error. Please try again.";
+      messages.scrollTop = messages.scrollHeight;
       updateEndChatStatus();
     }
+  }
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = "";
+    await sendMessageText(text);
   });
 
   setTimeout(() => {

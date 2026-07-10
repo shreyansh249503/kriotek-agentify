@@ -72,7 +72,7 @@ export const HowItWork = () => {
         {steps.map((step, index) => {
           const isReversed = index % 2 !== 0;
           return (
-            <StepRow key={step.number} isReversed={isReversed}>
+            <StepRow key={step.number} $isReversed={isReversed}>
               <StepContentColumn>
                 <StepNumber>{step.number}</StepNumber>
                 <StepTextContainer>

@@ -11,7 +11,7 @@ export async function OPTIONS() {
   return new Response(null, { status: 204, headers: corsHeaders });
 }
 
-const botCache = new Map<string, { data: { name: string; primary_color: string; logo_url: string | null }; ts: number }>();
+const botCache = new Map<string, { data: { name: string; primary_color: string; logo_url: string | null; ecommerce_enabled: boolean }; ts: number }>();
 
 export async function GET(
   _req: Request,
@@ -34,7 +34,7 @@ export async function GET(
   const db = await getDb();
   const bot = await db.getRepository<Bot>("Bot").findOne({
     where: { public_key: publicKey },
-    select: ["name", "primary_color", "logo_url"],
+    select: ["name", "primary_color", "logo_url", "ecommerce_enabled"],
   }).catch((err) => {
     console.error("Database query error in public bot GET:", err);
     return null;
@@ -48,6 +48,7 @@ export async function GET(
     name: bot.name,
     primary_color: bot.primary_color,
     logo_url: bot.logo_url || null,
+    ecommerce_enabled: bot.ecommerce_enabled,
   };
 
   botCache.set(publicKey, { data: result, ts: Date.now() });

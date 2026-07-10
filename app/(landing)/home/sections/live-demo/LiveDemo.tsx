@@ -89,7 +89,7 @@ export const LiveDemo = () => {
               Keyword-based instant customer service simulation.
             </LiveDemoListItem>
           </LiveDemoList>
-          <BlackButton>Launch Live Demo Store</BlackButton>
+          <BlackButton href="/demo">Launch Live Demo Store</BlackButton>
         </LiveDemoPrimarySection>
       </LiveDemoSectionHeader>
     </LiveDemoMainConatiner>

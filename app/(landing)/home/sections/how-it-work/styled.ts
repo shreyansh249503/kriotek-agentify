@@ -91,10 +91,10 @@ export const HowItWorkSectionConatiner = styled.div`
   }
 `;
 
-export const StepRow = styled.div<{ isReversed?: boolean }>`
+export const StepRow = styled.div<{ $isReversed?: boolean }>`
   width: 80%;
   display: flex;
-  flex-direction: ${(props) => (props.isReversed ? "row-reverse" : "row")};
+  flex-direction: ${(props) => (props.$isReversed ? "row-reverse" : "row")};
   justify-content: space-between;
   align-items: center;
   gap: 40px;

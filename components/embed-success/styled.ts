@@ -37,9 +37,9 @@ export const InnerEmbedSuccessContainer = styled.div`
     padding-bottom: 8px;
   }
 `;
-export const TabButton = styled.button<{ active: boolean }>`
-  background: ${(props) => (props.active ? COLOR.DARK : "transparent")};
-  color: ${(props) => (props.active ? COLOR.WHITE : COLOR.TEXT_SECONDARY)};
+export const TabButton = styled.button<{ $active: boolean }>`
+  background: ${(props) => (props.$active ? COLOR.DARK : "transparent")};
+  color: ${(props) => (props.$active ? COLOR.WHITE : COLOR.TEXT_SECONDARY)};
   border: none;
   padding: 8px 16px;
   border-radius: 99px;
@@ -52,7 +52,7 @@ export const TabButton = styled.button<{ active: boolean }>`
   transition: all 0.2s;
 
   &:hover {
-    background: ${(props) => (props.active ? COLOR.DARK : COLOR.LIGHT)};
+    background: ${(props) => (props.$active ? COLOR.DARK : COLOR.LIGHT)};
   }
 
   @media (max-width: ${BREAKPOINTS.MOBILE}) {
@@ -94,10 +94,10 @@ export const CodeFileName = styled.span`
   color: #888;
   font-family: monospace;
 `;
-export const CodeCopyButton = styled.button<{ copied: boolean }>`
+export const CodeCopyButton = styled.button<{ $copied: boolean }>`
   background: transparent;
   border: none;
-  color: ${(props) => (props.copied ? "#4caf50" : "#fff")};
+  color: ${(props) => (props.$copied ? "#4caf50" : "#fff")};
   cursor: pointer;
   font-size: 12px;
   display: flex;

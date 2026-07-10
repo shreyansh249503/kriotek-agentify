@@ -284,10 +284,15 @@ export async function runLeadAgent(
       .join("\n");
 
     try {
+      const conversationText = conversation
+        .filter((m) => m.role === "user" || m.role === "assistant")
+        .map((m) => `${m.role === "user" ? "USER" : "ASSISTANT"}: ${m.content}`)
+        .join("\n\n");
+
       const { object } = await generateObject({
         model: google("gemini-2.5-flash-lite"),
         schema: LeadExtractionSchema,
-        system: `Extract contact details the USER explicitly typed in this conversation.
+        prompt: `Extract contact details the USER explicitly typed in this conversation.
 
 STRICT RULES:
 - ONLY extract values the user actually typed. Never invent.
@@ -297,15 +302,14 @@ STRICT RULES:
 ${alreadyHave ? `ALREADY CONFIRMED (skip these):\n${alreadyHave}\n` : ""}
 
 EMAIL: Extract only valid email — something@domain.tld
-NAME: Only extract if you see a clear name. When uncertain → undefined.
+NAME: Only extract if you see a see a clear name. When uncertain → undefined.
 
-Default to undefined. False positives cause real harm.`,
-        messages: conversation
-          .filter((m) => m.role === "user" || m.role === "assistant")
-          .map((m) => ({
-            role: m.role as "user" | "assistant",
-            content: m.content,
-          })),
+Default to undefined. False positives cause real harm.
+
+Conversation History:
+${conversationText}
+
+Please extract the name and email fields according to the rules above.`,
       });
 
       extractedEmail = object.email;
