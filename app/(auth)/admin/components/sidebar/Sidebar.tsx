@@ -8,6 +8,7 @@ import {
   SquaresFourIcon,
   BrainIcon,
   AddressBookIcon,
+  ChatsIcon,
   XIcon,
 } from "@phosphor-icons/react";
 import {
@@ -67,6 +68,12 @@ export const Sidebar = () => {
       href: "/admin/leads",
       isActive: pathname === "/admin/leads",
       icon: (weight: "fill" | "regular") => <AddressBookIcon weight={weight} />,
+    },
+    {
+      label: "Live Support",
+      href: "/admin/inbox",
+      isActive: pathname === "/admin/inbox" || pathname.startsWith("/admin/inbox/"),
+      icon: (weight: "fill" | "regular") => <ChatsIcon weight={weight} />,
     },
     {
       label: "Settings",

@@ -34,9 +34,12 @@ export async function GET(
 
     if (!convo) return new Response(JSON.stringify({ error: "Conversation not found" }), { status: 404, headers: corsHeaders });
 
-    const messages = typeof convo.messages === 'string' ? convo.messages : JSON.stringify(convo.messages);
+    const messagesArray = typeof convo.messages === 'string' ? JSON.parse(convo.messages) : convo.messages;
 
-    return new Response(messages, { 
+    return new Response(JSON.stringify({
+      state: convo.state,
+      messages: messagesArray
+    }), { 
       headers: { ...corsHeaders, "Content-Type": "application/json" } 
     });
   } catch (error) {

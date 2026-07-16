@@ -317,8 +317,15 @@
     messages.appendChild(wrapper);
   }
 
+  let showSupportButtonGlobal = false;
+
   function processAnswerText(rawText) {
-    let text = rawText.replace(
+    let text = rawText;
+    if (text.includes("[SHOW_SUPPORT_BUTTON]")) {
+      showSupportButtonGlobal = true;
+      text = text.replace("[SHOW_SUPPORT_BUTTON]", "");
+    }
+    text = text.replace(
       /<product-carousel>(?![\s\S]*<\/product-carousel>)[\s\S]*/i,
       '<div style="color: #666; font-style: italic; font-size: 12px; padding: 10px;">Generating product recommendations...</div>',
     );
@@ -530,7 +537,7 @@
     </div>
     
     <div style="flex:1; position: relative; overflow: hidden;">
-      <div id="ai-messages" style="height: 96%; padding: 16px 16px 60px 16px; overflow-y:auto; background: #fff; display: flex; flex-direction: column;"></div>
+      <div id="ai-messages" style="height: 100%; box-sizing: border-box; padding: 16px 16px 20px 16px; overflow-y:auto; background: #fff; display: flex; flex-direction: column;"></div>
       
       <!-- Recent Chats View -->
       <div id="ai-history" style="
@@ -793,6 +800,158 @@
   let isMenuOpen = false;
   let greetingShownInSessions = {};
 
+  let currentConvoState = "idle";
+  let renderedCount = 0;
+  let pollInterval = null;
+
+  function startPolling() {
+    if (pollInterval) clearInterval(pollInterval);
+    pollInterval = setInterval(async () => {
+      await pollConversation(currentConversationId);
+    }, 4000);
+  }
+
+  function stopPolling() {
+    if (pollInterval) {
+      clearInterval(pollInterval);
+      pollInterval = null;
+    }
+  }
+
+  function createSystemMessage(text) {
+    const div = document.createElement("div");
+    div.style.cssText = `
+      align-self: center;
+      color: #6b7280;
+      font-size: 12.5px;
+      margin: 10px 0;
+      text-align: center;
+      width: 100%;
+      font-style: italic;
+      background: #f3f4f6;
+      padding: 6px 12px;
+      border-radius: 8px;
+      max-width: 85%;
+    `;
+    div.textContent = text;
+    messages.appendChild(div);
+    return div;
+  }
+
+  function renderSupportHandoffButton() {
+    const existing = messages.querySelector(".support-handoff-container");
+    if (existing) existing.remove();
+
+    const wrapper = document.createElement("div");
+    wrapper.className = "support-handoff-container";
+    wrapper.style.cssText = `
+      display: flex;
+      justify-content: flex-start;
+      margin: 8px 0 16px 0;
+      animation: ai-fade-in-up 0.3s ease-out;
+    `;
+    
+    const btn = document.createElement("button");
+    btn.textContent = "💬 Talk to customer support";
+    btn.style.cssText = `
+      background: #ffffff;
+      border: 1px solid ${THEME.color};
+      color: ${THEME.color};
+      padding: 8px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      transition: all 0.2s;
+    `;
+    btn.onmouseover = () => {
+      btn.style.background = THEME.color;
+      btn.style.color = "#ffffff";
+    };
+    btn.onmouseout = () => {
+      btn.style.background = "#ffffff";
+      btn.style.color = THEME.color;
+    };
+    
+    btn.onclick = async () => {
+      btn.disabled = true;
+      btn.textContent = "Connecting...";
+      
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/chat/switch-to-manual`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            conversationId: currentConversationId,
+            publicKey: publicKey,
+          }),
+        });
+        
+        if (res.ok) {
+          wrapper.remove();
+          currentConvoState = "manual";
+          createSystemMessage("Connecting to support representative...");
+          input.placeholder = "Type a message to support...";
+          startPolling();
+        } else {
+          btn.disabled = false;
+          btn.textContent = "💬 Talk to customer support";
+        }
+      } catch (err) {
+        console.error("Failed to transition to customer support", err);
+        btn.disabled = false;
+        btn.textContent = "💬 Talk to customer support";
+      }
+    };
+    
+    wrapper.appendChild(btn);
+    messages.appendChild(wrapper);
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  async function pollConversation(id) {
+    try {
+      const res = await fetch(
+        `${API_BASE_URL}/api/public/conversation/${id}?publicKey=${publicKey}`
+      );
+      if (!res.ok) return;
+
+      const data = await res.json();
+      const history = data.messages || [];
+      const newState = data.state || "idle";
+
+      if (Array.isArray(history) && history.length > renderedCount) {
+        for (let i = renderedCount; i < history.length; i++) {
+          const msg = history[i];
+          if (msg.role === "user") {
+            messages.appendChild(createUserMessage(msg.content, THEME.color));
+          } else if (msg.role === "assistant") {
+            const bubble = createBotMessage(messages, THEME.logoUrl);
+            showSupportButtonGlobal = false;
+            const processedAnswer = processAnswerText(msg.content);
+            if (window.marked) {
+              bubble.innerHTML = window.marked.parse(processedAnswer);
+            } else {
+              bubble.innerHTML = processedAnswer;
+            }
+          } else if (msg.role === "system") {
+            createSystemMessage(msg.content);
+          }
+        }
+        renderedCount = history.length;
+        messages.scrollTop = messages.scrollHeight;
+      }
+
+      if (newState !== "manual" && currentConvoState === "manual") {
+        currentConvoState = newState;
+        stopPolling();
+        input.placeholder = "Type your message...";
+      }
+    } catch (e) {
+      console.error("Polling error:", e);
+    }
+  }
+
   function updateEndChatStatus() {
     const hasMessages = messages.children.length > 1;
     const hasInput = input.value.trim().length > 0;
@@ -812,11 +971,8 @@
       widget.style.transform = "translateY(0)";
     }, 10);
 
-    if (
-      !greetingShownInSessions[currentConversationId] &&
-      messages.children.length === 0
-    ) {
-      showGreeting();
+    if (messages.children.length === 0) {
+      loadConversation(currentConversationId);
     }
     updateEndChatStatus();
   }
@@ -941,29 +1097,65 @@
     localStorage.setItem(conversationKey, currentConversationId);
     historyView.style.display = "none";
     messages.innerHTML = `<div style="padding: 20px; text-align: center; color: #666;">Loading messages...</div>`;
+    stopPolling();
 
     try {
       const res = await fetch(
         `${API_BASE_URL}/api/public/conversation/${id}?publicKey=${publicKey}`,
       );
-      const history = await res.json();
+      const data = await res.json();
 
+      let history = [];
+      let state = "idle";
+      if (data && !Array.isArray(data)) {
+        state = data.state || "idle";
+        history = data.messages || [];
+      } else {
+        history = data || [];
+      }
+
+      currentConvoState = state;
       messages.innerHTML = "";
+      renderedCount = 0;
+
+      if (history.length === 0) {
+        showGreeting();
+        return;
+      }
+
+      let lastIsCannotAnswer = false;
+
       if (Array.isArray(history)) {
         history.forEach((msg) => {
           if (msg.role === "user") {
             messages.appendChild(createUserMessage(msg.content, THEME.color));
           } else if (msg.role === "assistant") {
             const bubble = createBotMessage(messages, THEME.logoUrl);
+            showSupportButtonGlobal = false;
             const processedAnswer = processAnswerText(msg.content);
             if (window.marked) {
               bubble.innerHTML = window.marked.parse(processedAnswer);
             } else {
               bubble.innerHTML = processedAnswer;
             }
+            lastIsCannotAnswer = showSupportButtonGlobal;
+          } else if (msg.role === "system") {
+            createSystemMessage(msg.content);
           }
         });
+        renderedCount = history.length;
       }
+
+      if (currentConvoState === "manual") {
+        input.placeholder = "Type a message to support...";
+        startPolling();
+      } else {
+        input.placeholder = "Type your message...";
+        if (lastIsCannotAnswer) {
+          renderSupportHandoffButton();
+        }
+      }
+
       messages.scrollTop = messages.scrollHeight;
       updateEndChatStatus();
     } catch (e) {
@@ -977,7 +1169,25 @@
   async function sendMessageText(text) {
     messages.appendChild(createUserMessage(text, THEME.color));
     messages.scrollTop = messages.scrollHeight;
+    renderedCount += 1;
     updateEndChatStatus();
+
+    if (currentConvoState === "manual") {
+      try {
+        await fetch(`${API_BASE_URL}/api/chat`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            publicKey,
+            message: text,
+            conversationId: currentConversationId,
+          }),
+        });
+      } catch (error) {
+        console.error("Chat error:", error);
+      }
+      return;
+    }
 
     const typing = createTypingIndicator(THEME.logoUrl);
     messages.appendChild(typing);
@@ -1005,6 +1215,7 @@
         const { done, value } = await reader.read();
         if (done) break;
         answer += decoder.decode(value);
+        showSupportButtonGlobal = false;
         const processedAnswer = processAnswerText(answer);
         if (window.marked) {
           bubble.innerHTML = window.marked.parse(processedAnswer);
@@ -1013,6 +1224,13 @@
         }
         messages.scrollTop = messages.scrollHeight;
       }
+
+      renderedCount += 1;
+
+      if (showSupportButtonGlobal) {
+        renderSupportHandoffButton();
+      }
+
       updateEndChatStatus();
     } catch (error) {
       console.error("Chat error:", error);

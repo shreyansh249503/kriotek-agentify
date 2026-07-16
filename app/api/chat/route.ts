@@ -39,7 +39,6 @@ export async function POST(req: Request) {
   const dbInstance = await getDb();
   const convoRepo = dbInstance.getRepository<Conversation>("Conversation");
 
-  // ── 1. Load or create conversation ─────────────────────────────────────────
   let convo = await convoRepo.findOne({
     where: { id: finalConversationId, bot_id: bot.id },
   });
@@ -67,9 +66,18 @@ export async function POST(req: Request) {
     { role: "user" as const, content: message },
   ];
 
+  if (convo.state === "manual") {
+    await convoRepo.update(convo.id, {
+      message_count: convo.message_count + 1,
+      messages: JSON.stringify(fullConversation),
+    });
+    return new Response("Message sent to customer support.", {
+      headers: corsHeaders,
+    });
+  }
+
   const alreadyComplete = convo.state === "completed";
 
-  // ── 2. Run Lead Agent + RAG in parallel ────────────────────────────────────
   const contactEnabled = bot.contact_enabled !== false;
 
   const knownInfo = {
@@ -93,7 +101,6 @@ export async function POST(req: Request) {
     retrieveWebsiteContext(publicKey, message),
   ]);
 
-  // ── 3. Persist partial contact info as it is collected ─────────────────────
   if (
     contactEnabled &&
     !alreadyComplete &&
@@ -117,7 +124,6 @@ export async function POST(req: Request) {
     }
   }
 
-  // ── 4. Fire leads pipeline when collection completes ───────────────────────
   if (contactEnabled && leadDecision?.isComplete && !alreadyComplete) {
     const { name = "", email = "", phone = "" } = leadDecision.collectedInfo;
 
@@ -127,7 +133,6 @@ export async function POST(req: Request) {
       phone,
     });
 
-    // Mark conversation complete
     await convoRepo.update(convo.id, {
       state: "completed",
       name,
@@ -170,13 +175,11 @@ export async function POST(req: Request) {
     ]).catch((err) => console.error("[leads pipeline]", err));
   }
 
-  // ── 5. Save user message to conversation history ───────────────────────────
   await convoRepo.update(convo.id, {
     message_count: convo.message_count + 1,
     messages: JSON.stringify(fullConversation),
   });
 
-  // ── 6. Stream receptionist response ────────────────────────────────────────
   let result;
   try {
     result = runReceptionistAgent({

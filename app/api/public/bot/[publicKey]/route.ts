@@ -20,7 +20,6 @@ export async function GET(
   const { publicKey } = await params;
   console.log("PUBLIC_KEY_PARAM:", publicKey);
 
-  // Return cached result for 60 seconds
   const cached = botCache.get(publicKey);
   if (cached && Date.now() - cached.ts < 60_000) {
     return Response.json(cached.data, {
