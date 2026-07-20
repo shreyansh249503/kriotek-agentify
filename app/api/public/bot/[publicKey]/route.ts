@@ -1,6 +1,8 @@
 import { getDb } from "@/app/api/lib/db";
 import { Bot } from "@/app/api/lib/entities";
 
+export const dynamic = "force-dynamic";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, OPTIONS",
@@ -11,7 +13,20 @@ export async function OPTIONS() {
   return new Response(null, { status: 204, headers: corsHeaders });
 }
 
-const botCache = new Map<string, { data: { name: string; primary_color: string; logo_url: string | null; ecommerce_enabled: boolean }; ts: number }>();
+const botCache = new Map<
+  string,
+  {
+    data: {
+      name: string;
+      primary_color: string;
+      logo_url: string | null;
+      ecommerce_enabled: boolean;
+      supabaseUrl: string | null;
+      supabaseAnonKey: string | null;
+    };
+    ts: number;
+  }
+>();
 
 export async function GET(
   _req: Request,
@@ -48,6 +63,8 @@ export async function GET(
     primary_color: bot.primary_color,
     logo_url: bot.logo_url || null,
     ecommerce_enabled: bot.ecommerce_enabled,
+    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL || null,
+    supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || null,
   };
 
   botCache.set(publicKey, { data: result, ts: Date.now() });
@@ -55,6 +72,7 @@ export async function GET(
   return Response.json(result, {
     headers: {
       ...corsHeaders,
+      "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
       "ngrok-skip-browser-warning": "true",
     },
   });

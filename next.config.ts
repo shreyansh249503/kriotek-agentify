@@ -27,6 +27,7 @@ const nextConfig: NextConfig = {
         source: "/widget.js",
         headers: [
           { key: "Access-Control-Allow-Origin", value: "*" },
+          { key: "Cache-Control", value: "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0" },
         ],
       },
     ];

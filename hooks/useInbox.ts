@@ -10,7 +10,6 @@ export const useManualConversations = () => {
   return useQuery({
     queryKey: ["manualConversations"],
     queryFn: getManualConversations,
-    refetchInterval: 5000,
   });
 };
 
@@ -19,7 +18,6 @@ export const useConversationDetail = (id: string) => {
     queryKey: ["conversationDetail", id],
     queryFn: () => getConversationById(id),
     enabled: !!id,
-    refetchInterval: 3000,
   });
 };
 

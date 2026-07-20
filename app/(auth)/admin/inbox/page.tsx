@@ -40,11 +40,14 @@ import {
 } from "@/hooks/useInbox";
 import { ChatIcon, UserIcon, PaperPlaneRightIcon } from "@phosphor-icons/react";
 import { Loader } from "@/components";
+import { useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/lib/supabase";
 
 export default function InboxPage() {
   const [selectedConvoId, setSelectedConvoId] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const queryClient = useQueryClient();
 
   const { data: convos = [], isLoading: listLoading } = useManualConversations();
 
@@ -60,6 +63,53 @@ export default function InboxPage() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [convoDetail?.messages]);
+
+  // Listen to manual conversations list changes
+  useEffect(() => {
+    const channel = supabase
+      .channel("inbox-conversations-list")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "conversations",
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["manualConversations"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      channel.unsubscribe();
+    };
+  }, [queryClient]);
+
+  // Listen to updates on the active conversation
+  useEffect(() => {
+    if (!activeConvoId) return;
+
+    const channel = supabase
+      .channel(`inbox-convo-${activeConvoId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "conversations",
+          filter: `id=eq.${activeConvoId}`,
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["conversationDetail", activeConvoId] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      channel.unsubscribe();
+    };
+  }, [activeConvoId, queryClient]);
 
   const activeConvo = convos.find((c) => c.id === activeConvoId);
 

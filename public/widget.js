@@ -391,6 +391,7 @@
   }
 
   const bot = resolvedBotConfig || (await fetchBotConfig(publicKey));
+  console.log("Agentify Widget: Loaded bot configuration:", bot);
   const THEME = {
     color: bot.primary_color || "#4f46e5",
     botName: bot.name || "AI Assistant",
@@ -400,6 +401,8 @@
         : `${API_BASE_URL}${bot.logo_url.trim()}`
       : DEFAULT_BOT_ICON,
     ecommerceEnabled: !!bot.ecommerce_enabled,
+    supabaseUrl: bot.supabaseUrl || "",
+    supabaseAnonKey: bot.supabaseAnonKey || "",
   };
 
   function applyTheme() {
@@ -803,15 +806,125 @@
   let currentConvoState = "idle";
   let renderedCount = 0;
   let pollInterval = null;
+  let supabaseChannel = null;
 
   function startPolling() {
+    stopPolling();
+    console.log("Agentify: startPolling() called. Current state:", currentConvoState);
+
+    if (THEME.supabaseUrl && THEME.supabaseAnonKey) {
+      console.log("Agentify: Supabase credentials found. Attempting Realtime connection...");
+      if (!window.supabase) {
+        console.log("Agentify: Loading Supabase client library dynamically...");
+        const script = document.createElement("script");
+        script.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
+        script.onload = () => {
+          console.log("Agentify: Supabase library loaded successfully.");
+          initRealtimeChannel(currentConversationId);
+        };
+        script.onerror = () => {
+          console.error("Agentify: Failed to load Supabase CDN, falling back to HTTP polling");
+          startIntervalPolling();
+        };
+        document.head.appendChild(script);
+      } else {
+        initRealtimeChannel(currentConversationId);
+      }
+    } else {
+      console.warn("Agentify: Supabase credentials missing (url/key). Falling back to HTTP polling");
+      startIntervalPolling();
+    }
+  }
+
+  function startIntervalPolling() {
+    console.log("Agentify: Starting short-polling fallback (every 4000ms)...");
     if (pollInterval) clearInterval(pollInterval);
     pollInterval = setInterval(async () => {
       await pollConversation(currentConversationId);
     }, 4000);
   }
 
+  function initRealtimeChannel(id) {
+    console.log("Agentify: Initializing Supabase Realtime channel for conversation:", id);
+    if (supabaseChannel) {
+      supabaseChannel.unsubscribe();
+      supabaseChannel = null;
+    }
+    
+    try {
+      const supabaseClient = window.supabase.createClient(THEME.supabaseUrl, THEME.supabaseAnonKey);
+      supabaseChannel = supabaseClient
+        .channel(`convo-${id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'conversations',
+            filter: `id=eq.${id}`,
+          },
+          async (payload) => {
+            console.log("Agentify: Received realtime database update notification:", payload);
+            const updatedConvo = payload.new;
+            const history = typeof updatedConvo.messages === 'string'
+              ? JSON.parse(updatedConvo.messages)
+              : updatedConvo.messages;
+            const newState = updatedConvo.state || "idle";
+
+            if (Array.isArray(history) && history.length > renderedCount) {
+              console.log(`Agentify: Rendering ${history.length - renderedCount} new messages.`);
+              for (let i = renderedCount; i < history.length; i++) {
+                const msg = history[i];
+                if (msg.role === "user") {
+                  messages.appendChild(createUserMessage(msg.content, THEME.color));
+                } else if (msg.role === "assistant") {
+                  const bubble = createBotMessage(messages, THEME.logoUrl);
+                  showSupportButtonGlobal = false;
+                  const processedAnswer = processAnswerText(msg.content);
+                  if (window.marked) {
+                    bubble.innerHTML = window.marked.parse(processedAnswer);
+                  } else {
+                    bubble.innerHTML = processedAnswer;
+                  }
+                } else if (msg.role === "system") {
+                  createSystemMessage(msg.content);
+                }
+              }
+              renderedCount = history.length;
+              messages.scrollTop = messages.scrollHeight;
+            }
+
+            if (newState !== "manual" && currentConvoState === "manual") {
+              console.log("Agentify: Conversation switched back to AI mode. Stopping manual channel.");
+              currentConvoState = newState;
+              stopPolling();
+              input.placeholder = "Type your message...";
+            }
+          }
+        );
+
+      supabaseChannel.subscribe((status, err) => {
+        console.log(`Agentify: Realtime connection status changed to: ${status}`);
+        if (err) {
+          console.error("Agentify: Realtime subscription error details:", err);
+        }
+        if (status === 'CHANNEL_ERROR') {
+          console.warn("Agentify: Realtime channel error, falling back to HTTP polling as safety measure...");
+          startIntervalPolling();
+        }
+      });
+    } catch (err) {
+      console.error("Agentify: Exception during Supabase Realtime client setup:", err);
+      startIntervalPolling();
+    }
+  }
+
   function stopPolling() {
+    console.log("Agentify: stopPolling() called. Stopping subscription/polling timers...");
+    if (supabaseChannel) {
+      supabaseChannel.unsubscribe();
+      supabaseChannel = null;
+    }
     if (pollInterval) {
       clearInterval(pollInterval);
       pollInterval = null;
@@ -1017,6 +1130,7 @@
   });
 
   widget.querySelector("#ai-new-chat").onclick = async () => {
+    stopPolling();
     currentConversationId = crypto.randomUUID();
     localStorage.setItem(conversationKey, currentConversationId);
 
@@ -1027,6 +1141,9 @@
     }
 
     messages.innerHTML = "";
+    renderedCount = 0;
+    currentConvoState = "idle";
+    input.placeholder = "Type your message...";
     showGreeting();
     historyView.style.display = "none";
     confirmView.style.display = "none";
@@ -1042,8 +1159,17 @@
   };
 
   confirmYes.onclick = () => {
+    stopPolling();
     messages.innerHTML = "";
+    renderedCount = 0;
+    currentConvoState = "idle";
+    input.placeholder = "Type your message...";
     greetingShownInSessions[currentConversationId] = false;
+    
+    // Create new conversation ID so next reopen is fresh
+    currentConversationId = crypto.randomUUID();
+    localStorage.setItem(conversationKey, currentConversationId);
+
     confirmView.style.display = "none";
     closeWidget();
   };
