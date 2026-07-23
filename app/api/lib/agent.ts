@@ -133,19 +133,21 @@ function buildEcommerceSection(
 
   const isContactPending = contactState && !contactState.isComplete;
 
-  if (isContactPending) {
-    return `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-E-COMMERCE PRIORITY OVERRIDE
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-You have products to sell, BUT you MUST collect the user's contact details (name, email) first. 
-Do NOT pitch products or provide checkout links yet. Focus completely on the CONTACT COLLECTION instructions above until all fields are gathered.`;
-  }
+  const normalizedProducts = Array.isArray(config.ecommerceProducts)
+    ? config.ecommerceProducts.map((p: Product) => ({
+        name: p.name,
+        price: p.price,
+        image: p.image || p.image_url || "",
+        url: p.url,
+        description: p.description || "",
+      }))
+    : [];
 
-  const productsJson = Array.isArray(config.ecommerceProducts) && config.ecommerceProducts.length > 0 
-    ? JSON.stringify(config.ecommerceProducts, null, 2)
+  const productsJson = normalizedProducts.length > 0 
+    ? JSON.stringify(normalizedProducts, null, 2)
     : "[]";
 
-  return `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  let strategy = `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 E-COMMERCE & SALES STRATEGY
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 You are now in ACTIVE SALES MODE. Your goal is to act as an expert pitchman who convinces the user to purchase a product from your catalog based on their needs.
@@ -172,8 +174,15 @@ SALES RULES:
 ]
 </product-carousel>
 5. NEVER make up products, prices, images, or links that are not in the PRODUCT CATALOG. If a product is not in the PRODUCT CATALOG, you must not include it in the carousel.
-6. Always output the <product-carousel> block after your natural language pitch. Do not put markdown inside the block, only valid JSON.
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+6. Always output the <product-carousel> block after your natural language pitch. Do not put markdown inside the block, only valid JSON.`;
+
+  if (isContactPending) {
+    strategy += `
+7. IMPORTANT: Contact details collection is still in progress. While you CAN recommend products using the <product-carousel> block if the user explicitly asks for them or shows shopping intent, you must also prioritize collecting their contact info (name, email) as instructed in the CONTACT COLLECTION section. Ensure you answer their product queries, show the product carousel, and then ask for the pending contact details in the same response.`;
+  }
+
+  strategy += `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+  return strategy;
 }
 
 function buildContactSection(

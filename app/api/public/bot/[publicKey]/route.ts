@@ -55,7 +55,7 @@ export async function GET(
   });
 
   if (!bot) {
-    return Response.json({ error: "Bot not found" }, { status: 404 });
+    return Response.json({ error: "Bot not found" }, { status: 404, headers: corsHeaders });
   }
 
   const result = {

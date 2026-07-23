@@ -4,7 +4,7 @@ import { Conversation, Bot } from "@/app/api/lib/entities";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET,OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Allow-Headers": "Content-Type, ngrok-skip-browser-warning",
 };
 
 export async function OPTIONS() {
@@ -32,7 +32,11 @@ export async function GET(
       where: { id, bot_id: bot.id }
     });
 
-    if (!convo) return new Response(JSON.stringify({ error: "Conversation not found" }), { status: 404, headers: corsHeaders });
+    if (!convo) {
+      return new Response(JSON.stringify({ state: "idle", messages: [] }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
 
     const messagesArray = typeof convo.messages === 'string' ? JSON.parse(convo.messages) : convo.messages;
 

@@ -4,8 +4,11 @@
     document.querySelector("script[bot-id]") ||
     document.querySelector("script[shop-domain]");
   let publicKey = scriptTag?.getAttribute("bot-id");
-  const shopDomain =
+  let shopDomain =
     scriptTag?.getAttribute("shop-domain") || window.Shopify?.shop;
+  if (shopDomain) {
+    shopDomain = shopDomain.replace(/^https?:\/\//, "").replace(/\/.*$/, "").trim().toLowerCase();
+  }
 
   if (!publicKey && !shopDomain) return;
 
@@ -340,25 +343,34 @@
           const fallbackSvg =
             "data:image/svg+xml;utf8,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20width=%22100%25%22%20height=%22100%25%22%20viewBox=%220%200%2024%2024%22%20fill=%22none%22%20stroke=%22%23ccc%22%20stroke-width=%221%22%20stroke-linecap=%22round%22%20stroke-linejoin=%22round%22%3E%3Crect%20x=%223%22%20y=%223%22%20width=%2218%22%20height=%2218%22%20rx=%222%22%20ry=%222%22%3E%3C/rect%3E%3Ccircle%20cx=%228.5%22%20cy=%228.5%22%20r=%221.5%22%3E%3C/circle%3E%3Cpolyline%20points=%2221%2015%2016%2010%205%2021%22%3E%3C/polyline%3E%3C/svg%3E";
 
-          let html = `<div class="carousel-wrapper" style="position: relative; display: flex; align-items: center; margin: 8px 0;">`;
-          html += `<button onclick="document.getElementById('${carouselId}').scrollBy({left: -220, behavior: 'smooth'})" style="position: absolute; left: -14px; z-index: 2; border-radius: 50%; width: 28px; height: 28px; background: white; border: 1px solid #e5e7eb; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; font-size: 18px; color: #333; padding-bottom: 2px;">&#8249;</button>`;
-          html += `<div id="${carouselId}" class="product-carousel">`;
+          const showArrows = products.length > 1;
+          const isSingle = products.length === 1;
+
+          let html = `<div class="carousel-wrapper ${isSingle ? "single-wrapper" : ""}">`;
+          if (showArrows) {
+            html += `<button class="carousel-nav-btn prev" onclick="document.getElementById('${carouselId}').scrollBy({left: -220, behavior: 'smooth'})" aria-label="Previous"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg></button>`;
+          }
+          html += `<div id="${carouselId}" class="product-carousel ${isSingle ? "single-product" : ""}">`;
           products.forEach((p) => {
-            const imgUrl = p.image || fallbackSvg;
+            const imgUrl = p.image || p.image_url || fallbackSvg;
             const safeName = (p.name || "Product").replace(/"/g, "&quot;");
             html += `
             <div class="product-card">
-              <img src="${imgUrl}" class="product-image" alt="${safeName}" onerror="this.src='${fallbackSvg}'"/>
+              <div class="product-image-container">
+                <img src="${imgUrl}" class="product-image" alt="${safeName}" onerror="this.src='${fallbackSvg}'"/>
+              </div>
               <div class="product-info">
-                <div class="product-name">${p.name || "Unnamed Product"}</div>
+                <div class="product-name" title="${safeName}">${p.name || "Unnamed Product"}</div>
                 <div class="product-price">${p.price || ""}</div>
-                <a class="product-action" href="${p.url || "#"}" target="_blank">View Details</a>
+                <a class="product-action" href="${p.url || "#"}" target="_blank" rel="noopener noreferrer">View Details</a>
               </div>
             </div>
           `;
           });
           html += `</div>`;
-          html += `<button onclick="document.getElementById('${carouselId}').scrollBy({left: 220, behavior: 'smooth'})" style="position: absolute; right: -14px; z-index: 2; border-radius: 50%; width: 28px; height: 28px; background: white; border: 1px solid #e5e7eb; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; font-size: 18px; color: #333; padding-bottom: 2px;">&#8250;</button>`;
+          if (showArrows) {
+            html += `<button class="carousel-nav-btn next" onclick="document.getElementById('${carouselId}').scrollBy({left: 220, behavior: 'smooth'})" aria-label="Next"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg></button>`;
+          }
           html += `</div>`;
           return html.replace(/\n\s*/g, "");
         } catch (e) {
@@ -640,39 +652,98 @@
       0%, 80%, 100% { transform: scale(0); }
       40% { transform: scale(1); }
     }
+    .carousel-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+      margin: 10px 0;
+      width: 100%;
+    }
+    .carousel-wrapper.single-wrapper {
+      justify-content: center;
+    }
+    .carousel-nav-btn {
+      position: absolute;
+      z-index: 5;
+      border-radius: 50%;
+      width: 28px;
+      height: 28px;
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #374151;
+      transition: all 0.2s ease;
+      padding: 0;
+    }
+    .carousel-nav-btn:hover {
+      background: #f9fafb;
+      color: #111827;
+      transform: scale(1.08);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.16);
+    }
+    .carousel-nav-btn.prev {
+      left: -10px;
+    }
+    .carousel-nav-btn.next {
+      right: -10px;
+    }
     .product-carousel {
       display: flex;
       overflow-x: auto;
       gap: 12px;
-      padding: 10px 14px;
+      padding: 8px 4px;
       scroll-snap-type: x mandatory;
       scrollbar-width: none;
       flex: 1;
       scroll-behavior: smooth;
+      width: 100%;
     }
     .product-carousel::-webkit-scrollbar { display: none; }
+    .product-carousel.single-product {
+      justify-content: center;
+      padding: 8px 0;
+    }
+    .product-carousel.single-product .product-card {
+      min-width: 210px;
+      max-width: 230px;
+      width: 100%;
+    }
     .product-card {
-      min-width: 180px;
-      max-width: 200px;
-      background: #fff;
+      min-width: 175px;
+      max-width: 195px;
+      background: #ffffff;
       border: 1px solid #e5e7eb;
       border-radius: 12px;
       overflow: hidden;
       scroll-snap-align: start;
       display: flex;
       flex-direction: column;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.06);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
     .product-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.12);
+    }
+    .product-image-container {
+      width: 100%;
+      height: 140px;
+      background: #f8fafc;
+      overflow: hidden;
+      position: relative;
     }
     .product-image {
       width: 100%;
-      height: 140px;
+      height: 100%;
       object-fit: cover;
-      background: #f3f4f6;
+      transition: transform 0.3s ease;
+    }
+    .product-card:hover .product-image {
+      transform: scale(1.04);
     }
     .product-info {
       padding: 12px;
@@ -682,37 +753,41 @@
     }
     .product-name {
       font-weight: 600;
-      font-size: 14px;
-      color: #111;
-      margin-bottom: 4px;
+      font-size: 13px;
+      color: #1f2937;
+      margin-bottom: 6px;
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
       overflow: hidden;
-      line-height: 1.2;
+      line-height: 1.35;
+      min-height: 35px;
     }
     .product-price {
       font-weight: 700;
-      font-size: 13px;
-      color: #374151;
+      font-size: 14px;
+      color: #111827;
       margin-bottom: 12px;
     }
     .product-action {
       margin-top: auto;
       background: var(--bot-theme-color, #4f46e5);
-      color: white;
+      color: #ffffff;
       border: none;
-      padding: 8px;
-      border-radius: 6px;
+      padding: 8px 12px;
+      border-radius: 8px;
       font-weight: 600;
       font-size: 12px;
       cursor: pointer;
       text-align: center;
-      transition: opacity 0.2s;
+      transition: all 0.2s ease;
       text-decoration: none;
+      display: block;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     }
     .product-action:hover {
-      opacity: 0.9;
+      opacity: 0.92;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
     }
     #ai-messages::-webkit-scrollbar, #ai-history-list::-webkit-scrollbar { width: 6px; }
     #ai-messages::-webkit-scrollbar-thumb, #ai-history-list::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 10px; }
@@ -993,7 +1068,10 @@
       try {
         const res = await fetch(`${API_BASE_URL}/api/chat/switch-to-manual`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "ngrok-skip-browser-warning": "true",
+          },
           body: JSON.stringify({
             conversationId: currentConversationId,
             publicKey: publicKey,
@@ -1025,7 +1103,12 @@
   async function pollConversation(id) {
     try {
       const res = await fetch(
-        `${API_BASE_URL}/api/public/conversation/${id}?publicKey=${publicKey}`
+        `${API_BASE_URL}/api/public/conversation/${id}?publicKey=${publicKey}`,
+        {
+          headers: {
+            "ngrok-skip-browser-warning": "true",
+          },
+        }
       );
       if (!res.ok) return;
 
@@ -1182,7 +1265,10 @@
     try {
       const res = await fetch(`${API_BASE_URL}/api/public/history`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "true",
+        },
         body: JSON.stringify({ publicKey, conversationIds: ids }),
       });
       const data = await res.json();
@@ -1228,7 +1314,20 @@
     try {
       const res = await fetch(
         `${API_BASE_URL}/api/public/conversation/${id}?publicKey=${publicKey}`,
+        {
+          headers: {
+            "ngrok-skip-browser-warning": "true",
+          },
+        }
       );
+
+      if (!res.ok) {
+        messages.innerHTML = "";
+        renderedCount = 0;
+        showGreeting();
+        return;
+      }
+
       const data = await res.json();
 
       let history = [];
@@ -1286,7 +1385,9 @@
       updateEndChatStatus();
     } catch (e) {
       console.error(e);
-      messages.innerHTML = `<div style="padding: 20px; text-align: center; color: #ef4444;">Failed to load messages.</div>`;
+      messages.innerHTML = "";
+      renderedCount = 0;
+      showGreeting();
     }
   }
 
@@ -1302,7 +1403,10 @@
       try {
         await fetch(`${API_BASE_URL}/api/chat`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "ngrok-skip-browser-warning": "true",
+          },
           body: JSON.stringify({
             publicKey,
             message: text,
@@ -1322,7 +1426,10 @@
     try {
       const res = await fetch(`${API_BASE_URL}/api/chat`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "true",
+        },
         body: JSON.stringify({
           publicKey,
           message: text,

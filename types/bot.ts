@@ -23,6 +23,7 @@ export interface Product {
   image: string;
   url: string;
   description?: string;
+  image_url?: string;
 }
 
 export interface CreateBotInput {

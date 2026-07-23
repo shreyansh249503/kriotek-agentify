@@ -2,12 +2,13 @@ import { streamText } from "ai";
 import { google } from "@ai-sdk/google";
 import { buildSystemPrompt, type ContactState } from "../agent";
 import type { LeadDecision } from "./leadAgent";
+import type { Bot } from "../entities";
 
 type Message = { role: "user" | "assistant" | "system"; content: string };
 
 interface ReceptionistOptions {
   messages: Message[];
-  botConfig: any;
+  botConfig: Bot & { supported_languages?: string[] };
   leadDecision: LeadDecision | null;
   websiteContext: string;
 }
@@ -31,8 +32,8 @@ export function runReceptionistAgent({
   const systemPrompt = buildSystemPrompt(
     {
       companyName: botConfig.name,
-      companyDescription: botConfig.description,
-      tone: botConfig.tone,
+      companyDescription: botConfig.description || "",
+      tone: botConfig.tone as "friendly" | "professional" | undefined,
       supportedLanguages: botConfig.supported_languages,
       ecommerceEnabled: botConfig.ecommerce_enabled,
       ecommercePrompt: botConfig.ecommerce_prompt,

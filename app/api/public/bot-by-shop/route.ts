@@ -33,7 +33,7 @@ const botCache = new Map<
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const shop = searchParams.get("shop");
+  let shop = searchParams.get("shop");
 
   if (!shop) {
     return Response.json(
@@ -41,6 +41,8 @@ export async function GET(req: NextRequest) {
       { status: 400, headers: corsHeaders }
     );
   }
+
+  shop = shop.replace(/^https?:\/\//, "").replace(/\/.*$/, "").trim().toLowerCase();
 
   // Return cached result for 60 seconds
   const cached = botCache.get(shop);
