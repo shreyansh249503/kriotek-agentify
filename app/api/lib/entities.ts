@@ -16,43 +16,43 @@ export class Bot {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
 
-  @Column({ name: "public_key", unique: true, nullable: true })
+  @Column({ type: "varchar", name: "public_key", unique: true, nullable: true })
   public_key?: string;
 
-  @Column()
+  @Column({ type: "varchar" })
   name!: string;
 
-  @Column({ nullable: true })
+  @Column({ type: "varchar", nullable: true })
   description!: string;
 
-  @Column({ default: "friendly" })
+  @Column({ type: "varchar", default: "friendly" })
   tone!: string;
 
-  @Column({ name: "primary_color", default: "#000000" })
+  @Column({ type: "varchar", name: "primary_color", default: "#000000" })
   primary_color!: string;
 
-  @Column({ name: "contact_enabled", default: false })
+  @Column({ type: "boolean", name: "contact_enabled", default: false })
   contact_enabled!: boolean;
 
-  @Column({ name: "contact_email", nullable: true })
+  @Column({ type: "varchar", name: "contact_email", nullable: true })
   contact_email!: string;
 
-  @Column({ name: "contact_prompt", nullable: true })
+  @Column({ type: "varchar", name: "contact_prompt", nullable: true })
   contact_prompt!: string;
 
-  @Column({ name: "contact_email_message", nullable: true })
+  @Column({ type: "varchar", name: "contact_email_message", nullable: true })
   contact_email_message!: string;
 
-  @Column({ name: "user_id" })
+  @Column({ type: "varchar", name: "user_id" })
   user_id!: string;
 
-  @Column({ name: "logo_url", nullable: true })
+  @Column({ type: "varchar", name: "logo_url", nullable: true })
   logo_url!: string;
 
-  @Column({ name: "ecommerce_enabled", default: false })
+  @Column({ type: "boolean", name: "ecommerce_enabled", default: false })
   ecommerce_enabled!: boolean;
 
-  @Column({ name: "ecommerce_prompt", nullable: true })
+  @Column({ type: "varchar", name: "ecommerce_prompt", nullable: true })
   ecommerce_prompt!: string;
 
   @Column({ type: "jsonb", nullable: true, name: "ecommerce_products" })
@@ -80,10 +80,10 @@ export class Conversation {
   @JoinColumn({ name: "bot_id" })
   bot!: Bot;
 
-  @Column({ default: "idle" })
+  @Column({ type: "varchar", default: "idle" })
   state!: string;
 
-  @Column({ name: "message_count", default: 0 })
+  @Column({ type: "int", name: "message_count", default: 0 })
   message_count!: number;
 
   @Column({ type: "jsonb", default: "[]" })
@@ -92,19 +92,19 @@ export class Conversation {
   @CreateDateColumn({ name: "created_at" })
   created_at!: Date;
 
-  @Column({ nullable: true })
+  @Column({ type: "varchar", nullable: true })
   name!: string;
 
-  @Column({ nullable: true })
+  @Column({ type: "varchar", nullable: true })
   email!: string;
 
-  @Column({ nullable: true })
+  @Column({ type: "varchar", nullable: true })
   phone!: string;
 
-  @Column({ default: false })
+  @Column({ type: "boolean", default: false })
   declined!: boolean;
 
-  @Column({ default: false })
+  @Column({ type: "boolean", default: false })
   prompted!: boolean;
 }
 
@@ -120,13 +120,13 @@ export class Lead {
   @JoinColumn({ name: "bot_id" })
   bot!: Bot;
 
-  @Column({ nullable: true })
+  @Column({ type: "varchar", nullable: true })
   name!: string;
 
-  @Column({ nullable: true })
+  @Column({ type: "varchar", nullable: true })
   email!: string;
 
-  @Column({ nullable: true })
+  @Column({ type: "varchar", nullable: true })
   phone!: string;
 
   @CreateDateColumn({ name: "created_at" })
@@ -138,10 +138,10 @@ export class CrawledPage {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
 
-  @Column({ name: "bot_public_key" })
+  @Column({ type: "varchar", name: "bot_public_key" })
   bot_public_key!: string;
 
-  @Column({ name: "page_url" })
+  @Column({ type: "varchar", name: "page_url" })
   page_url!: string;
 }
 
@@ -150,7 +150,7 @@ export class BotDocument {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
 
-  @Column({ name: "public_key" })
+  @Column({ type: "varchar", name: "public_key" })
   public_key!: string;
 
   @Column({ type: "text" })
@@ -165,10 +165,10 @@ export class ShopifyStore {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
 
-  @Column({ unique: true })
+  @Column({ type: "varchar", unique: true })
   shop!: string;
 
-  @Column({ name: "access_token" })
+  @Column({ type: "varchar", name: "access_token" })
   access_token!: string;
 
   @Column({ name: "bot_id", type: "uuid", nullable: true })
@@ -178,10 +178,9 @@ export class ShopifyStore {
   @JoinColumn({ name: "bot_id" })
   bot!: Bot | null;
 
-  @Column({ nullable: true })
+  @Column({ type: "varchar", nullable: true })
   scopes!: string;
 
   @CreateDateColumn({ name: "installed_at" })
   installed_at!: Date;
 }
-

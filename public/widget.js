@@ -379,7 +379,226 @@
         }
       },
     );
+    let renderedJourneyCard = false;
+    text = text.replace(
+      /\[ORDER_JOURNEY_JSON:\s*(\{[\s\S]*?\})\]/gi,
+      (match, jsonString) => {
+        if (renderedJourneyCard) return "";
+        try {
+          const journey = JSON.parse(jsonString.trim());
+          renderedJourneyCard = true;
+          return renderOrderJourneyHTML(journey);
+        } catch (e) {
+          console.error("Failed to parse order journey JSON", e);
+          return "";
+        }
+      }
+    );
+
+    // Fallback: If AI streams raw JSON string containing orderNumber or milestones
+    if (text.includes('"orderNumber"') || text.includes('"milestones"') || text.includes('"currentStep"')) {
+      const jsonMatch = text.match(/\{[\s\S]*?"orderNumber"[\s\S]*?\}/) || text.match(/\{[\s\S]*?"currentStep"[\s\S]*?\}/);
+      if (jsonMatch) {
+        try {
+          const rawJson = jsonMatch[0];
+          const journey = JSON.parse(rawJson.trim());
+          if (journey && journey.orderNumber) {
+            text = text.replace(rawJson, "").replace(/,\s*"items":[\s\S]*/, "").replace(/,\s*$/, "").trim();
+            text += renderOrderJourneyHTML(journey);
+          }
+        } catch (e) {
+          console.warn("Fallback order journey JSON parse skipped:", e);
+        }
+      }
+    }
+
+    // Cleanup any raw JSON artifacts output by AI (e.g. , "items": [...])
+    if (text.includes('"items":') || text.includes('"shippingAddress":') || text.includes('"isCancelled":')) {
+      text = text.replace(/,\s*"items":[\s\S]*/i, "").replace(/,\s*"tracking":[\s\S]*/i, "").replace(/,\s*"shippingAddress":[\s\S]*/i, "").replace(/,\s*"isCancelled":[\s\S]*/i, "").trim();
+    }
+
     return text;
+  }
+
+  function updateBubbleHTML(bubble, rawContent) {
+    showSupportButtonGlobal = false;
+    const processed = processAnswerText(rawContent);
+
+    if (!processed || !processed.trim()) {
+      bubble.style.display = "none";
+      return;
+    }
+    bubble.style.display = "block";
+
+    const hasJourneyCard = processed.includes('class="order-journey-card-container"');
+    const hasCarouselCard = processed.includes('class="carousel-wrapper');
+
+    if (hasJourneyCard || hasCarouselCard) {
+      bubble.style.background = "transparent";
+      bubble.style.padding = "0";
+      bubble.style.maxWidth = "95%";
+
+      const cardMarker = hasJourneyCard
+        ? '<div class="order-journey-card-container"'
+        : '<div class="carousel-wrapper';
+
+      const startIndex = processed.indexOf(cardMarker);
+      let textContent = "";
+      let cardHtml = "";
+
+      if (startIndex !== -1) {
+        const textBefore = processed.substring(0, startIndex).trim();
+        const cardAndAfter = processed.substring(startIndex);
+        const cardEndIndex = cardAndAfter.lastIndexOf('</div>');
+
+        if (cardEndIndex !== -1) {
+          cardHtml = cardAndAfter.substring(0, cardEndIndex + 6);
+          const textAfter = cardAndAfter.substring(cardEndIndex + 6).trim();
+          textContent = [textBefore, textAfter].filter(Boolean).join("\n\n");
+        } else {
+          cardHtml = cardAndAfter;
+          textContent = textBefore;
+        }
+      } else {
+        cardHtml = processed;
+      }
+
+      let htmlOut = "";
+      if (textContent) {
+        const textParsed = window.marked ? window.marked.parse(textContent) : textContent;
+        htmlOut += `<div style="background:#f3f4f6; color:#111; padding:10px 12px; border-radius:14px 14px 14px 2px; margin-bottom:8px; display:inline-block; max-width:85%; width:fit-content;">${textParsed}</div>`;
+      }
+      htmlOut += cardHtml;
+      bubble.innerHTML = htmlOut;
+    } else {
+      bubble.style.background = "#f3f4f6";
+      bubble.style.padding = "10px 12px";
+      bubble.style.maxWidth = "80%";
+      if (window.marked) {
+        bubble.innerHTML = window.marked.parse(processed);
+      } else {
+        bubble.innerHTML = processed;
+      }
+    }
+  }
+
+  function renderOrderJourneyHTML(journey) {
+    if (!journey || !journey.orderNumber) return "";
+    const items = journey.items || [];
+    const tracking = journey.tracking;
+
+    let badgeColor = "#10B981";
+    let badgeBg = "#ECFDF5";
+    if (journey.isCancelled) {
+      badgeColor = "#EF4444";
+      badgeBg = "#FEF2F2";
+    } else if (journey.currentStep === 4) {
+      badgeColor = "#2563EB";
+      badgeBg = "#EFF6FF";
+    } else if (journey.currentStep < 4) {
+      badgeColor = "#F59E0B";
+      badgeBg = "#FFFBEB";
+    }
+
+    const labels = ["Placed", "Paid", "Packed", "Shipped", "Delivered"];
+
+    let html = `
+      <div class="order-journey-card-container" style="background:#ffffff; border:1px solid #e5e7eb; border-radius:12px; padding:14px; margin:10px 0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; box-shadow:0 2px 8px rgba(0,0,0,0.06); text-align:left; box-sizing:border-box; width:100%;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <div>
+            <div style="font-weight:700; font-size:15px; color:#111827;">Order ${journey.orderNumber}</div>
+            <div style="font-size:11px; color:#6b7280; margin-top:2px;">${journey.orderDate || ""}</div>
+          </div>
+          <span style="padding:3px 8px; border-radius:12px; font-size:11px; font-weight:600; color:${badgeColor}; background:${badgeBg};">
+            ${journey.statusBadge || "Active"}
+          </span>
+        </div>
+
+        <div style="display:flex; align-items:center; justify-content:space-between; margin:16px 0 12px 0; position:relative;">
+    `;
+
+    const totalSteps = 5;
+
+    for (let i = 1; i <= totalSteps; i++) {
+      const isCompleted = i < journey.currentStep || (i === 5 && journey.currentStep === 5);
+      const isCurrent = i === journey.currentStep && journey.currentStep !== 5 && !journey.isCancelled;
+      const isError = journey.isCancelled && i === journey.currentStep;
+
+      let dotBg = "#f3f4f6";
+      let dotColor = "#9ca3af";
+      let dotBorder = "1px solid #d1d5db";
+      let dotShadow = "none";
+
+      if (isCompleted) {
+        dotBg = "#10b981";
+        dotColor = "#ffffff";
+        dotBorder = "none";
+      } else if (isCurrent) {
+        dotBg = "#2563eb";
+        dotColor = "#ffffff";
+        dotBorder = "none";
+        dotShadow = "0 0 0 3px rgba(37, 99, 235, 0.2)";
+      } else if (isError) {
+        dotBg = "#ef4444";
+        dotColor = "#ffffff";
+        dotBorder = "none";
+      }
+
+      html += `
+        <div style="display:flex; flex-direction:column; align-items:center; z-index:2;">
+          <div style="width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; background:${dotBg}; color:${dotColor}; border:${dotBorder}; box-shadow:${dotShadow}; transition:all 0.2s ease;">
+            ${isCompleted ? "✓" : isError ? "✕" : i}
+          </div>
+          <div style="font-size:10px; color:#6b7280; margin-top:4px; font-weight:500;">${labels[i - 1]}</div>
+        </div>
+      `;
+
+      if (i < totalSteps) {
+        const lineActive = i < journey.currentStep;
+        const lineBg = lineActive ? "#10b981" : "#e5e7eb";
+        html += `<div style="flex:1; height:2px; background:${lineBg}; margin:0 2px 14px 2px;"></div>`;
+      }
+    }
+
+    html += `</div>`;
+
+    html += `
+      <div style="background:#f9fafb; border-radius:8px; padding:10px 12px; margin-top:10px; border:1px solid #f3f4f6;">
+        <div style="font-size:12px; color:#374151; line-height:1.4;">${journey.statusDescription || ""}</div>
+        ${journey.shippingAddress ? `<div style="font-size:11px; color:#6b7280; margin-top:4px;">📍 Deliver to: ${journey.shippingAddress}</div>` : ""}
+      </div>
+    `;
+
+    if (tracking && (tracking.url || tracking.number)) {
+      const trackUrl = tracking.url || "#";
+      const carrier = tracking.company || "Carrier";
+      html += `
+        <a href="${trackUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-flex; align-items:center; gap:6px; margin-top:10px; padding:8px 12px; background:#111827; color:#ffffff !important; border-radius:6px; font-size:12px; font-weight:600; text-decoration:none;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+          Track Package (${carrier}${tracking.number ? ` #${tracking.number}` : ""})
+        </a>
+      `;
+    }
+
+    if (items.length > 0) {
+      html += `<div style="font-size:11px; font-weight:600; color:#9ca3af; text-transform:uppercase; letter-spacing:0.5px; margin-top:12px; margin-bottom:6px;">Items in Order (${items.length})</div><div style="display:flex; flex-direction:column; gap:6px;">`;
+      items.forEach((item) => {
+        const img = item.image || "data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Crect width='40' height='40' fill='%23eee'/%3E%3C/svg%3E";
+        html += `
+          <div style="display:flex; align-items:center; gap:10px; padding:4px 0;">
+            <img src="${img}" style="width:36px; height:36px; border-radius:6px; object-fit:cover; background:#f3f4f6; border:1px solid #e5e7eb;" alt="${item.name}" />
+            <div style="flex:1;">
+              <div style="font-size:12px; font-weight:600; color:#1f2937;">${item.name}</div>
+              <div style="font-size:11px; color:#6b7280;">Qty: ${item.quantity} × ${item.currency || ""} ${item.price || ""}</div>
+            </div>
+          </div>
+        `;
+      });
+      html += `</div>`;
+    }
+
+    html += `</div>`;
+    return html;
   }
 
   if (!window.marked) {
@@ -392,8 +611,11 @@
   const conversationKey = `chat_conversation_id_${publicKey}`;
   const historyKey = `chat_history_${publicKey}`;
 
-  let currentConversationId =
-    localStorage.getItem(conversationKey) || crypto.randomUUID();
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  let storedConvoId = localStorage.getItem(conversationKey);
+  let currentConversationId = (storedConvoId && uuidRegex.test(storedConvoId))
+    ? storedConvoId
+    : crypto.randomUUID();
   localStorage.setItem(conversationKey, currentConversationId);
 
   let historyIds = JSON.parse(localStorage.getItem(historyKey) || "[]");
@@ -858,6 +1080,170 @@
         opacity: 0.5;
       }
     }
+
+    .order-journey-card {
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 14px;
+      margin: 10px 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+      box-sizing: border-box;
+      width: 100%;
+    }
+    .oj-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .oj-title {
+      font-weight: 700;
+      font-size: 15px;
+      color: #111827;
+    }
+    .oj-sub {
+      font-size: 11px;
+      color: #6b7280;
+    }
+    .oj-badge {
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .oj-stepper {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 16px 0 12px 0;
+      position: relative;
+    }
+    .oj-step-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      z-index: 2;
+    }
+    .oj-dot {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      transition: all 0.2s ease;
+    }
+    .oj-dot-completed {
+      background: #10b981;
+      color: #ffffff;
+    }
+    .oj-dot-current {
+      background: #2563eb;
+      color: #ffffff;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+    }
+    .oj-dot-upcoming {
+      background: #f3f4f6;
+      color: #9ca3af;
+      border: 1px solid #d1d5db;
+    }
+    .oj-dot-error {
+      background: #ef4444;
+      color: #ffffff;
+    }
+    .oj-step-label {
+      font-size: 10px;
+      color: #6b7280;
+      margin-top: 4px;
+      font-weight: 500;
+    }
+    .oj-line {
+      flex: 1;
+      height: 2px;
+      background: #e5e7eb;
+      margin: 0 2px 14px 2px;
+    }
+    .oj-line-active {
+      background: #10b981;
+    }
+    .oj-status-box {
+      background: #f9fafb;
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-top: 10px;
+      border: 1px solid #f3f4f6;
+    }
+    .oj-status-desc {
+      font-size: 12px;
+      color: #374151;
+      line-height: 1.4;
+    }
+    .oj-address {
+      font-size: 11px;
+      color: #6b7280;
+      margin-top: 4px;
+    }
+    .oj-tracking-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 10px;
+      padding: 8px 12px;
+      background: #111827;
+      color: #ffffff !important;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: opacity 0.2s;
+    }
+    .oj-tracking-btn:hover {
+      opacity: 0.9;
+    }
+    .oj-items-header {
+      font-size: 11px;
+      font-weight: 600;
+      color: #9ca3af;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 12px;
+      margin-bottom: 6px;
+    }
+    .oj-items-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .oj-item-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 4px 0;
+    }
+    .oj-item-img {
+      width: 36px;
+      height: 36px;
+      border-radius: 6px;
+      object-fit: cover;
+      background: #f3f4f6;
+      border: 1px solid #e5e7eb;
+    }
+    .oj-item-details {
+      flex: 1;
+    }
+    .oj-item-name {
+      font-size: 12px;
+      font-weight: 600;
+      color: #1f2937;
+    }
+    .oj-item-qty {
+      font-size: 11px;
+      color: #6b7280;
+    }
   `;
   document.head.appendChild(style);
 
@@ -1123,13 +1509,7 @@
             messages.appendChild(createUserMessage(msg.content, THEME.color));
           } else if (msg.role === "assistant") {
             const bubble = createBotMessage(messages, THEME.logoUrl);
-            showSupportButtonGlobal = false;
-            const processedAnswer = processAnswerText(msg.content);
-            if (window.marked) {
-              bubble.innerHTML = window.marked.parse(processedAnswer);
-            } else {
-              bubble.innerHTML = processedAnswer;
-            }
+            updateBubbleHTML(bubble, msg.content);
           } else if (msg.role === "system") {
             createSystemMessage(msg.content);
           }
@@ -1356,13 +1736,7 @@
             messages.appendChild(createUserMessage(msg.content, THEME.color));
           } else if (msg.role === "assistant") {
             const bubble = createBotMessage(messages, THEME.logoUrl);
-            showSupportButtonGlobal = false;
-            const processedAnswer = processAnswerText(msg.content);
-            if (window.marked) {
-              bubble.innerHTML = window.marked.parse(processedAnswer);
-            } else {
-              bubble.innerHTML = processedAnswer;
-            }
+            updateBubbleHTML(bubble, msg.content);
             lastIsCannotAnswer = showSupportButtonGlobal;
           } else if (msg.role === "system") {
             createSystemMessage(msg.content);
@@ -1448,13 +1822,7 @@
         const { done, value } = await reader.read();
         if (done) break;
         answer += decoder.decode(value);
-        showSupportButtonGlobal = false;
-        const processedAnswer = processAnswerText(answer);
-        if (window.marked) {
-          bubble.innerHTML = window.marked.parse(processedAnswer);
-        } else {
-          bubble.innerHTML = processedAnswer;
-        }
+        updateBubbleHTML(bubble, answer);
         messages.scrollTop = messages.scrollHeight;
       }
 

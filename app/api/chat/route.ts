@@ -8,7 +8,7 @@ import { getBotByPublicKey } from "../lib/bot";
 import { retrieveWebsiteContext } from "../lib/rag";
 import { sendOwnerNotification, sendUserEmail } from "../lib/sendEmail";
 import { getDb } from "../lib/db";
-import { Conversation, Lead } from "../lib/entities";
+import { Conversation, Lead, ShopifyStore } from "../lib/entities";
 import { generateUserConfirmationTemplate } from "../lib/emailTemplates";
 import { runLeadAgent } from "../lib/agents/leadAgent";
 import { runReceptionistAgent } from "../lib/agents/receptionistAgent";
@@ -34,7 +34,10 @@ export async function POST(req: Request) {
   }
 
   const bot = await getBotByPublicKey(publicKey);
-  const finalConversationId = conversationId || crypto.randomUUID();
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  const finalConversationId = (conversationId && uuidRegex.test(conversationId))
+    ? conversationId
+    : crypto.randomUUID();
 
   const dbInstance = await getDb();
   const convoRepo = dbInstance.getRepository<Conversation>("Conversation");
@@ -86,7 +89,7 @@ export async function POST(req: Request) {
     phone: convo.phone ?? undefined,
   };
 
-  const [leadDecision, websiteContext] = await Promise.all([
+  const [leadDecision, websiteContext, shopifyStore] = await Promise.all([
     !contactEnabled || alreadyComplete
       ? Promise.resolve(
           alreadyComplete
@@ -99,7 +102,12 @@ export async function POST(req: Request) {
         )
       : runLeadAgent(fullConversation, bot.contact_prompt, knownInfo),
     retrieveWebsiteContext(publicKey, message),
+    dbInstance
+      .getRepository<ShopifyStore>("ShopifyStore")
+      .findOne({ where: { bot_id: bot.id } }),
   ]);
+
+  const isShopifyConnected = Boolean(shopifyStore);
 
   if (
     contactEnabled &&
@@ -187,6 +195,7 @@ export async function POST(req: Request) {
       botConfig: bot,
       leadDecision,
       websiteContext,
+      isShopifyConnected,
     });
   } catch (err) {
     const error = err as StreamError;
@@ -207,10 +216,20 @@ export async function POST(req: Request) {
   const encoder = new TextEncoder();
   const customStream = new ReadableStream({
     async start(controller) {
+      console.log("[route] customStream start() executing...");
       try {
         for await (const part of result.fullStream) {
+          console.log("[route] fullStream part:", part.type);
           if (part.type === "text-delta") {
+            console.log("[route] enqueuing text-delta:", JSON.stringify(part.text));
             controller.enqueue(encoder.encode(part.text));
+          } else if (part.type === "tool-result") {
+            const toolPart = part as unknown as { output?: Record<string, unknown>; result?: Record<string, unknown> };
+            const toolRes = toolPart.output || toolPart.result;
+            if (toolRes && typeof toolRes.tagPayload === "string") {
+              console.log("[route] Injecting tool result tagPayload into stream:", toolRes.tagPayload.slice(0, 50));
+              controller.enqueue(encoder.encode(`\n\n${toolRes.tagPayload}`));
+            }
           } else if (part.type === "error") {
             console.error("[route] fullStream error:", part.error);
             const err = part.error as StreamError;
@@ -224,13 +243,13 @@ export async function POST(req: Request) {
             if (isQuota) {
               controller.enqueue(
                 encoder.encode(
-                  "\n\n*Your free tier of the day is over. Please try again later.*",
+                  "Your daily AI query quota has been reached. Please try again shortly.",
                 ),
               );
             } else {
               controller.enqueue(
                 encoder.encode(
-                  "\n\n*Sorry, an error occurred while generating the response.*",
+                  "Sorry, an error occurred while generating the response.",
                 ),
               );
             }
@@ -248,13 +267,13 @@ export async function POST(req: Request) {
         if (isQuota) {
           controller.enqueue(
             encoder.encode(
-              "\n\n*Your free tier of the day is over. Please try again later.*",
+              "Your daily AI query quota has been reached. Please try again shortly.",
             ),
           );
         } else {
           controller.enqueue(
             encoder.encode(
-              "\n\n*Sorry, an error occurred while generating the response.*",
+              "Sorry, an error occurred while generating the response.",
             ),
           );
         }

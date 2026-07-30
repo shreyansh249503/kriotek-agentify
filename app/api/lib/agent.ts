@@ -8,6 +8,7 @@ export type AgentConfig = {
   ecommerceEnabled?: boolean;
   ecommercePrompt?: string | null;
   ecommerceProducts?: Product[];
+  shopifyEnabled?: boolean;
 };
 
 export type AgentContext = {
@@ -32,6 +33,25 @@ export function buildSystemPrompt(
 
   const contactSection = buildContactSection(config.companyName, contactState);
   const ecommerceSection = buildEcommerceSection(config, contactState);
+
+  const shopifySection = config.shopifyEnabled
+    ? `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SHOPIFY ORDER TRACKING & JOURNEY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+If the user asks about order status, order tracking, shipping progress, delivery date, or where their package is:
+1. You have access to a tool named 'lookup_shopify_order'.
+2. To look up an order, you MUST have both the ORDER NUMBER (e.g. #1042 or 1042) AND the customer's EMAIL address or PHONE number for security verification.
+3. If the user provides an order number but missing email/phone, ask politely: "Could you please provide the email address or phone number associated with order [order_number] so I can check your order journey?"
+4. MANDATORY RULE: If the user provides an email address (e.g. fanendra.choudhary@kriotek.in) or phone number, or if the previous message from you asked for an email/phone for an order lookup:
+   - Look back in the conversation history to extract the order number (e.g. #1001 or 1001).
+   - You MUST IMMEDIATELY INVOKE the 'lookup_shopify_order' tool with the order_number from history and the provided email/phone!
+   - Do NOT respond with generic greetings, fallback messages, or "I'm here to help with Agentify" — you MUST execute 'lookup_shopify_order' immediately!
+5. When 'lookup_shopify_order' returns results, your response MUST contain a friendly 1-sentence status summary.
+
+CRITICAL RULE: Never return generic fallback text when an email/phone is provided after an order number prompt — always execute 'lookup_shopify_order'.
+`
+    : "";
 
   return `You are a confident, natural sales assistant for ${config.companyName}. Think of yourself as a knowledgeable salesperson who genuinely wants to help — not a scripted chatbot.
 
@@ -110,7 +130,7 @@ If information is partial → share what you know, be honest about gaps
 If information is missing or you cannot answer → "I don't have that detail right now. The team would be happy to help — feel free to reach out directly or talk to our live support team. [SHOW_SUPPORT_BUTTON]"
 If the user asks to speak to support, a human, customer support, or a representative → "Sure, I can connect you to our customer support. Please click the button below to start the support session. [SHOW_SUPPORT_BUTTON]"
 If question is off-topic → "I'm here specifically to help with ${config.companyName} questions. What would you like to know about us?"
-
+${shopifySection}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ${contactSection}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -200,6 +220,10 @@ Not required for this bot. Focus entirely on answering questions.`;
 The USER who is chatting with you has already provided their contact details:
 - USER name: "${c.name}"
 - USER email: "${c.email}"
+
+CRITICAL ORDER LOOKUP OVERRIDE:
+- If the user's latest message provides an email or phone number in response to a previous query/prompt about an ORDER NUMBER (e.g. #1001 or 1001), you MUST IMMEDIATELY execute 'lookup_shopify_order' with that order number and the provided email/phone!
+- Do NOT simply say "Thanks for confirming your email!" or ask if they need help with anything else — you MUST look up their order and return the order status & journey card!
 
 CRITICAL IDENTITY RULES:
 - These are the CUSTOMER'S details, NOT yours. You are an AI assistant for ${companyName}.
