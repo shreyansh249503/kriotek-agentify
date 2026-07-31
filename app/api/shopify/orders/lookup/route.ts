@@ -93,7 +93,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Retrieve Shopify store token for this bot
     const { data: storeData, error: storeError } = await supabase
       .from("shopify_stores")
       .select("shop, access_token")
@@ -116,7 +115,6 @@ export async function POST(req: NextRequest) {
     const targetEmail = email ? email.trim().toLowerCase() : null;
     const targetPhone = phone ? phone.trim().replace(/\D/g, "") : null;
 
-    // Helper to fetch orders from Shopify GraphQL API
     const fetchOrdersFromShopify = async (queryParam?: string) => {
       const gqlPayload = {
         query: queryParam
@@ -237,7 +235,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Map order to journey payload
     const journey = mapShopifyOrderToJourney(matchedOrder);
 
     return NextResponse.json({

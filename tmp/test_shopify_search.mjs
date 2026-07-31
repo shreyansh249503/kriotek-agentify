@@ -25,7 +25,7 @@ async function run() {
       `name:"1001"`,
       `fanendra.choudhary@kriotek.in`,
       `email:fanendra.choudhary@kriotek.in`,
-      null, // query all
+      null,
     ];
 
     for (const q of testQueries) {

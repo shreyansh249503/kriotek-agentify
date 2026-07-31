@@ -322,6 +322,112 @@
 
   let showSupportButtonGlobal = false;
 
+  function extractOrderJourneyData(text) {
+    const tagPrefix = "[ORDER_JOURNEY_JSON:";
+    const tagIndex = text.indexOf(tagPrefix);
+
+    if (tagIndex !== -1) {
+      const jsonStart = tagIndex + tagPrefix.length;
+      let depth = 1;
+      let tagEnd = -1;
+      let inString = false;
+      let escapeNext = false;
+
+      for (let i = jsonStart; i < text.length; i++) {
+        const char = text[i];
+        if (escapeNext) {
+          escapeNext = false;
+          continue;
+        }
+        if (char === "\\") {
+          escapeNext = true;
+          continue;
+        }
+        if (char === '"') {
+          inString = !inString;
+          continue;
+        }
+        if (!inString) {
+          if (char === "[" || char === "{") depth++;
+          else if (char === "]" || char === "}") {
+            depth--;
+            if (depth === 0) {
+              tagEnd = i;
+              break;
+            }
+          }
+        }
+      }
+
+      if (tagEnd !== -1) {
+        const rawTag = text.substring(tagIndex, tagEnd + 1);
+        const jsonStr = text.substring(jsonStart, tagEnd).trim();
+        try {
+          const journey = JSON.parse(jsonStr);
+          if (journey && journey.orderNumber) {
+            return { journey, rawTag, isStreaming: false };
+          }
+        } catch (e) {
+          console.error("Failed to parse order journey JSON:", e);
+        }
+      } else {
+        const rawTag = text.substring(tagIndex);
+        return { journey: null, rawTag, isStreaming: true };
+      }
+    }
+
+    if (text.includes('"orderNumber"')) {
+      const keyIndex = text.indexOf('"orderNumber"');
+      const braceStart = text.lastIndexOf("{", keyIndex);
+      if (braceStart !== -1) {
+        let depth = 0;
+        let inString = false;
+        let escapeNext = false;
+        let braceEnd = -1;
+
+        for (let i = braceStart; i < text.length; i++) {
+          const char = text[i];
+          if (escapeNext) {
+            escapeNext = false;
+            continue;
+          }
+          if (char === "\\") {
+            escapeNext = true;
+            continue;
+          }
+          if (char === '"') {
+            inString = !inString;
+            continue;
+          }
+          if (!inString) {
+            if (char === "{") depth++;
+            else if (char === "}") {
+              depth--;
+              if (depth === 0) {
+                braceEnd = i;
+                break;
+              }
+            }
+          }
+        }
+
+        if (braceEnd !== -1) {
+          const rawMatch = text.substring(braceStart, braceEnd + 1);
+          try {
+            const journey = JSON.parse(rawMatch);
+            if (journey && journey.orderNumber) {
+              return { journey, rawTag: rawMatch, isStreaming: false };
+            }
+          } catch (e) {
+            console.error("Failed to parse order journey JSON:", e);
+          }
+        }
+      }
+    }
+
+    return null;
+  }
+
   function processAnswerText(rawText) {
     let text = rawText;
     if (text.includes("[SHOW_SUPPORT_BUTTON]")) {
@@ -379,40 +485,24 @@
         }
       },
     );
-    let renderedJourneyCard = false;
-    text = text.replace(
-      /\[ORDER_JOURNEY_JSON:\s*(\{[\s\S]*?\})\]/gi,
-      (match, jsonString) => {
-        if (renderedJourneyCard) return "";
-        try {
-          const journey = JSON.parse(jsonString.trim());
-          renderedJourneyCard = true;
-          return renderOrderJourneyHTML(journey);
-        } catch (e) {
-          console.error("Failed to parse order journey JSON", e);
-          return "";
-        }
-      }
-    );
 
-    // Fallback: If AI streams raw JSON string containing orderNumber or milestones
-    if (text.includes('"orderNumber"') || text.includes('"milestones"') || text.includes('"currentStep"')) {
-      const jsonMatch = text.match(/\{[\s\S]*?"orderNumber"[\s\S]*?\}/) || text.match(/\{[\s\S]*?"currentStep"[\s\S]*?\}/);
-      if (jsonMatch) {
-        try {
-          const rawJson = jsonMatch[0];
-          const journey = JSON.parse(rawJson.trim());
-          if (journey && journey.orderNumber) {
-            text = text.replace(rawJson, "").replace(/,\s*"items":[\s\S]*/, "").replace(/,\s*$/, "").trim();
-            text += renderOrderJourneyHTML(journey);
-          }
-        } catch (e) {
-          console.warn("Fallback order journey JSON parse skipped:", e);
-        }
+    let extracted = extractOrderJourneyData(text);
+    while (extracted) {
+      if (extracted.isStreaming) {
+        text = text.replace(
+          extracted.rawTag,
+          '<div style="font-size: 13px; color: #6b7280; font-style: italic; padding: 10px 14px; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 10px; margin: 8px 0;">📦 Loading order details...</div>'
+        );
+        break;
+      } else if (extracted.journey) {
+        const cardHtml = renderOrderJourneyHTML(extracted.journey);
+        text = text.replace(extracted.rawTag, cardHtml);
+      } else {
+        text = text.replace(extracted.rawTag, "");
       }
+      extracted = extractOrderJourneyData(text);
     }
 
-    // Cleanup any raw JSON artifacts output by AI (e.g. , "items": [...])
     if (text.includes('"items":') || text.includes('"shippingAddress":') || text.includes('"isCancelled":')) {
       text = text.replace(/,\s*"items":[\s\S]*/i, "").replace(/,\s*"tracking":[\s\S]*/i, "").replace(/,\s*"shippingAddress":[\s\S]*/i, "").replace(/,\s*"isCancelled":[\s\S]*/i, "").trim();
     }
@@ -466,7 +556,7 @@
       let htmlOut = "";
       if (textContent) {
         const textParsed = window.marked ? window.marked.parse(textContent) : textContent;
-        htmlOut += `<div style="background:#f3f4f6; color:#111; padding:10px 12px; border-radius:14px 14px 14px 2px; margin-bottom:8px; display:inline-block; max-width:85%; width:fit-content;">${textParsed}</div>`;
+        htmlOut += `<div style="background:#f3f4f6; color:#111; padding:10px 14px; border-radius:14px 14px 14px 2px; margin-bottom:8px; display:inline-block; max-width:85%; width:fit-content; font-size:14px; line-height:1.5;">${textParsed}</div>`;
       }
       htmlOut += cardHtml;
       bubble.innerHTML = htmlOut;
@@ -489,32 +579,39 @@
 
     let badgeColor = "#10B981";
     let badgeBg = "#ECFDF5";
+    let badgeBorder = "#A7F3D0";
     if (journey.isCancelled) {
       badgeColor = "#EF4444";
       badgeBg = "#FEF2F2";
+      badgeBorder = "#FCA5A5";
     } else if (journey.currentStep === 4) {
       badgeColor = "#2563EB";
       badgeBg = "#EFF6FF";
+      badgeBorder = "#BFDBFE";
     } else if (journey.currentStep < 4) {
-      badgeColor = "#F59E0B";
+      badgeColor = "#D97706";
       badgeBg = "#FFFBEB";
+      badgeBorder = "#FDE68A";
     }
 
     const labels = ["Placed", "Paid", "Packed", "Shipped", "Delivered"];
 
     let html = `
-      <div class="order-journey-card-container" style="background:#ffffff; border:1px solid #e5e7eb; border-radius:12px; padding:14px; margin:10px 0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; box-shadow:0 2px 8px rgba(0,0,0,0.06); text-align:left; box-sizing:border-box; width:100%;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <div class="order-journey-card-container" style="background:#ffffff; border:1px solid #e5e7eb; border-radius:14px; padding:16px; margin:12px 0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; box-shadow:0 4px 16px rgba(0,0,0,0.06); text-align:left; box-sizing:border-box; width:100%;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px; gap:8px;">
           <div>
-            <div style="font-weight:700; font-size:15px; color:#111827;">Order ${journey.orderNumber}</div>
-            <div style="font-size:11px; color:#6b7280; margin-top:2px;">${journey.orderDate || ""}</div>
+            <div style="font-weight:700; font-size:16px; color:#111827;">Order ${journey.orderNumber}</div>
+            <div style="font-size:12px; color:#6b7280; margin-top:2px; font-weight:500;">
+              ${journey.orderDate ? `Placed on ${journey.orderDate}` : ""}
+              ${journey.email ? ` • ${journey.email}` : ""}
+            </div>
           </div>
-          <span style="padding:3px 8px; border-radius:12px; font-size:11px; font-weight:600; color:${badgeColor}; background:${badgeBg};">
+          <span style="padding:4px 10px; border-radius:20px; font-size:12px; font-weight:600; color:${badgeColor}; background:${badgeBg}; border:1px solid ${badgeBorder}; white-space:nowrap;">
             ${journey.statusBadge || "Active"}
           </span>
         </div>
 
-        <div style="display:flex; align-items:center; justify-content:space-between; margin:16px 0 12px 0; position:relative;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin:20px 0 16px 0; position:relative; padding:0 4px;">
     `;
 
     const totalSteps = 5;
@@ -522,22 +619,23 @@
     for (let i = 1; i <= totalSteps; i++) {
       const isCompleted = i < journey.currentStep || (i === 5 && journey.currentStep === 5);
       const isCurrent = i === journey.currentStep && journey.currentStep !== 5 && !journey.isCancelled;
-      const isError = journey.isCancelled && i === journey.currentStep;
+      const isError = Boolean(journey.isCancelled && i === journey.currentStep);
 
       let dotBg = "#f3f4f6";
       let dotColor = "#9ca3af";
-      let dotBorder = "1px solid #d1d5db";
+      let dotBorder = "1.5px solid #d1d5db";
       let dotShadow = "none";
 
       if (isCompleted) {
         dotBg = "#10b981";
         dotColor = "#ffffff";
         dotBorder = "none";
+        dotShadow = "0 2px 4px rgba(16, 185, 129, 0.25)";
       } else if (isCurrent) {
         dotBg = "#2563eb";
         dotColor = "#ffffff";
         dotBorder = "none";
-        dotShadow = "0 0 0 3px rgba(37, 99, 235, 0.2)";
+        dotShadow = "0 0 0 4px rgba(37, 99, 235, 0.18)";
       } else if (isError) {
         dotBg = "#ef4444";
         dotColor = "#ffffff";
@@ -545,27 +643,27 @@
       }
 
       html += `
-        <div style="display:flex; flex-direction:column; align-items:center; z-index:2;">
-          <div style="width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; background:${dotBg}; color:${dotColor}; border:${dotBorder}; box-shadow:${dotShadow}; transition:all 0.2s ease;">
+        <div style="display:flex; flex-direction:column; align-items:center; z-index:2; flex:0 0 auto;">
+          <div style="width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; background:${dotBg}; color:${dotColor}; border:${dotBorder}; box-shadow:${dotShadow}; transition:all 0.2s ease;">
             ${isCompleted ? "✓" : isError ? "✕" : i}
           </div>
-          <div style="font-size:10px; color:#6b7280; margin-top:4px; font-weight:500;">${labels[i - 1]}</div>
+          <div style="font-size:11px; color:${isCompleted || isCurrent ? "#111827" : "#6b7280"}; margin-top:6px; font-weight:${isCurrent ? "700" : "600"}; text-align:center;">${labels[i - 1]}</div>
         </div>
       `;
 
       if (i < totalSteps) {
         const lineActive = i < journey.currentStep;
         const lineBg = lineActive ? "#10b981" : "#e5e7eb";
-        html += `<div style="flex:1; height:2px; background:${lineBg}; margin:0 2px 14px 2px;"></div>`;
+        html += `<div style="flex:1; height:3px; background:${lineBg}; margin:0 4px 20px 4px; border-radius:2px;"></div>`;
       }
     }
 
     html += `</div>`;
 
     html += `
-      <div style="background:#f9fafb; border-radius:8px; padding:10px 12px; margin-top:10px; border:1px solid #f3f4f6;">
-        <div style="font-size:12px; color:#374151; line-height:1.4;">${journey.statusDescription || ""}</div>
-        ${journey.shippingAddress ? `<div style="font-size:11px; color:#6b7280; margin-top:4px;">📍 Deliver to: ${journey.shippingAddress}</div>` : ""}
+      <div style="background:#f9fafb; border-radius:10px; padding:12px 14px; margin-top:12px; border:1px solid #f3f4f6;">
+        <div style="font-size:13px; color:#374151; line-height:1.5; font-weight:500;">${journey.statusDescription || ""}</div>
+        ${journey.shippingAddress ? `<div style="font-size:12px; color:#4b5563; margin-top:6px; display:flex; align-items:center; gap:4px;">📍 <strong>Deliver to:</strong> ${journey.shippingAddress}</div>` : ""}
       </div>
     `;
 
@@ -573,28 +671,46 @@
       const trackUrl = tracking.url || "#";
       const carrier = tracking.company || "Carrier";
       html += `
-        <a href="${trackUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-flex; align-items:center; gap:6px; margin-top:10px; padding:8px 12px; background:#111827; color:#ffffff !important; border-radius:6px; font-size:12px; font-weight:600; text-decoration:none;">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+        <a href="${trackUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-flex; align-items:center; gap:8px; margin-top:12px; padding:9px 16px; background:#111827; color:#ffffff !important; border-radius:8px; font-size:13px; font-weight:600; text-decoration:none; box-shadow:0 2px 4px rgba(0,0,0,0.08); transition:background 0.2s;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"></path><circle cx="12" cy="10" r="3"></circle></svg>
           Track Package (${carrier}${tracking.number ? ` #${tracking.number}` : ""})
         </a>
       `;
     }
 
     if (items.length > 0) {
-      html += `<div style="font-size:11px; font-weight:600; color:#9ca3af; text-transform:uppercase; letter-spacing:0.5px; margin-top:12px; margin-bottom:6px;">Items in Order (${items.length})</div><div style="display:flex; flex-direction:column; gap:6px;">`;
+      html += `
+        <div style="margin-top:16px; border-top:1px solid #f3f4f6; padding-top:12px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <div style="font-size:12px; font-weight:700; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px;">Items in Order (${items.length})</div>
+            ${journey.totalPrice ? `<div style="font-size:12px; font-weight:700; color:#111827;">Total: ${journey.currency || "$"} ${journey.totalPrice}</div>` : ""}
+          </div>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+      `;
       items.forEach((item) => {
-        const img = item.image || "data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Crect width='40' height='40' fill='%23eee'/%3E%3C/svg%3E";
+        const img = item.image || "data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44'%3E%3Crect width='44' height='44' fill='%23eee'/%3E%3C/svg%3E";
+        const itemSubtotal = item.price ? (parseFloat(item.price) * item.quantity).toFixed(2) : null;
         html += `
-          <div style="display:flex; align-items:center; gap:10px; padding:4px 0;">
-            <img src="${img}" style="width:36px; height:36px; border-radius:6px; object-fit:cover; background:#f3f4f6; border:1px solid #e5e7eb;" alt="${item.name}" />
-            <div style="flex:1;">
-              <div style="font-size:12px; font-weight:600; color:#1f2937;">${item.name}</div>
-              <div style="font-size:11px; color:#6b7280;">Qty: ${item.quantity} × ${item.currency || ""} ${item.price || ""}</div>
+          <div style="display:flex; align-items:center; gap:12px; padding:6px 0; border-bottom:1px solid #f9fafb;">
+            <img src="${img}" style="width:44px; height:44px; border-radius:8px; object-fit:cover; background:#f3f4f6; border:1px solid #e5e7eb; flex-shrink:0;" alt="${item.name}" />
+            <div style="flex:1; min-width:0;">
+              <div style="font-size:13px; font-weight:600; color:#111827; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.name}</div>
+              <div style="font-size:12px; color:#6b7280; margin-top:2px;">Qty: ${item.quantity} × ${item.currency || "$"} ${item.price || ""}</div>
             </div>
+            ${itemSubtotal ? `<div style="font-size:13px; font-weight:600; color:#111827; text-align:right; flex-shrink:0;">${item.currency || "$"}${itemSubtotal}</div>` : ""}
           </div>
         `;
       });
-      html += `</div>`;
+      html += `</div></div>`;
+    }
+
+    if (journey.totalPrice) {
+      html += `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:14px; padding-top:12px; border-top:1px dashed #e5e7eb; font-size:14px; font-weight:700; color:#111827;">
+          <span>Order Total</span>
+          <span>${journey.currency || "$"} ${journey.totalPrice}</span>
+        </div>
+      `;
     }
 
     html += `</div>`;
@@ -1629,7 +1745,6 @@
     input.placeholder = "Type your message...";
     greetingShownInSessions[currentConversationId] = false;
     
-    // Create new conversation ID so next reopen is fresh
     currentConversationId = crypto.randomUUID();
     localStorage.setItem(conversationKey, currentConversationId);
 

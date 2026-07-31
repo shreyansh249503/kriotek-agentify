@@ -34,10 +34,12 @@ export async function POST(req: Request) {
   }
 
   const bot = await getBotByPublicKey(publicKey);
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  const finalConversationId = (conversationId && uuidRegex.test(conversationId))
-    ? conversationId
-    : crypto.randomUUID();
+  const uuidRegex =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  const finalConversationId =
+    conversationId && uuidRegex.test(conversationId)
+      ? conversationId
+      : crypto.randomUUID();
 
   const dbInstance = await getDb();
   const convoRepo = dbInstance.getRepository<Conversation>("Conversation");
@@ -221,13 +223,22 @@ export async function POST(req: Request) {
         for await (const part of result.fullStream) {
           console.log("[route] fullStream part:", part.type);
           if (part.type === "text-delta") {
-            console.log("[route] enqueuing text-delta:", JSON.stringify(part.text));
+            console.log(
+              "[route] enqueuing text-delta:",
+              JSON.stringify(part.text),
+            );
             controller.enqueue(encoder.encode(part.text));
           } else if (part.type === "tool-result") {
-            const toolPart = part as unknown as { output?: Record<string, unknown>; result?: Record<string, unknown> };
+            const toolPart = part as unknown as {
+              output?: Record<string, unknown>;
+              result?: Record<string, unknown>;
+            };
             const toolRes = toolPart.output || toolPart.result;
             if (toolRes && typeof toolRes.tagPayload === "string") {
-              console.log("[route] Injecting tool result tagPayload into stream:", toolRes.tagPayload.slice(0, 50));
+              console.log(
+                "[route] Injecting tool result tagPayload into stream:",
+                toolRes.tagPayload.slice(0, 50),
+              );
               controller.enqueue(encoder.encode(`\n\n${toolRes.tagPayload}`));
             }
           } else if (part.type === "error") {

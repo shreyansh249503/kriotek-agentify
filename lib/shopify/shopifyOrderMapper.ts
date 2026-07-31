@@ -26,7 +26,7 @@ export interface OrderJourneyData {
   orderDate: string;
   customerName?: string;
   email?: string;
-  currentStep: number; // 1 to 5
+  currentStep: number;
   statusBadge: string;
   statusDescription: string;
   totalPrice: string;
@@ -111,7 +111,6 @@ export function mapShopifyOrderToJourney(order: RawShopifyOrderNode): OrderJourn
   const fulfillmentStatus = (order.displayFulfillmentStatus || "UNFULFILLED").toUpperCase();
   const isCancelled = Boolean(order.cancelledAt);
 
-  // Extract items
   const items: OrderItem[] = (order.lineItems?.edges || []).map((edge) => {
     const node = edge.node;
     return {
@@ -123,7 +122,6 @@ export function mapShopifyOrderToJourney(order: RawShopifyOrderNode): OrderJourn
     };
   });
 
-  // Extract tracking info
   let tracking: TrackingInfo | null = null;
   const fulfillmentList = order.fulfillments || order.successfulFulfillments || [];
   if (fulfillmentList.length > 0) {
@@ -138,13 +136,11 @@ export function mapShopifyOrderToJourney(order: RawShopifyOrderNode): OrderJourn
     }
   }
 
-  // Determine financial completion
   const isPaid = ["PAID", "AUTHORIZED", "PARTIALLY_REFUNDED"].includes(financialStatus);
   const isFulfilled = ["FULFILLED", "DELIVERED"].includes(fulfillmentStatus);
   const isInTransit = isFulfilled || fulfillmentStatus === "PARTIALLY_FULFILLED" || Boolean(tracking?.number);
   const isDelivered = fulfillmentStatus === "DELIVERED";
 
-  // Calculate current step (1 to 5)
   let currentStep = 1;
   if (isCancelled) {
     currentStep = 1;
@@ -153,12 +149,11 @@ export function mapShopifyOrderToJourney(order: RawShopifyOrderNode): OrderJourn
   } else if (isInTransit) {
     currentStep = 4;
   } else if (isPaid) {
-    currentStep = 3; // Processing
+    currentStep = 3; 
   } else {
-    currentStep = 2; // Payment Pending
+    currentStep = 2; 
   }
 
-  // Build milestones
   const milestones: OrderJourneyMilestone[] = [
     {
       step: 1,
@@ -221,7 +216,6 @@ export function mapShopifyOrderToJourney(order: RawShopifyOrderNode): OrderJourn
     };
   }
 
-  // Address
   const addr = order.shippingAddress;
   const shippingAddressStr = addr
     ? [addr.address1, addr.city, addr.province, addr.country, addr.zip]
@@ -229,7 +223,6 @@ export function mapShopifyOrderToJourney(order: RawShopifyOrderNode): OrderJourn
         .join(", ")
     : null;
 
-  // Status Badge & Description
   let statusBadge = "Confirmed";
   let statusDescription = `Order ${order.name} placed on ${orderDateFormatted}.`;
 

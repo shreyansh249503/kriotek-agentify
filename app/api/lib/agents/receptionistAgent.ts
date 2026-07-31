@@ -144,7 +144,6 @@ export function runReceptionistAgent({
               const targetEmail = email ? email.trim().toLowerCase() : null;
               const targetPhone = phone ? phone.trim().replace(/\D/g, "") : null;
 
-              // Helper function to query Shopify GraphQL API
               const fetchOrdersFromShopify = async (queryParam?: string) => {
                 const gqlPayload = {
                   query: queryParam
@@ -177,7 +176,6 @@ export function runReceptionistAgent({
                 return resJson?.data?.orders?.edges ?? [];
               };
 
-              // Step 1: Indexed search by name or email
               let queryStr = `name:"${searchName}" OR name:"${rawNum}" OR "${rawNum}"`;
               if (targetEmail) {
                 queryStr += ` OR email:"${targetEmail}"`;
@@ -186,7 +184,6 @@ export function runReceptionistAgent({
               let orderEdges = await fetchOrdersFromShopify(queryStr);
               console.log("[lookup_shopify_order] Primary search fetched count:", orderEdges.length);
 
-              // Step 2: Fallback search if primary query yields 0 results
               if (orderEdges.length === 0) {
                 console.log("[lookup_shopify_order] Primary search returned 0. Querying raw number fallback:", rawNum);
                 orderEdges = await fetchOrdersFromShopify(rawNum);
@@ -231,7 +228,6 @@ export function runReceptionistAgent({
                 let isContactMatch = false;
 
                 if (!hasAnyContactInRecord) {
-                  // Order record in Shopify has no email or phone attached (e.g. guest draft order)
                   isContactMatch = true;
                 } else {
                   if (targetEmail) {
@@ -296,8 +292,10 @@ export function runReceptionistAgent({
       }
     : undefined;
 
+  const modelName = process.env.GEMINI_MODEL || "gemini-2.5-flash-lite";
+
   return streamText({
-    model: google("gemini-2.0-flash"),
+    model: google(modelName),
     system: systemPrompt,
     messages: messages.filter(
       (m) => m.role === "user" || m.role === "assistant",
