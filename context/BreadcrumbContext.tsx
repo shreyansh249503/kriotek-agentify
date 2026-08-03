@@ -3,7 +3,7 @@
 import { createContext, useContext, useState } from "react";
 
 type BreadcrumbMeta = {
-  customLabels: Record<string, string>; 
+  customLabels: Record<string, string>;
   nonLinkable: string[];
 };
 

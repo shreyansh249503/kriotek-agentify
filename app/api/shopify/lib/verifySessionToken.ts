@@ -1,7 +1,5 @@
 import jwt from "jsonwebtoken";
 
-const { SHOPIFY_API_SECRET } = process.env;
-
 export interface ShopifySession {
   shop: string;
   dest: string;
@@ -17,8 +15,8 @@ export function verifySessionToken(authHeader: string | null): ShopifySession {
   }
 
   const token = authHeader.replace("Bearer ", "");
-
-  const decoded = jwt.verify(token, SHOPIFY_API_SECRET!, { clockTolerance: 300 }) as ShopifySession;
+  const secret = process.env.SHOPIFY_API_SECRET;
+  const decoded = jwt.verify(token, secret!, { clockTolerance: 300 }) as ShopifySession;
 
   if (!decoded.dest) {
     throw new Error("Invalid session token");

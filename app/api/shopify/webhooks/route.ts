@@ -27,12 +27,6 @@ interface ShopifyWebhookProductPayload {
   }>;
 }
 
-const {
-  SHOPIFY_API_SECRET,
-  NEXT_PUBLIC_SUPABASE_URL,
-  SUPABASE_SERVICE_ROLE_KEY,
-} = process.env;
-
 export async function POST(req: NextRequest) {
   try {
     const rawBody = await req.text();
@@ -52,8 +46,8 @@ export async function POST(req: NextRequest) {
     const payload = JSON.parse(rawBody) as ShopifyWebhookProductPayload;
 
     const supabase = createClient(
-      NEXT_PUBLIC_SUPABASE_URL!,
-      SUPABASE_SERVICE_ROLE_KEY!
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
     const { data: storeData } = await supabase
@@ -134,9 +128,10 @@ function mapWebhookProduct(payload: ShopifyWebhookProductPayload, shop: string):
 }
 
 function isValidWebhookHmac(body: string, hmac: string | null): boolean {
-  if (!hmac || !SHOPIFY_API_SECRET) return false;
+  const secret = process.env.SHOPIFY_API_SECRET;
+  if (!hmac || !secret) return false;
   const digest = crypto
-    .createHmac("sha256", SHOPIFY_API_SECRET)
+    .createHmac("sha256", secret)
     .update(body, "utf8")
     .digest("base64");
   return digest === hmac;
