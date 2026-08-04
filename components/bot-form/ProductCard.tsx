@@ -83,22 +83,24 @@ export const ProductCard = ({
     url: false,
   });
 
-  const isValidUrl = (value: string) => {
+  const isValidUrl = (value?: string) => {
     if (!value) return false;
     try {
-      new URL(value);
+      new URL(String(value).trim());
       return true;
     } catch {
       return false;
     }
   };
 
-  const nameError = touched.name && !product.name?.trim();
-  const priceError = touched.price && !product.price?.trim();
-  const urlError = touched.url && (!product.url?.trim() || !isValidUrl(product.url));
+  const nameError = touched.name && !String(product.name ?? "").trim();
+  const priceError = touched.price && !String(product.price ?? "").trim();
+  const urlError =
+    touched.url &&
+    (!String(product.url ?? "").trim() || !isValidUrl(product.url));
 
   const urlHelperText = touched.url
-    ? !product.url?.trim()
+    ? !String(product.url ?? "").trim()
       ? "Product link is required"
       : !isValidUrl(product.url)
       ? "Invalid URL (must start with http:// or https://)"
@@ -106,9 +108,9 @@ export const ProductCard = ({
     : "";
 
   const isSaveDisabled =
-    !product.name?.trim() ||
-    !product.price?.trim() ||
-    !product.url?.trim() ||
+    !String(product.name ?? "").trim() ||
+    !String(product.price ?? "").trim() ||
+    !String(product.url ?? "").trim() ||
     !isValidUrl(product.url) ||
     uploading;
 

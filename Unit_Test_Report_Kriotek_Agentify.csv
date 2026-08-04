@@ -1,123 +1,155 @@
 Test ID,Category,File,Group,Test Name,Status
-UT-001,"API Route Handlers","app/api/chat/route.test.ts","OPTIONS /api/chat","should return 204 status with CORS headers",PASSED
-UT-002,"API Route Handlers","app/api/chat/route.test.ts","POST /api/chat","should return 400 Bad Request if publicKey or message is missing",PASSED
-UT-003,"API Route Handlers","app/api/chat/route.test.ts","POST /api/chat","should handle manual support state conversation",PASSED
-UT-004,"API Route Handlers","app/api/chat/route.test.ts","POST /api/chat","should return 429 when receptionist agent fails with quota error",PASSED
-UT-005,"API Route Handlers","app/api/chat/route.test.ts","POST /api/chat","should fire lead completion pipeline and stream receptionist response",PASSED
-UT-006,"API Route Handlers","app/api/ingest-pdf/route.test.ts","POST /api/ingest-pdf","should return 400 Bad Request if file or publicKey is missing",PASSED
-UT-007,"API Route Handlers","app/api/ingest-pdf/route.test.ts","POST /api/ingest-pdf","should return 400 Bad Request if extracted text is empty",PASSED
-UT-008,"API Route Handlers","app/api/ingest-pdf/route.test.ts","POST /api/ingest-pdf","should reject with an error when PDF parsing fails",PASSED
-UT-009,"API Route Handlers","app/api/ingest-pdf/route.test.ts","POST /api/ingest-pdf","should successfully extract text, generate embeddings, and save document chunks",PASSED
-UT-010,"API Route Handlers","app/api/ingest-url/route.test.ts","POST /api/ingest-url","should return 401 Unauthorized if user session is invalid",PASSED
-UT-011,"API Route Handlers","app/api/ingest-url/route.test.ts","POST /api/ingest-url","should return 400 Bad Request if publicKey or url is missing",PASSED
-UT-012,"API Route Handlers","app/api/ingest-url/route.test.ts","POST /api/ingest-url","should return 403 Forbidden if bot does not belong to the user",PASSED
-UT-013,"API Route Handlers","app/api/ingest-url/route.test.ts","POST /api/ingest-url","should return 200 with alreadyCrawled flag if URL has already been crawled",PASSED
-UT-014,"API Route Handlers","app/api/ingest-url/route.test.ts","POST /api/ingest-url","should return 400 if crawler finds no readable text content",PASSED
-UT-015,"API Route Handlers","app/api/ingest-url/route.test.ts","POST /api/ingest-url","should successfully crawl, extract products, chunk, and ingest document content",PASSED
-UT-016,"API Route Handlers","app/api/ingest-url/route.test.ts","POST /api/ingest-url","should return 400 Bad Request if publicKey is missing",PASSED
-UT-017,"API Route Handlers","app/api/ingest-url/route.test.ts","POST /api/ingest-url","should deduplicate extracted products against existing bot products",PASSED
-UT-018,"Utilities & Mappers","app/api/lib/chunker.test.ts","chunkText","should return an empty array for empty or falsy text",PASSED
-UT-019,"Utilities & Mappers","app/api/lib/chunker.test.ts","chunkText","should return an empty array if text length is less than 200 characters",PASSED
-UT-020,"Utilities & Mappers","app/api/lib/chunker.test.ts","chunkText","should return a single chunk if text length is between 200 and default chunkSize (800)",PASSED
-UT-021,"Utilities & Mappers","app/api/lib/chunker.test.ts","chunkText","should correctly split text longer than default chunkSize into multiple chunks",PASSED
-UT-022,"Utilities & Mappers","app/api/lib/chunker.test.ts","chunkText","should handle exact multiples of chunkSize",PASSED
-UT-023,"Utilities & Mappers","app/api/lib/chunker.test.ts","chunkText","should respect custom chunkSize parameter",PASSED
-UT-024,"Utilities & Mappers","app/api/lib/emailTemplates.test.ts","generateUserConfirmationTemplate","should render full confirmation email template with custom message",PASSED
-UT-025,"Utilities & Mappers","app/api/lib/emailTemplates.test.ts","generateUserConfirmationTemplate","should render confirmation email template without custom message when omitted",PASSED
-UT-026,"Utilities & Mappers","app/api/shopify/lib/verifySessionToken.test.ts","Shopify verifySessionToken Utility","should throw error if authorization header is missing or does not start with Bearer",PASSED
-UT-027,"Utilities & Mappers","app/api/shopify/lib/verifySessionToken.test.ts","Shopify verifySessionToken Utility","should throw error if session token is invalid or missing dest claim",PASSED
-UT-028,"Utilities & Mappers","app/api/shopify/lib/verifySessionToken.test.ts","Shopify verifySessionToken Utility","should verify valid session token and return payload",PASSED
-UT-029,"Utilities & Mappers","app/api/shopify/lib/verifySessionToken.test.ts","Shopify verifySessionToken Utility","should extract shop hostname from session payload",PASSED
-UT-030,"API Route Handlers","app/api/shopify/webhooks/route.test.ts","POST /api/shopify/webhooks","should return 401 Unauthorized when HMAC signature is invalid",PASSED
-UT-031,"API Route Handlers","app/api/shopify/webhooks/route.test.ts","POST /api/shopify/webhooks","should return 400 Bad Request when shop or topic header is missing",PASSED
-UT-032,"API Route Handlers","app/api/shopify/webhooks/route.test.ts","POST /api/shopify/webhooks","should process products/create webhook and update bot ecommerce_products in database",PASSED
-UT-033,"API Route Handlers","app/api/shopify/webhooks/route.test.ts","POST /api/shopify/webhooks","should process app/uninstalled webhook and delete store record",PASSED
-UT-034,"UI Components","components/AuthGuard.test.tsx","AuthGuard","should redirect unauthenticated users to /login and not render children",PASSED
-UT-035,"UI Components","components/AuthGuard.test.tsx","AuthGuard","should render children when user is authenticated",PASSED
-UT-036,"UI Components","components/AuthGuard.test.tsx","RefreshAuthGuard","should redirect authenticated users to /admin and not render children",PASSED
-UT-037,"UI Components","components/AuthGuard.test.tsx","RefreshAuthGuard","should render public children when user is not authenticated",PASSED
-UT-038,"UI Components","components/bot-form/BotForm.test.tsx","BotForm","should render default values when no initialData is provided",PASSED
-UT-039,"UI Components","components/bot-form/BotForm.test.tsx","BotForm","should render initial data when provided",PASSED
-UT-040,"UI Components","components/bot-form/BotForm.test.tsx","BotForm","should allow changing basic info fields",PASSED
-UT-041,"UI Components","components/bot-form/BotForm.test.tsx","BotForm","should toggle lead collection and allow editing contact settings",PASSED
-UT-042,"UI Components","components/bot-form/BotForm.test.tsx","BotForm","should toggle e-commerce mode and handle product catalog operations",PASSED
-UT-043,"UI Components","components/bot-form/BotForm.test.tsx","BotForm","should submit the form with cleaned product entries on form submission",PASSED
-UT-044,"UI Components","components/bot-form/BotForm.test.tsx","BotForm","should display loading state when loading prop is true",PASSED
-UT-045,"UI Components","components/bot-form/BotForm.test.tsx","BotForm","should handle logo image upload successfully",PASSED
-UT-046,"UI Components","components/bot-form/BotForm.test.tsx","BotForm","should handle auto-extract products crawl request",PASSED
-UT-047,"UI Components","components/buttons/black-button/BlackButton.test.tsx","BlackButton Component","should render button with children and handle click events",PASSED
-UT-048,"UI Components","components/buttons/black-button/BlackButton.test.tsx","BlackButton Component","should render as an anchor link when href is provided",PASSED
-UT-049,"UI Components","components/buttons/black-button/BlackButton.test.tsx","BlackButton Component","should respect disabled prop on button element",PASSED
-UT-050,"UI Components","components/buttons/primary-button/PrimaryButton.test.tsx","PrimaryButton Component","should render button with children and handle click events",PASSED
-UT-051,"UI Components","components/buttons/primary-button/PrimaryButton.test.tsx","PrimaryButton Component","should render as an anchor link when href is provided",PASSED
-UT-052,"UI Components","components/buttons/primary-button/PrimaryButton.test.tsx","PrimaryButton Component","should respect disabled prop on button element",PASSED
-UT-053,"UI Components","components/buttons/secondary-button/SecondaryButton.test.tsx","SecondaryButton Component","should render button with children and handle click events",PASSED
-UT-054,"UI Components","components/buttons/secondary-button/SecondaryButton.test.tsx","SecondaryButton Component","should render as an anchor link when href is provided",PASSED
-UT-055,"UI Components","components/buttons/secondary-button/SecondaryButton.test.tsx","SecondaryButton Component","should respect disabled prop on button element",PASSED
-UT-056,"UI Components","components/custom-select/CustomSelect.test.tsx","CustomSelect Component","should render selected option label",PASSED
-UT-057,"UI Components","components/custom-select/CustomSelect.test.tsx","CustomSelect Component","should render fallback text when selected value does not match any option",PASSED
-UT-058,"UI Components","components/custom-select/CustomSelect.test.tsx","CustomSelect Component","should open options menu on click and select an option",PASSED
-UT-059,"UI Components","components/custom-select/CustomSelect.test.tsx","CustomSelect Component","should close dropdown menu when clicking outside",PASSED
-UT-060,"UI Components","components/empty-state/EmptyState.test.tsx","EmptyState Component","should render title, description, and icon",PASSED
-UT-061,"UI Components","components/empty-state/EmptyState.test.tsx","EmptyState Component","should render action button and handle click events when actionLabel and onAction are provided",PASSED
-UT-062,"UI Components","components/footer/Footer.test.tsx","Footer Component","should render footer logo, section titles, and copyright text",PASSED
-UT-063,"UI Components","components/header/Header.test.tsx","Header Component","should render sign in / try for free buttons when user is not authenticated",PASSED
-UT-064,"UI Components","components/header/Header.test.tsx","Header Component","should render Dashboard button when user is authenticated",PASSED
-UT-065,"UI Components","components/loader/Loader.test.tsx","Loader Component","should render default loader component",PASSED
-UT-066,"UI Components","components/loader/Loader.test.tsx","Loader Component","should render fullScreen loader component",PASSED
-UT-067,"UI Components","components/pagination/Pagination.test.tsx","Pagination Component","should return null if totalPages is 1 or less",PASSED
-UT-068,"UI Components","components/pagination/Pagination.test.tsx","Pagination Component","should render page info and navigation buttons when totalPages > 1",PASSED
-UT-069,"UI Components","components/pagination/Pagination.test.tsx","Pagination Component","should disable previous button on first page and next button on last page",PASSED
-UT-070,"UI Components","components/scroll-to-top/ScrollToTop.test.tsx","ScrollToTop Component","should toggle visibility on window scroll and handle scroll to top click",PASSED
-UT-071,"UI Components","components/search-bar/SearchBar.test.tsx","SearchBar Component","should render placeholder and input value",PASSED
-UT-072,"UI Components","components/search-bar/SearchBar.test.tsx","SearchBar Component","should trigger debounced search on input change",PASSED
-UT-073,"UI Components","components/search-bar/SearchBar.test.tsx","SearchBar Component","should clear search query when clear button is clicked",PASSED
-UT-074,"UI Components","components/status-badge/StatusBadge.test.tsx","StatusBadge Component","should render active status badge correctly",PASSED
-UT-075,"UI Components","components/status-badge/StatusBadge.test.tsx","StatusBadge Component","should render inactive status badge correctly",PASSED
-UT-076,"Context Providers","context/BreadcrumbContext.test.tsx","BreadcrumbContext","should initialize default meta values and allow updating breadcrumb metadata",PASSED
-UT-077,"Context Providers","context/BreadcrumbContext.test.tsx","BreadcrumbContext","should provide default dummy setBreadcrumbMeta function when used outside provider",PASSED
-UT-078,"Context Providers","context/SidebarContext.test.tsx","SidebarContext","should initialize default state correctly and update localStorage on sidebar toggle",PASSED
-UT-079,"Context Providers","context/SidebarContext.test.tsx","SidebarContext","should handle drawer toggle and close drawer actions",PASSED
-UT-080,"Context Providers","context/SidebarContext.test.tsx","SidebarContext","should initialize isCollapsed to true if localStorage has sidebar-collapsed set to true",PASSED
-UT-081,"Context Providers","context/SidebarContext.test.tsx","SidebarContext","should throw error if useSidebar is used outside SidebarProvider",PASSED
-UT-082,"Context Providers","context/SidebarContext.test.tsx","SidebarContext","should handle SSR environment where window is undefined during initial state setup",PASSED
-UT-083,"Custom React Hooks","hooks/useAnalytics.test.tsx","useAnalytics hook","should fetch analytics data successfully",PASSED
-UT-084,"Custom React Hooks","hooks/useAuth.test.tsx","useCurrentUser hook","should fetch current authenticated user data",PASSED
-UT-085,"Custom React Hooks","hooks/useBot.test.tsx","useBots","should fetch all bots successfully",PASSED
-UT-086,"Custom React Hooks","hooks/useBot.test.tsx","useBot","should fetch bot details when valid ID is provided",PASSED
-UT-087,"Custom React Hooks","hooks/useBot.test.tsx","useBot","should not execute query when ID is empty (enabled: false)",PASSED
-UT-088,"Custom React Hooks","hooks/useBot.test.tsx","useCreateBot","should call createBot service and invalidate bots query cache on success",PASSED
-UT-089,"Custom React Hooks","hooks/useBot.test.tsx","useUpdateBot","should call updateBot service and invalidate single bot & bots list caches on success",PASSED
-UT-090,"Custom React Hooks","hooks/useInbox.test.tsx","useManualConversations","should fetch manual conversations successfully",PASSED
-UT-091,"Custom React Hooks","hooks/useInbox.test.tsx","useConversationDetail","should fetch conversation detail when valid ID is provided",PASSED
-UT-092,"Custom React Hooks","hooks/useInbox.test.tsx","useConversationDetail","should stay idle when ID is empty",PASSED
-UT-093,"Custom React Hooks","hooks/useInbox.test.tsx","useReplyToConversation","should send reply and invalidate caches on success",PASSED
-UT-094,"Custom React Hooks","hooks/useInbox.test.tsx","useCloseConversation","should close conversation and invalidate caches on success",PASSED
-UT-095,"Custom React Hooks","hooks/useLead.test.tsx","useLeads hook","should fetch all leads successfully",PASSED
-UT-096,"Utilities & Mappers","lib/axios.test.ts","axiosInstance interceptors","should attach Authorization header when active supabase session exists",PASSED
-UT-097,"Utilities & Mappers","lib/axios.test.ts","axiosInstance interceptors","should not attach Authorization header when no session exists",PASSED
-UT-098,"Utilities & Mappers","lib/embed.test.ts","generateEmbedScript","should generate a valid HTML script tag with the provided public key",PASSED
-UT-099,"Utilities & Mappers","lib/embed.test.ts","generateReactEmbedScript","should generate a valid Next.js Script component string with the provided public key",PASSED
-UT-100,"Utilities & Mappers","lib/shopify/shopifyOrderMapper.test.ts","shopifyOrderMapper","should correctly map a complete paid and fulfilled Shopify order",PASSED
-UT-101,"Utilities & Mappers","lib/shopify/shopifyOrderMapper.test.ts","shopifyOrderMapper","should handle DELIVERED order status correctly",PASSED
-UT-102,"Utilities & Mappers","lib/shopify/shopifyOrderMapper.test.ts","shopifyOrderMapper","should handle PAID but UNFULFILLED order status (Processing)",PASSED
-UT-103,"Utilities & Mappers","lib/shopify/shopifyOrderMapper.test.ts","shopifyOrderMapper","should handle PENDING payment and UNFULFILLED order (Confirmed)",PASSED
-UT-104,"Utilities & Mappers","lib/shopify/shopifyOrderMapper.test.ts","shopifyOrderMapper","should correctly handle CANCELLED order",PASSED
-UT-105,"Utilities & Mappers","lib/shopify/shopifyOrderMapper.test.ts","shopifyOrderMapper","should fallback to successfulFulfillments if fulfillments is missing",PASSED
-UT-106,"Utilities & Mappers","lib/shopify/shopifyOrderMapper.test.ts","shopifyOrderMapper","should resolve customer email fallback when order email is missing",PASSED
-UT-107,"Utilities & Mappers","lib/shopify/shopifyOrderMapper.test.ts","shopifyOrderMapper","should handle cancelled order without a cancelReason",PASSED
-UT-108,"Utilities & Mappers","lib/shopify/shopifyOrderMapper.test.ts","shopifyOrderMapper","should handle in-transit fulfillment without tracking company",PASSED
-UT-109,"Utilities & Mappers","lib/shopify/shopifyOrderMapper.test.ts","shopifyOrderMapper","should handle missing line items and default prices gracefully",PASSED
-UT-110,"Utilities & Mappers","lib/shopify/shopifyOrderMapper.test.ts","shopifyOrderMapper","should fallback cleanly when invalid date string is provided",PASSED
-UT-111,"API Services","services/analytics.api.test.ts","getAnalytics","should fetch analytics metrics from /api/analytics endpoint",PASSED
-UT-112,"API Services","services/auth.api.test.ts","getCurrentUser","should fetch current authenticated user profile from /api/me",PASSED
-UT-113,"API Services","services/bot.api.test.ts","getAllBots","should fetch all bots from /api/bots endpoint",PASSED
-UT-114,"API Services","services/bot.api.test.ts","getBotById","should fetch a single bot by ID from /api/bots/:id",PASSED
-UT-115,"API Services","services/bot.api.test.ts","createBot","should post new bot payload to /api/bots endpoint",PASSED
-UT-116,"API Services","services/bot.api.test.ts","updateBot","should put updated bot data with authorization header from active supabase session",PASSED
-UT-117,"API Services","services/inbox.api.test.ts","getManualConversations","should fetch manual conversations list from /api/admin/conversations",PASSED
-UT-118,"API Services","services/inbox.api.test.ts","getConversationById","should fetch conversation details by ID from /api/admin/conversations/:id",PASSED
-UT-119,"API Services","services/inbox.api.test.ts","replyToConversation","should post reply message to /api/admin/conversations/:id/reply",PASSED
-UT-120,"API Services","services/inbox.api.test.ts","closeConversation","should post close action to /api/admin/conversations/:id/close",PASSED
-UT-121,"API Services","services/lead.api.test.ts","getAllLeads","should fetch all leads from /api/leads endpoint",PASSED
-UT-122,"Integration & Example","__tests__/example.test.tsx","Header Component","renders the header title correctly",PASSED
+UT-001,"UI Components","app/(auth)/admin/components/admin-header/Adminheader.test.tsx","Adminheader Component","should render page title ",PASSED
+UT-002,"UI Components","app/(auth)/admin/components/admin-header/Adminheader.test.tsx","Adminheader Component","should trigger toggleSidebar and toggleDrawer when buttons are clicked",PASSED
+UT-003,"UI Components","app/(auth)/admin/components/bar-chart/BarsChart.test.tsx","BarsChart Component","should render bar chart container without crashing",PASSED
+UT-004,"UI Components","app/(auth)/admin/components/breadcrumbs/Breadcrumbs.test.tsx","Breadcrumbs Component","should return null if pathname has 1 or fewer segments",PASSED
+UT-005,"UI Components","app/(auth)/admin/components/breadcrumbs/Breadcrumbs.test.tsx","Breadcrumbs Component","should render breadcrumb items for multi-segment path",PASSED
+UT-006,"UI Components","app/(auth)/admin/components/chart-tool-tip/ChartTooltip.test.tsx","ChartTooltip Component","should return null if active is false or payload is empty",PASSED
+UT-007,"UI Components","app/(auth)/admin/components/chart-tool-tip/ChartTooltip.test.tsx","ChartTooltip Component","should render label and payload values when active is true",PASSED
+UT-008,"UI Components","app/(auth)/admin/components/performance-table/PerformanceTable.test.tsx","PerformanceTable Component","should render empty state message when convosPerBot is empty",PASSED
+UT-009,"UI Components","app/(auth)/admin/components/performance-table/PerformanceTable.test.tsx","PerformanceTable Component","should render bot stats, conversion rate, and handle pagination",PASSED
+UT-010,"UI Components","app/(auth)/admin/components/pie-chart/PiesChart.test.tsx","PiesChart Component","should render pie chart container without crashing",PASSED
+UT-011,"UI Components","app/(auth)/admin/components/sidebar/Sidebar.test.tsx","Sidebar Component","should render navigation items (Dashboard, Create Bot, Bots, Leads, Live Support, Settings)",PASSED
+UT-012,"UI Components","app/(auth)/admin/components/sidebar/Sidebar.test.tsx","Sidebar Component","should handle logout button click and redirect to /login",PASSED
+UT-013,"UI Components","app/(auth)/admin/components/stats-card/StatsCard.test.tsx","StatsCard Component","should render stat title, length value, delta text, and icon",PASSED
+UT-014,"API Route Handlers","app/api/chat/route.test.ts","OPTIONS /api/chat","should return 204 status with CORS headers",PASSED
+UT-015,"API Route Handlers","app/api/chat/route.test.ts","POST /api/chat","should return 400 Bad Request if publicKey or message is missing",PASSED
+UT-016,"API Route Handlers","app/api/chat/route.test.ts","POST /api/chat","should handle manual support state conversation",PASSED
+UT-017,"API Route Handlers","app/api/chat/route.test.ts","POST /api/chat","should return 429 when receptionist agent fails with quota error",PASSED
+UT-018,"API Route Handlers","app/api/chat/route.test.ts","POST /api/chat","should fire lead completion pipeline and stream receptionist response",PASSED
+UT-019,"API Route Handlers","app/api/ingest-pdf/route.test.ts","POST /api/ingest-pdf","should return 400 Bad Request if file or publicKey is missing",PASSED
+UT-020,"API Route Handlers","app/api/ingest-pdf/route.test.ts","POST /api/ingest-pdf","should return 400 Bad Request if extracted text is empty",PASSED
+UT-021,"API Route Handlers","app/api/ingest-pdf/route.test.ts","POST /api/ingest-pdf","should reject with an error when PDF parsing fails",PASSED
+UT-022,"API Route Handlers","app/api/ingest-pdf/route.test.ts","POST /api/ingest-pdf","should successfully extract text, generate embeddings, and save document chunks",PASSED
+UT-023,"API Route Handlers","app/api/ingest-url/route.test.ts","POST /api/ingest-url","should return 401 Unauthorized if user session is invalid",PASSED
+UT-024,"API Route Handlers","app/api/ingest-url/route.test.ts","POST /api/ingest-url","should return 400 Bad Request if publicKey or url is missing",PASSED
+UT-025,"API Route Handlers","app/api/ingest-url/route.test.ts","POST /api/ingest-url","should return 403 Forbidden if bot does not belong to the user",PASSED
+UT-026,"API Route Handlers","app/api/ingest-url/route.test.ts","POST /api/ingest-url","should return 200 with alreadyCrawled flag if URL has already been crawled",PASSED
+UT-027,"API Route Handlers","app/api/ingest-url/route.test.ts","POST /api/ingest-url","should return 400 if crawler finds no readable text content",PASSED
+UT-028,"API Route Handlers","app/api/ingest-url/route.test.ts","POST /api/ingest-url","should successfully crawl, extract products, chunk, and ingest document content",PASSED
+UT-029,"API Route Handlers","app/api/ingest-url/route.test.ts","POST /api/ingest-url","should return 400 Bad Request if publicKey is missing",PASSED
+UT-030,"API Route Handlers","app/api/ingest-url/route.test.ts","POST /api/ingest-url","should deduplicate extracted products against existing bot products",PASSED
+UT-031,"Utilities & Mappers","app/api/lib/chunker.test.ts","chunkText","should return an empty array for empty or falsy text",PASSED
+UT-032,"Utilities & Mappers","app/api/lib/chunker.test.ts","chunkText","should return an empty array if text length is less than 200 characters",PASSED
+UT-033,"Utilities & Mappers","app/api/lib/chunker.test.ts","chunkText","should return a single chunk if text length is between 200 and default chunkSize (800)",PASSED
+UT-034,"Utilities & Mappers","app/api/lib/chunker.test.ts","chunkText","should correctly split text longer than default chunkSize into multiple chunks",PASSED
+UT-035,"Utilities & Mappers","app/api/lib/chunker.test.ts","chunkText","should handle exact multiples of chunkSize",PASSED
+UT-036,"Utilities & Mappers","app/api/lib/chunker.test.ts","chunkText","should respect custom chunkSize parameter",PASSED
+UT-037,"Utilities & Mappers","app/api/lib/emailTemplates.test.ts","generateUserConfirmationTemplate","should render full confirmation email template with custom message",PASSED
+UT-038,"Utilities & Mappers","app/api/lib/emailTemplates.test.ts","generateUserConfirmationTemplate","should render confirmation email template without custom message when omitted",PASSED
+UT-039,"Utilities & Mappers","app/api/shopify/lib/verifySessionToken.test.ts","Shopify verifySessionToken Utility","should throw error if authorization header is missing or does not start with Bearer",PASSED
+UT-040,"Utilities & Mappers","app/api/shopify/lib/verifySessionToken.test.ts","Shopify verifySessionToken Utility","should throw error if session token is invalid or missing dest claim",PASSED
+UT-041,"Utilities & Mappers","app/api/shopify/lib/verifySessionToken.test.ts","Shopify verifySessionToken Utility","should verify valid session token and return payload",PASSED
+UT-042,"Utilities & Mappers","app/api/shopify/lib/verifySessionToken.test.ts","Shopify verifySessionToken Utility","should extract shop hostname from session payload",PASSED
+UT-043,"API Route Handlers","app/api/shopify/webhooks/route.test.ts","POST /api/shopify/webhooks","should return 401 Unauthorized when HMAC signature is invalid",PASSED
+UT-044,"API Route Handlers","app/api/shopify/webhooks/route.test.ts","POST /api/shopify/webhooks","should return 400 Bad Request when shop or topic header is missing",PASSED
+UT-045,"API Route Handlers","app/api/shopify/webhooks/route.test.ts","POST /api/shopify/webhooks","should process products/create webhook and update bot ecommerce_products in database",PASSED
+UT-046,"API Route Handlers","app/api/shopify/webhooks/route.test.ts","POST /api/shopify/webhooks","should process app/uninstalled webhook and delete store record",PASSED
+UT-047,"UI Components","components/AuthGuard.test.tsx","AuthGuard","should redirect unauthenticated users to /login and not render children",PASSED
+UT-048,"UI Components","components/AuthGuard.test.tsx","AuthGuard","should render children when user is authenticated",PASSED
+UT-049,"UI Components","components/AuthGuard.test.tsx","RefreshAuthGuard","should redirect authenticated users to /admin and not render children",PASSED
+UT-050,"UI Components","components/AuthGuard.test.tsx","RefreshAuthGuard","should render public children when user is not authenticated",PASSED
+UT-051,"UI Components","components/bot-form/AppearanceSection.test.tsx","AppearanceSection Component","should render color picker and upload avatar button when logoUrl is empty",PASSED
+UT-052,"UI Components","components/bot-form/AppearanceSection.test.tsx","AppearanceSection Component","should render avatar preview image and handle remove logo click",PASSED
+UT-053,"UI Components","components/bot-form/AppearanceSection.test.tsx","AppearanceSection Component","should handle logo file upload successfully",PASSED
+UT-054,"UI Components","components/bot-form/AppearanceSection.test.tsx","AppearanceSection Component","should alert if uploaded file exceeds 1MB",PASSED
+UT-055,"UI Components","components/bot-form/BasicInfoSection.test.tsx","BasicInfoSection Component","should render bot name, description, and tone fields",PASSED
+UT-056,"UI Components","components/bot-form/BasicInfoSection.test.tsx","BasicInfoSection Component","should trigger update callback when bot name and description change",PASSED
+UT-057,"UI Components","components/bot-form/BotForm.test.tsx","BotForm","should render default values when no initialData is provided",PASSED
+UT-058,"UI Components","components/bot-form/BotForm.test.tsx","BotForm","should render initial data when provided",PASSED
+UT-059,"UI Components","components/bot-form/BotForm.test.tsx","BotForm","should allow changing basic info fields",PASSED
+UT-060,"UI Components","components/bot-form/BotForm.test.tsx","BotForm","should toggle lead collection and allow editing contact settings",PASSED
+UT-061,"UI Components","components/bot-form/BotForm.test.tsx","BotForm","should toggle e-commerce mode and handle product catalog operations",PASSED
+UT-062,"UI Components","components/bot-form/BotForm.test.tsx","BotForm","should submit the form with cleaned product entries on form submission",PASSED
+UT-063,"UI Components","components/bot-form/BotForm.test.tsx","BotForm","should display loading state when loading prop is true",PASSED
+UT-064,"UI Components","components/bot-form/BotForm.test.tsx","BotForm","should handle logo image upload successfully",PASSED
+UT-065,"UI Components","components/bot-form/BotForm.test.tsx","BotForm","should handle auto-extract products crawl request",PASSED
+UT-066,"UI Components","components/bot-form/ContactSettingsSection.test.tsx","ContactSettingsSection Component","should toggle lead collection when toggle switch is clicked",PASSED
+UT-067,"UI Components","components/bot-form/ContactSettingsSection.test.tsx","ContactSettingsSection Component","should render inputs for notification email, prompt, and confirmation message when enabled",PASSED
+UT-068,"UI Components","components/bot-form/ContactSettingsSection.test.tsx","ContactSettingsSection Component","should trigger update on input change when contactEnabled is true",PASSED
+UT-069,"UI Components","components/bot-form/EcommerceSettingsSection.test.tsx","EcommerceSettingsSection Component","should toggle ecommerce mode when switch is clicked",PASSED
+UT-070,"UI Components","components/bot-form/EcommerceSettingsSection.test.tsx","EcommerceSettingsSection Component","should render auto-extract URL input, product list, and sales prompt when enabled",PASSED
+UT-071,"UI Components","components/bot-form/EcommerceSettingsSection.test.tsx","EcommerceSettingsSection Component","should crawl products from URL and update ecommerceProducts list",PASSED
+UT-072,"UI Components","components/bot-form/EcommerceSettingsSection.test.tsx","EcommerceSettingsSection Component","should handle product addition manually when + Add Product button is clicked",PASSED
+UT-073,"UI Components","components/bot-preview/BotPreview.test.tsx","BotPreview Component","should render default bot title, default name ",PASSED
+UT-074,"UI Components","components/bot-preview/BotPreview.test.tsx","BotPreview Component","should render custom name, logo image, and contact prompt when contactEnabled is true",PASSED
+UT-075,"UI Components","components/bot-preview/BotPreview.test.tsx","BotPreview Component","should render fallback contact prompt when contactEnabled is true but contactPrompt is empty",PASSED
+UT-076,"UI Components","components/bot-preview/OrderJourneyCard.test.tsx","OrderJourneyCard Component","should return null if data or orderNumber is missing",PASSED
+UT-077,"UI Components","components/bot-preview/OrderJourneyCard.test.tsx","OrderJourneyCard Component","should render order header, status badge, step progress, address, tracking button, and items list",PASSED
+UT-078,"UI Components","components/bot-preview/OrderJourneyCard.test.tsx","OrderJourneyCard Component","should render cancelled status badge styling and error step indicator when order is cancelled",PASSED
+UT-079,"UI Components","components/buttons/black-button/BlackButton.test.tsx","BlackButton Component","should render button with children and handle click events",PASSED
+UT-080,"UI Components","components/buttons/black-button/BlackButton.test.tsx","BlackButton Component","should render as an anchor link when href is provided",PASSED
+UT-081,"UI Components","components/buttons/black-button/BlackButton.test.tsx","BlackButton Component","should respect disabled prop on button element",PASSED
+UT-082,"UI Components","components/buttons/primary-button/PrimaryButton.test.tsx","PrimaryButton Component","should render button with children and handle click events",PASSED
+UT-083,"UI Components","components/buttons/primary-button/PrimaryButton.test.tsx","PrimaryButton Component","should render as an anchor link when href is provided",PASSED
+UT-084,"UI Components","components/buttons/primary-button/PrimaryButton.test.tsx","PrimaryButton Component","should respect disabled prop on button element",PASSED
+UT-085,"UI Components","components/buttons/secondary-button/SecondaryButton.test.tsx","SecondaryButton Component","should render button with children and handle click events",PASSED
+UT-086,"UI Components","components/buttons/secondary-button/SecondaryButton.test.tsx","SecondaryButton Component","should render as an anchor link when href is provided",PASSED
+UT-087,"UI Components","components/buttons/secondary-button/SecondaryButton.test.tsx","SecondaryButton Component","should respect disabled prop on button element",PASSED
+UT-088,"UI Components","components/custom-select/CustomSelect.test.tsx","CustomSelect Component","should render selected option label",PASSED
+UT-089,"UI Components","components/custom-select/CustomSelect.test.tsx","CustomSelect Component","should render fallback text when selected value does not match any option",PASSED
+UT-090,"UI Components","components/custom-select/CustomSelect.test.tsx","CustomSelect Component","should open options menu on click and select an option",PASSED
+UT-091,"UI Components","components/custom-select/CustomSelect.test.tsx","CustomSelect Component","should close dropdown menu when clicking outside",PASSED
+UT-092,"UI Components","components/empty-state/EmptyState.test.tsx","EmptyState Component","should render title, description, and icon",PASSED
+UT-093,"UI Components","components/empty-state/EmptyState.test.tsx","EmptyState Component","should render action button and handle click events when actionLabel and onAction are provided",PASSED
+UT-094,"UI Components","components/footer/Footer.test.tsx","Footer Component","should render footer logo, section titles, and copyright text",PASSED
+UT-095,"UI Components","components/header/Header.test.tsx","Header Component","should render sign in / try for free buttons when user is not authenticated",PASSED
+UT-096,"UI Components","components/header/Header.test.tsx","Header Component","should render Dashboard button when user is authenticated",PASSED
+UT-097,"UI Components","components/loader/Loader.test.tsx","Loader Component","should render default loader component",PASSED
+UT-098,"UI Components","components/loader/Loader.test.tsx","Loader Component","should render fullScreen loader component",PASSED
+UT-099,"UI Components","components/pagination/Pagination.test.tsx","Pagination Component","should return null if totalPages is 1 or less",PASSED
+UT-100,"UI Components","components/pagination/Pagination.test.tsx","Pagination Component","should render page info and navigation buttons when totalPages > 1",PASSED
+UT-101,"UI Components","components/pagination/Pagination.test.tsx","Pagination Component","should disable previous button on first page and next button on last page",PASSED
+UT-102,"UI Components","components/scroll-to-top/ScrollToTop.test.tsx","ScrollToTop Component","should toggle visibility on window scroll and handle scroll to top click",PASSED
+UT-103,"UI Components","components/search-bar/SearchBar.test.tsx","SearchBar Component","should render placeholder and input value",PASSED
+UT-104,"UI Components","components/search-bar/SearchBar.test.tsx","SearchBar Component","should trigger debounced search on input change",PASSED
+UT-105,"UI Components","components/search-bar/SearchBar.test.tsx","SearchBar Component","should clear search query when clear button is clicked",PASSED
+UT-106,"UI Components","components/status-badge/StatusBadge.test.tsx","StatusBadge Component","should render active status badge correctly",PASSED
+UT-107,"UI Components","components/status-badge/StatusBadge.test.tsx","StatusBadge Component","should render inactive status badge correctly",PASSED
+UT-108,"Context Providers","context/BreadcrumbContext.test.tsx","BreadcrumbContext","should initialize default meta values and allow updating breadcrumb metadata",PASSED
+UT-109,"Context Providers","context/BreadcrumbContext.test.tsx","BreadcrumbContext","should provide default dummy setBreadcrumbMeta function when used outside provider",PASSED
+UT-110,"Context Providers","context/SidebarContext.test.tsx","SidebarContext","should initialize default state correctly and update localStorage on sidebar toggle",PASSED
+UT-111,"Context Providers","context/SidebarContext.test.tsx","SidebarContext","should handle drawer toggle and close drawer actions",PASSED
+UT-112,"Context Providers","context/SidebarContext.test.tsx","SidebarContext","should initialize isCollapsed to true if localStorage has sidebar-collapsed set to true",PASSED
+UT-113,"Context Providers","context/SidebarContext.test.tsx","SidebarContext","should throw error if useSidebar is used outside SidebarProvider",PASSED
+UT-114,"Context Providers","context/SidebarContext.test.tsx","SidebarContext","should handle SSR environment where window is undefined during initial state setup",PASSED
+UT-115,"Custom React Hooks","hooks/useAnalytics.test.tsx","useAnalytics hook","should fetch analytics data successfully",PASSED
+UT-116,"Custom React Hooks","hooks/useAuth.test.tsx","useCurrentUser hook","should fetch current authenticated user data",PASSED
+UT-117,"Custom React Hooks","hooks/useBot.test.tsx","useBots","should fetch all bots successfully",PASSED
+UT-118,"Custom React Hooks","hooks/useBot.test.tsx","useBot","should fetch bot details when valid ID is provided",PASSED
+UT-119,"Custom React Hooks","hooks/useBot.test.tsx","useBot","should not execute query when ID is empty (enabled: false)",PASSED
+UT-120,"Custom React Hooks","hooks/useBot.test.tsx","useCreateBot","should call createBot service and invalidate bots query cache on success",PASSED
+UT-121,"Custom React Hooks","hooks/useBot.test.tsx","useUpdateBot","should call updateBot service and invalidate single bot & bots list caches on success",PASSED
+UT-122,"Custom React Hooks","hooks/useInbox.test.tsx","useManualConversations","should fetch manual conversations successfully",PASSED
+UT-123,"Custom React Hooks","hooks/useInbox.test.tsx","useConversationDetail","should fetch conversation detail when valid ID is provided",PASSED
+UT-124,"Custom React Hooks","hooks/useInbox.test.tsx","useConversationDetail","should stay idle when ID is empty",PASSED
+UT-125,"Custom React Hooks","hooks/useInbox.test.tsx","useReplyToConversation","should send reply and invalidate caches on success",PASSED
+UT-126,"Custom React Hooks","hooks/useInbox.test.tsx","useCloseConversation","should close conversation and invalidate caches on success",PASSED
+UT-127,"Custom React Hooks","hooks/useLead.test.tsx","useLeads hook","should fetch all leads successfully",PASSED
+UT-128,"Utilities & Mappers","lib/axios.test.ts","axiosInstance interceptors","should attach Authorization header when active supabase session exists",PASSED
+UT-129,"Utilities & Mappers","lib/axios.test.ts","axiosInstance interceptors","should not attach Authorization header when no session exists",PASSED
+UT-130,"Utilities & Mappers","lib/embed.test.ts","generateEmbedScript","should generate a valid HTML script tag with the provided public key",PASSED
+UT-131,"Utilities & Mappers","lib/embed.test.ts","generateReactEmbedScript","should generate a valid Next.js Script component string with the provided public key",PASSED
+UT-132,"Utilities & Mappers","lib/shopify/shopifyOrderMapper.test.ts","shopifyOrderMapper","should correctly map a complete paid and fulfilled Shopify order",PASSED
+UT-133,"Utilities & Mappers","lib/shopify/shopifyOrderMapper.test.ts","shopifyOrderMapper","should handle DELIVERED order status correctly",PASSED
+UT-134,"Utilities & Mappers","lib/shopify/shopifyOrderMapper.test.ts","shopifyOrderMapper","should handle PAID but UNFULFILLED order status (Processing)",PASSED
+UT-135,"Utilities & Mappers","lib/shopify/shopifyOrderMapper.test.ts","shopifyOrderMapper","should handle PENDING payment and UNFULFILLED order (Confirmed)",PASSED
+UT-136,"Utilities & Mappers","lib/shopify/shopifyOrderMapper.test.ts","shopifyOrderMapper","should correctly handle CANCELLED order",PASSED
+UT-137,"Utilities & Mappers","lib/shopify/shopifyOrderMapper.test.ts","shopifyOrderMapper","should fallback to successfulFulfillments if fulfillments is missing",PASSED
+UT-138,"Utilities & Mappers","lib/shopify/shopifyOrderMapper.test.ts","shopifyOrderMapper","should resolve customer email fallback when order email is missing",PASSED
+UT-139,"Utilities & Mappers","lib/shopify/shopifyOrderMapper.test.ts","shopifyOrderMapper","should handle cancelled order without a cancelReason",PASSED
+UT-140,"Utilities & Mappers","lib/shopify/shopifyOrderMapper.test.ts","shopifyOrderMapper","should handle in-transit fulfillment without tracking company",PASSED
+UT-141,"Utilities & Mappers","lib/shopify/shopifyOrderMapper.test.ts","shopifyOrderMapper","should handle missing line items and default prices gracefully",PASSED
+UT-142,"Utilities & Mappers","lib/shopify/shopifyOrderMapper.test.ts","shopifyOrderMapper","should fallback cleanly when invalid date string is provided",PASSED
+UT-143,"API Services","services/analytics.api.test.ts","getAnalytics","should fetch analytics metrics from /api/analytics endpoint",PASSED
+UT-144,"API Services","services/auth.api.test.ts","getCurrentUser","should fetch current authenticated user profile from /api/me",PASSED
+UT-145,"API Services","services/bot.api.test.ts","getAllBots","should fetch all bots from /api/bots endpoint",PASSED
+UT-146,"API Services","services/bot.api.test.ts","getBotById","should fetch a single bot by ID from /api/bots/:id",PASSED
+UT-147,"API Services","services/bot.api.test.ts","createBot","should post new bot payload to /api/bots endpoint",PASSED
+UT-148,"API Services","services/bot.api.test.ts","updateBot","should put updated bot data with authorization header from active supabase session",PASSED
+UT-149,"API Services","services/inbox.api.test.ts","getManualConversations","should fetch manual conversations list from /api/admin/conversations",PASSED
+UT-150,"API Services","services/inbox.api.test.ts","getConversationById","should fetch conversation details by ID from /api/admin/conversations/:id",PASSED
+UT-151,"API Services","services/inbox.api.test.ts","replyToConversation","should post reply message to /api/admin/conversations/:id/reply",PASSED
+UT-152,"API Services","services/inbox.api.test.ts","closeConversation","should post close action to /api/admin/conversations/:id/close",PASSED
+UT-153,"API Services","services/lead.api.test.ts","getAllLeads","should fetch all leads from /api/leads endpoint",PASSED
+UT-154,"Integration & Example","__tests__/example.test.tsx","Header Component","renders the header title correctly",PASSED

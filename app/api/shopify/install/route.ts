@@ -82,6 +82,10 @@ export async function GET(req: NextRequest) {
         headers: { "Content-Type": "text/html" },
       });
 
+      if (!response.headers.append) {
+        (response.headers as unknown as { append: (k: string, v: string) => void }).append = (k, v) => response.headers.set(k, v);
+      }
+
       response.cookies.set("shopify_state", state, {
         httpOnly: true,
         secure: true,
@@ -93,6 +97,10 @@ export async function GET(req: NextRequest) {
     }
 
     const response = NextResponse.redirect(installUrl);
+    if (!response.headers.append) {
+      (response.headers as unknown as { append: (k: string, v: string) => void }).append = (k, v) => response.headers.set(k, v);
+    }
+
     response.cookies.set("shopify_state", state, {
       httpOnly: true,
       secure: true,

@@ -100,7 +100,10 @@ export const BotForm = ({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const cleanProducts = (form.ecommerceProducts || []).filter(
-      (p) => p.name?.trim() && p.price?.trim() && p.url?.trim(),
+      (p) =>
+        String(p.name ?? "").trim() &&
+        String(p.price ?? "").trim() &&
+        String(p.url ?? "").trim(),
     );
     await onSubmit({
       ...form,

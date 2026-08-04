@@ -88,7 +88,9 @@ export const EcommerceSettingsSection = ({
         const isDup = merged.some(
           (p) =>
             (p.url && p.url === prod.url) ||
-            p.name.toLowerCase() === prod.name.toLowerCase(),
+            (p.name &&
+              prod.name &&
+              String(p.name).toLowerCase() === String(prod.name).toLowerCase()),
         );
         if (!isDup) {
           merged.push(prod);
@@ -112,7 +114,10 @@ export const EcommerceSettingsSection = ({
   }
 
   const hasEmptyProduct = (form.ecommerceProducts || []).some(
-    (p) => !p.name?.trim() || !p.price?.trim() || !p.url?.trim()
+    (p) =>
+      !String(p.name ?? "").trim() ||
+      !String(p.price ?? "").trim() ||
+      !String(p.url ?? "").trim(),
   );
 
   const isAddDisabled =
@@ -132,7 +137,9 @@ export const EcommerceSettingsSection = ({
     const cleaned = (form.ecommerceProducts || []).filter(
       (p, i) =>
         i === newIndex ||
-        (p.name?.trim() && p.price?.trim() && p.url?.trim())
+        (String(p.name ?? "").trim() &&
+          String(p.price ?? "").trim() &&
+          String(p.url ?? "").trim()),
     );
 
     update("ecommerceProducts", cleaned);
