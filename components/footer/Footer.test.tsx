@@ -2,7 +2,6 @@ import { render, screen } from "@testing-library/react";
 import { Footer } from "./Footer";
 import React from "react";
 
-// Mock next/image
 jest.mock("next/image", () => ({
   __esModule: true,
   default: (props: React.ImgHTMLAttributes<HTMLImageElement>) => (

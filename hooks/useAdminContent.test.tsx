@@ -55,15 +55,13 @@ describe("useAdminContent hook", () => {
     expect(result.current.isLoading).toBe(false);
     expect(result.current.bots).toEqual(mockBots);
     expect(result.current.totals).toEqual(mockAnalytics.totals);
-    expect(result.current.conversionRate).toBe("25.0"); // (5 / 20) * 100
+    expect(result.current.conversionRate).toBe("25.0");
 
-    // pieData filters out 0 leads
     expect(result.current.pieData).toEqual([
       { name: "Old Bot", value: 2 },
       { name: "New Bot With A Very Long Name Indeed", value: 3 },
     ]);
 
-    // botBarData truncates names > 10 chars
     expect(result.current.botBarData).toEqual([
       {
         name: "Old Bot",
@@ -77,7 +75,6 @@ describe("useAdminContent hook", () => {
       },
     ]);
 
-    // recentBots sorted by created_at descending and sliced to 4
     expect(result.current.recentBots).toHaveLength(4);
     expect(result.current.recentBots[0].id).toBe("bot-2");
     expect(result.current.recentBots[1].id).toBe("bot-5");

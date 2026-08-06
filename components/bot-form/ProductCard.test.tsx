@@ -217,7 +217,6 @@ describe("ProductCard Component", () => {
         />
       );
 
-      // Create a file larger than 1MB
       const largeFile = new File([new ArrayBuffer(1024 * 1024 + 1)], "large.png", {
         type: "image/png",
       });

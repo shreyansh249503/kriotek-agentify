@@ -77,7 +77,6 @@ describe("shopifyOrderMapper", () => {
     expect(result.isCancelled).toBe(false);
     expect(result.shippingAddress).toBe("123 Main St, New York, NY, USA, 10001");
 
-    // Items check
     expect(result.items).toHaveLength(1);
     expect(result.items[0]).toEqual({
       name: "Wireless Headphones",
@@ -87,14 +86,12 @@ describe("shopifyOrderMapper", () => {
       image: "https://example.com/headphones.jpg",
     });
 
-    // Tracking check
     expect(result.tracking).toEqual({
       company: "FedEx",
       number: "FX123456789",
       url: "https://fedex.com/track/FX123456789",
     });
 
-    // Milestones check
     expect(result.milestones).toHaveLength(5);
     expect(result.milestones[0].status).toBe("completed");
     expect(result.milestones[1].status).toBe("completed");

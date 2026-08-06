@@ -11,39 +11,47 @@ export const RealTimeInsightsMainConatiner = styled.div`
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  padding: 130px 0px;
+  padding: 110px 0px;
 
-  @media (max-width: ${BREAKPOINTS.TABLET}) {
+  @media (max-width: ${BREAKPOINTS.TABLET_LANDSCAPE}) {
     padding: 60px 0px;
+  }
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    padding: 40px 0px;
   }
 `;
 
 export const RealTimeInsightsSectionHeader = styled.div`
   width: 80%;
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
   gap: 40px;
 
-  @media (max-width: ${BREAKPOINTS.TABLET}) {
+  @media (max-width: ${BREAKPOINTS.TABLET_LANDSCAPE}) {
     width: 90%;
     flex-direction: column-reverse;
-    gap: 32px;
+    gap: 40px;
+  }
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    width: 95%;
+    gap: 30px;
   }
 `;
 
 export const RealTimeInsightsPrimarySection = styled.div`
-  width: 40%;
+  width: 45%;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 38px;
+  align-items: flex-start;
+  gap: 28px;
 
-  @media (max-width: ${BREAKPOINTS.TABLET}) {
+  @media (max-width: ${BREAKPOINTS.TABLET_LANDSCAPE}) {
     width: 100%;
-    align-items: center;
-    text-align: center;
-    gap: 24px;
+    gap: 20px;
   }
 `;
 
@@ -56,6 +64,11 @@ export const RealTimeInsightsTitleBtn = styled.div`
   font-size: 15px;
   font-weight: 500;
   color: ${COLOR.PRIMARY_HOVER};
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    font-size: 13px;
+    padding: 8px 14px;
+  }
 `;
 
 export const RealTimeInsightsHeading = styled.h2`
@@ -64,83 +77,88 @@ export const RealTimeInsightsHeading = styled.h2`
   color: ${COLOR.DARK};
   line-height: 1.2;
 
-  @media (max-width: ${BREAKPOINTS.TABLET}) {
+  @media (max-width: ${BREAKPOINTS.TABLET_LANDSCAPE}) {
     font-size: 32px;
   }
 
   @media (max-width: ${BREAKPOINTS.MOBILE}) {
-    font-size: 26px;
+    font-size: 25px;
   }
 `;
 
 export const RealTimeInsightsDescription = styled.p`
   font-size: 16px;
   color: ${COLOR.TEXT_SECONDARY};
-  max-width: 85%;
+  max-width: 100%;
+  line-height: 1.5;
 
-  @media (max-width: ${BREAKPOINTS.TABLET}) {
-    max-width: 100%;
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    font-size: 14px;
   }
 `;
 
 export const RealTimeInsightsSecondarySection = styled.div`
-  width: 55%;
+  width: 50%;
   display: flex;
   justify-content: center;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 20px;
 
-  @media (max-width: ${BREAKPOINTS.TABLET}) {
+  @media (max-width: ${BREAKPOINTS.TABLET_LANDSCAPE}) {
     width: 100%;
   }
 `;
 
 export const RealTimeInsightsDashboardImage = styled(Image)`
-  width: 90%;
+  width: 100%;
+  max-width: 560px;
   height: auto;
-  object-fit: cover;
+  object-fit: contain;
   border: 1px solid #eaeaea;
-  border-radius: 12px;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
 
-  @media (max-width: ${BREAKPOINTS.TABLET}) {
-    width: 100%;
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    border-radius: 12px;
   }
 `;
 
 export const RealTimeInsightsList = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 16px;
-
-  @media (max-width: ${BREAKPOINTS.TABLET}) {
-    align-items: flex-start;
-  }
+  gap: 14px;
+  width: 100%;
 `;
 
 export const RealTimeInsightsListItem = styled.div`
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
-  font-size: 16.5px;
+  font-size: 16px;
   color: ${COLOR.TEXT_SECONDARY};
   font-weight: 500;
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    font-size: 14px;
+  }
 
   svg {
     color: ${COLOR.PRIMARY_HOVER};
     flex-shrink: 0;
+    margin-top: 2px;
   }
 `;
 
 export const FlowtingImage = styled(Image)`
   position: absolute;
-  bottom: 30px;
-  right: 200px;
+  bottom: 20px;
+  right: 5%;
   width: auto;
+  max-width: 280px;
   height: auto;
   object-fit: contain;
+  pointer-events: none;
 
-  @media (max-width: ${BREAKPOINTS.TABLET}) {
+  @media (max-width: ${BREAKPOINTS.TABLET_LANDSCAPE}) {
     display: none;
   }
 `;

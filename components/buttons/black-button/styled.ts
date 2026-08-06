@@ -1,4 +1,4 @@
-import { COLOR } from "@/styles";
+import { BREAKPOINTS, COLOR } from "@/styles";
 import Link from "next/link";
 import styled, { css } from "styled-components";
 
@@ -19,9 +19,12 @@ const buttonStyles = css`
   cursor: pointer;
   border: 2px solid ${COLOR.DARK};
   font-family: inherit;
+  box-sizing: border-box;
 
   .arrow-icon {
+    font-size: 16px;
     transition: transform 0.2s ease;
+    flex-shrink: 0;
   }
 
   &:hover {
@@ -33,6 +36,27 @@ const buttonStyles = css`
   &:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+  }
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    padding: 14px 26px;
+    font-size: 15px;
+    border-radius: 10px;
+
+    .arrow-icon {
+      font-size: 15px;
+    }
+  }
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    padding: 12px 20px;
+    font-size: 14px;
+    gap: 6px;
+    border-radius: 8px;
+
+    .arrow-icon {
+      font-size: 14px;
+    }
   }
 `;
 
@@ -51,3 +75,4 @@ export const BlackButtonStyle = styled.button`
     color: ${COLOR.PRIMARY};
   }
 `;
+

@@ -13,8 +13,8 @@ describe("ColorPicker Component", () => {
     render(<ColorPicker value="#FF0000" onChange={mockOnChange} />);
 
     expect(screen.getByDisplayValue("FF0000")).toBeInTheDocument();
-    expect(screen.getByDisplayValue("255")).toBeInTheDocument(); // R channel
-    expect(screen.getAllByDisplayValue("0")).toHaveLength(2); // G & B channels
+    expect(screen.getByDisplayValue("255")).toBeInTheDocument();
+    expect(screen.getAllByDisplayValue("0")).toHaveLength(2); 
   });
 
   it("should call onChange when hex input is updated with a valid hex string", () => {
@@ -38,7 +38,6 @@ describe("ColorPicker Component", () => {
   it("should select a preset color when swatch is clicked", () => {
     render(<ColorPicker value="#000000" onChange={mockOnChange} />);
 
-    // Click the reset button
     const resetButton = screen.getByRole("button", { name: /Reset color/i });
     fireEvent.click(resetButton);
 

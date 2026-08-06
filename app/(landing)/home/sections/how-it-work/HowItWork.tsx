@@ -91,7 +91,7 @@ export const HowItWork = () => {
                     alt={step.alt}
                     width={500}
                     height={500}
-                    priority={index === 0}
+                    priority={index === 0 ? true : undefined}
                   />
                   <CenterBottomFlowtingDiv />
                   <RightBottomFlowtingDiv />

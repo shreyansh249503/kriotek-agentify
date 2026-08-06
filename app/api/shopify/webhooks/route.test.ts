@@ -82,7 +82,6 @@ describe("POST /api/shopify/webhooks", () => {
 
     const reqHeaders = new Headers({
       "x-shopify-hmac-sha256": hmac,
-      // missing x-shopify-shop-domain & x-shopify-topic
     });
 
     const req = new Request("http://localhost:3000/api/shopify/webhooks", {

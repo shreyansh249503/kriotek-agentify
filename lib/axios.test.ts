@@ -25,7 +25,6 @@ describe("axiosInstance interceptors", () => {
       },
     });
 
-    // Invoke request interceptor directly via adapter mock or interceptor handler
     const requestInterceptor = (axiosInstance.interceptors.request as unknown as {
       handlers: Array<{ fulfilled: (config: Record<string, unknown>) => Promise<Record<string, unknown>> }>;
     }).handlers[0].fulfilled;

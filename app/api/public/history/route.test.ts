@@ -30,7 +30,7 @@ describe("POST /api/public/history", () => {
   it("should return 400 when publicKey or conversationIds array is missing", async () => {
     const req = new Request("http://localhost/api/public/history", {
       method: "POST",
-      body: JSON.stringify({ publicKey: "pk_123" }), // missing conversationIds
+      body: JSON.stringify({ publicKey: "pk_123" }),
     });
     const res = await POST(req);
     const data = await res.json();

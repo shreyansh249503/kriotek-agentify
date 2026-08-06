@@ -4,7 +4,6 @@ import { crawlWebsite } from "../lib/crawler";
 import { getDb } from "../lib/db";
 import { ingestDocument } from "../lib/ingest";
 
-// Polyfill web Request and Response for Jest JSDOM test environment
 if (typeof Request === "undefined") {
   (global as unknown as Record<string, unknown>).Request = class MockRequest {
     private body: unknown;
@@ -94,7 +93,7 @@ describe("POST /api/ingest-url", () => {
   it("should return 400 Bad Request if publicKey or url is missing", async () => {
     mockedGetUser.mockResolvedValueOnce({ id: "user-1" });
 
-    const req = createRequest({ publicKey: "pk_123" }); // Missing url
+    const req = createRequest({ publicKey: "pk_123" });
     const res = (await POST(req as unknown as Request)) as unknown as { status: number; json: () => Promise<Record<string, unknown>> };
     const data = await res.json();
 
@@ -153,7 +152,7 @@ describe("POST /api/ingest-url", () => {
     mockFindOne.mockResolvedValueOnce(mockBotObj);
     mockExists.mockResolvedValueOnce(false);
 
-    const sampleLongText = "A".repeat(850); // Generates 2 chunks
+    const sampleLongText = "A".repeat(850);
     const newProduct = { name: "Test Product", price: "29.99", url: "https://example.com/p1", image: "" };
     mockedCrawl.mockResolvedValueOnce({
       collectedText: sampleLongText,
@@ -179,7 +178,7 @@ describe("POST /api/ingest-url", () => {
   it("should return 400 Bad Request if publicKey is missing", async () => {
     mockedGetUser.mockResolvedValueOnce({ id: "user-1" });
 
-    const req = createRequest({ url: "https://example.com" }); // Missing publicKey
+    const req = createRequest({ url: "https://example.com" });
     const res = (await POST(req as unknown as Request)) as unknown as { status: number; json: () => Promise<Record<string, unknown>> };
     const data = await res.json();
 
@@ -200,8 +199,7 @@ describe("POST /api/ingest-url", () => {
     mockFindOne.mockResolvedValueOnce(mockBotObj);
     mockExists.mockResolvedValueOnce(false);
 
-    const sampleLongText = "B".repeat(300); // 1 chunk
-    // Same product URL and same name (case-insensitive) should be filtered out
+    const sampleLongText = "B".repeat(300);
     const duplicateProduct = { name: "test product", price: "29.99", url: "https://example.com/p1", image: "" };
     const brandNewProduct = { name: "Another Product", price: "15.00", url: "https://example.com/p2", image: "" };
 

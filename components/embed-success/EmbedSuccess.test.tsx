@@ -2,14 +2,12 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { EmbedSuccess } from "./EmbedSuccess";
 import React from "react";
 
-// Mock @phosphor-icons/react icons
 jest.mock("@phosphor-icons/react", () => ({
   CopyIcon: () => <span data-testid="copy-icon">CopyIcon</span>,
   FileJsIcon: () => <span data-testid="file-js-icon">FileJsIcon</span>,
   CodeIcon: () => <span data-testid="code-icon">CodeIcon</span>,
 }));
 
-// Mock embed helpers
 jest.mock("@/lib/embed", () => ({
   generateEmbedScript: (pk: string) => `<script src="https://cdn.example.com/embed.js" data-key="${pk}"></script>`,
   generateReactEmbedScript: (pk: string) => `<Chatbot publicKey="${pk}" />`,

@@ -2,7 +2,6 @@ import { render, screen } from "@testing-library/react";
 import { BotPreview } from "./BotPreview";
 import React from "react";
 
-// Mock next/image if needed
 jest.mock("next/image", () => ({
   __esModule: true,
   default: (props: React.ImgHTMLAttributes<HTMLImageElement>) => (
@@ -17,7 +16,7 @@ describe("BotPreview Component", () => {
 
     expect(screen.getByText("Live Preview")).toBeInTheDocument();
     expect(screen.getByText("Your Bot")).toBeInTheDocument();
-    expect(screen.getAllByText("AI")).toHaveLength(2); // Header avatar + Launcher avatar
+    expect(screen.getAllByText("AI")).toHaveLength(2); 
     expect(screen.getByText("Hello 👋 I'm here to help!")).toBeInTheDocument();
     expect(screen.getByText("Tell me about your services")).toBeInTheDocument();
     expect(screen.getByText("Tone: Friendly")).toBeInTheDocument();

@@ -3,7 +3,6 @@ import { AppearanceSection } from "./AppearanceSection";
 import { CreateBotInput } from "@/types/bot";
 import React from "react";
 
-// Mock next/image
 jest.mock("next/image", () => ({
   __esModule: true,
   default: (props: React.ImgHTMLAttributes<HTMLImageElement>) => (

@@ -73,7 +73,7 @@ describe("API: /api/shopify/admin/bot", () => {
     });
 
     it("should return empty payload if no bot_id is linked to the store", async () => {
-      mockSingle.mockResolvedValueOnce({ data: null }); // shopify_stores query
+      mockSingle.mockResolvedValueOnce({ data: null });
 
       const req = new NextRequest("http://localhost/api/shopify/admin/bot", {
         headers: { authorization: "Bearer valid_token" },
@@ -87,8 +87,8 @@ describe("API: /api/shopify/admin/bot", () => {
 
     it("should return 404 if bot_id exists but bot record is not found in bots table", async () => {
       mockSingle
-        .mockResolvedValueOnce({ data: { bot_id: "bot_123" } }) // shopify_stores
-        .mockResolvedValueOnce({ data: null, error: new Error("Bot not found") }); // bots
+        .mockResolvedValueOnce({ data: { bot_id: "bot_123" } })
+        .mockResolvedValueOnce({ data: null, error: new Error("Bot not found") });
 
       const req = new NextRequest("http://localhost/api/shopify/admin/bot", {
         headers: { authorization: "Bearer valid_token" },
@@ -105,12 +105,12 @@ describe("API: /api/shopify/admin/bot", () => {
       const mockPages = [{ id: "p1", page_url: "https://shop.myshopify.com/about" }];
 
       mockSingle
-        .mockResolvedValueOnce({ data: { bot_id: "bot_123" } }) // shopify_stores
-        .mockResolvedValueOnce({ data: mockBot }); // bots
+        .mockResolvedValueOnce({ data: { bot_id: "bot_123" } }) 
+        .mockResolvedValueOnce({ data: mockBot });
 
       mockEq.mockImplementationOnce(() => ({ single: mockSingle }))
         .mockImplementationOnce(() => ({ single: mockSingle }))
-        .mockImplementationOnce(() => Promise.resolve({ data: mockPages })); // crawled_pages
+        .mockImplementationOnce(() => Promise.resolve({ data: mockPages }));
 
       const req = new NextRequest("http://localhost/api/shopify/admin/bot", {
         headers: { authorization: "Bearer valid_token" },
@@ -159,8 +159,8 @@ describe("API: /api/shopify/admin/bot", () => {
       const updatedBot = { id: "bot_123", name: "Updated Shopify Bot", tone: "friendly" };
 
       mockSingle
-        .mockResolvedValueOnce({ data: { bot_id: "bot_123" } }) // shopify_stores
-        .mockResolvedValueOnce({ data: updatedBot }); // bots update single
+        .mockResolvedValueOnce({ data: { bot_id: "bot_123" } }) 
+        .mockResolvedValueOnce({ data: updatedBot }); 
 
       const req = new NextRequest("http://localhost/api/shopify/admin/bot", {
         method: "PATCH",

@@ -4,7 +4,6 @@ import "@testing-library/jest-dom";
 import { BotForm } from "./BotForm";
 import { Bot } from "@/types/bot";
 
-// Mock child components that might make fetch/external calls if needed or mock supabase
 jest.mock("@/lib/supabase", () => ({
   supabase: {
     auth: {
@@ -15,7 +14,6 @@ jest.mock("@/lib/supabase", () => ({
   },
 }));
 
-// Mock next/image
 jest.mock("next/image", () => ({
   __esModule: true,
   default: (props: React.ImgHTMLAttributes<HTMLImageElement>) => (

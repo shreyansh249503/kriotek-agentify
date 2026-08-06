@@ -45,10 +45,8 @@ describe("CustomSelect Component", () => {
     const selectBtn = screen.getByRole("button", { name: "Option 1" });
     fireEvent.click(selectBtn);
 
-    // Dropdown should be open
     expect(screen.getByText("Option 2")).toBeInTheDocument();
 
-    // Click outside
     fireEvent.mouseDown(screen.getByTestId("outside"));
   });
 });

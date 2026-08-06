@@ -31,7 +31,6 @@ describe("ContactSettingsSection Component", () => {
     expect(screen.getByText("Contact Settings")).toBeInTheDocument();
     expect(screen.getByText("Enable Lead Collection")).toBeInTheDocument();
 
-    // Field grid should not render when disabled
     expect(screen.queryByPlaceholderText("email@example.com")).not.toBeInTheDocument();
 
     const toggle = document.querySelector('div[class*="ToggleSwitch"]') || document.querySelector('button') || screen.getByText("Enable Lead Collection").previousSibling!;

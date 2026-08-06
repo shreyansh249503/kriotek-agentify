@@ -38,7 +38,7 @@ const blink = keyframes`
 
 export const HeroSection = styled.section`
   width: 100%;
-  height: 100vh;
+  min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -49,11 +49,28 @@ export const HeroSection = styled.section`
   position: relative;
   overflow: hidden;
   padding-top: 80px;
+  box-sizing: border-box;
 
-  @media (max-width: ${BREAKPOINTS.TABLET}) {
-    padding-top: 60px;
+  @media (max-width: ${BREAKPOINTS.TABLET_LANDSCAPE}) {
+    padding-top: 120px;
+    padding-bottom: 60px;
     height: auto;
     min-height: 80vh;
+  }
+
+  @media (max-width: ${BREAKPOINTS.TABLET_PORTRAIT}) {
+    padding-top: 110px;
+    padding-bottom: 50px;
+  }
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    padding-top: 100px;
+    padding-bottom: 40px;
+  }
+
+  @media (max-width: ${BREAKPOINTS.MOBILE_SM}) {
+    padding-top: 90px;
+    padding-bottom: 30px;
   }
 
   &::before {
@@ -69,20 +86,38 @@ export const HeroSection = styled.section`
 
 export const HeroContentContainer = styled.div`
   width: 80%;
-  height: 100vh;
+  max-width: 1800px;
+  min-height: calc(100vh - 80px);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 42px;
+  gap: 40px;
   z-index: 2;
 
-  @media (max-width: ${BREAKPOINTS.TABLET}) {
+  @media (max-width: ${BREAKPOINTS.WIDE}) {
+    max-width: 1400px;
+  }
+
+  @media (max-width: ${BREAKPOINTS.LAPTOP}) {
+    max-width: 1200px;
+  }
+
+  @media (max-width: ${BREAKPOINTS.TABLET_LANDSCAPE}) {
     width: 90%;
-    height: auto;
+    min-height: auto;
     flex-direction: column;
     justify-content: center;
-    gap: 50px;
-    padding: 60px 0;
+    gap: 40px;
+  }
+
+  @media (max-width: ${BREAKPOINTS.TABLET_PORTRAIT}) {
+    width: 92%;
+    gap: 34px;
+  }
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    width: 95%;
+    gap: 28px;
   }
 `;
 
@@ -92,18 +127,22 @@ export const HeroContent = styled.div`
   flex-direction: column;
   justify-content: center;
   align-items: flex-start;
-  gap: 52px;
+  gap: 35px;
 
-  @media (max-width: ${BREAKPOINTS.TABLET}) {
+  @media (max-width: 1214px) {
+    gap: 20px;
+  }
+
+  @media (max-width: ${BREAKPOINTS.TABLET_LANDSCAPE}) {
     width: 100%;
     align-items: center;
     text-align: center;
-    gap: 30px;
+    gap: 25px;
   }
 `;
 
 export const MainHeading = styled.h1`
-  font-size: 66px;
+  font-size: 60px;
   font-weight: 800;
   line-height: 1.1;
   color: ${COLOR.DARK};
@@ -114,34 +153,73 @@ export const MainHeading = styled.h1`
     font-weight: 700;
     color: ${COLOR.PRIMARY};
     z-index: 2;
+    display: inline-block;
+  }
+
+  @media (min-width: ${BREAKPOINTS.ULTRAWIDE}) {
+    font-size: 72px;
+  }
+
+  @media (max-width: ${BREAKPOINTS.WIDE}) {
+    font-size: 50px;
+  }
+
+  @media (max-width: ${BREAKPOINTS.TABLET_LANDSCAPE}) {
+    font-size: 48px;
   }
 
   @media (max-width: ${BREAKPOINTS.TABLET}) {
-    font-size: 42px;
+    font-size: 40px;
+  }
+
+  @media (max-width: ${BREAKPOINTS.TABLET_PORTRAIT}) {
+    font-size: 36px;
   }
 
   @media (max-width: ${BREAKPOINTS.MOBILE}) {
-    font-size: 36px;
+    font-size: 30px;
+  }
+
+  @media (max-width: ${BREAKPOINTS.MOBILE_SM}) {
+    font-size: 26px;
   }
 `;
 
 export const UnderlineImage = styled(Image)`
   position: absolute;
   bottom: -10px;
-  left: 5px;
-  width: 250px;
+  left: 0px;
+  width: 100%;
+  max-width: 250px;
   height: auto;
   z-index: 2;
   object-fit: contain;
 
-  @media (max-width: ${BREAKPOINTS.TABLET}) {
-    width: 180px;
+  @media (min-width: ${BREAKPOINTS.ULTRAWIDE}) {
+    max-width: 280px;
+  }
+
+  @media (max-width: ${BREAKPOINTS.TABLET_LANDSCAPE}) {
+    max-width: 190px;
     bottom: -8px;
   }
 
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    max-width: 170px;
+  }
+
+  @media (max-width: ${BREAKPOINTS.TABLET_PORTRAIT}) {
+    max-width: 150px;
+  }
+
   @media (max-width: ${BREAKPOINTS.MOBILE}) {
-    width: 140px;
+    max-width: 130px;
     bottom: -6px;
+  }
+
+  @media (max-width: ${BREAKPOINTS.MOBILE_SM}) {
+    max-width: 110px;
+    bottom: -4px;
   }
 `;
 
@@ -153,22 +231,30 @@ export const SubHeading = styled.p`
   margin: 0;
   animation: ${fadeIn} 0.8s ease-out 0.2s backwards;
 
-  @media (max-width: ${BREAKPOINTS.TABLET}) {
+  @media (min-width: ${BREAKPOINTS.WIDE}) {
     font-size: 18px;
   }
 
-  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
     font-size: 16px;
+  }
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    font-size: 14px;
+  }
+
+  @media (max-width: ${BREAKPOINTS.MOBILE_SM}) {
+    font-size: 13.5px;
   }
 `;
 
 export const TagContainer = styled.div`
   display: flex;
   gap: 16px;
+  flex-wrap: wrap;
   animation: ${fadeIn} 0.8s ease-out 0.6s backwards;
 
-  @media (max-width: ${BREAKPOINTS.TABLET}) {
-    flex-wrap: wrap;
+  @media (max-width: ${BREAKPOINTS.TABLET_LANDSCAPE}) {
     justify-content: center;
     gap: 10px;
   }
@@ -189,6 +275,16 @@ export const TagButton = styled.div`
   text-align: center;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    padding: 8px 14px;
+    font-size: 13px;
+  }
+
+  @media (max-width: ${BREAKPOINTS.MOBILE_SM}) {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
   .check-icon {
     font-size: 16px;
     color: ${COLOR.DARK};
@@ -202,53 +298,80 @@ export const HeroChatBotContainer = styled.div`
   justify-content: center;
   align-items: center;
 
-  @media (max-width: ${BREAKPOINTS.TABLET}) {
+  @media (max-width: ${BREAKPOINTS.TABLET_LANDSCAPE}) {
     width: 100%;
-    margin-top: 20px;
+    margin-top: 10px;
   }
 `;
 
 export const HeroChatBotMainWrapper = styled.div`
-  width: 460px;
-  height: 650px;
-  border-radius: 12px;
-  overflow: hidden;
+  width: 100%;
+  max-width: 350px;
+  height: auto;
+  aspect-ratio: 460 / 650;
+  max-height: 650px;
 
-  @media (max-width: ${BREAKPOINTS.TABLET}) {
+  @media (min-width: ${BREAKPOINTS.ULTRAWIDE}) {
+    max-width: 500px;
+  }
+
+  @media (max-width: ${BREAKPOINTS.TABLET_LANDSCAPE}) {
+    max-width: 400px;
     display: none;
-    width: 100%;
-    max-width: 460px;
-    height: 520px;
+  }
+
+  @media (max-width: ${BREAKPOINTS.TABLET_PORTRAIT}) {
+    max-width: 360px;
   }
 
   @media (max-width: ${BREAKPOINTS.MOBILE}) {
-    height: 450px;
+    max-width: 300px;
+    border-radius: 12px;
+  }
+
+  @media (max-width: ${BREAKPOINTS.MOBILE_SM}) {
+    max-width: 260px;
   }
 `;
 
 export const ChatBotPriviewImage = styled(Image)`
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
 `;
 
 export const CTAContainer = styled.div`
   display: flex;
-  gap: 24px;
+  gap: 20px;
   animation: ${fadeIn} 0.8s ease-out 0.4s backwards;
 
-  @media (max-width: 640px) {
+  @media (max-width: 1214px) {
     flex-direction: column;
-    width: 100%;
-    align-items: center;
+    gap: 14px;
+  }
+
+  @media (max-width: 1050px) {
+    flex-direction: row;
+    gap: 14px;
+  }
+
+  @media (max-width: ${BREAKPOINTS.TABLET_PORTRAIT}) {
+    gap: 14px;
+  }
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    flex-direction: column;
+    gap: 12px;
 
     & > * {
       width: 100% !important;
+      text-align: center;
     }
   }
 `;
 
 export const WatchDemoButton = styled.button`
+  width: fit-content;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -265,10 +388,29 @@ export const WatchDemoButton = styled.button`
   border: none;
   font-family: inherit;
   box-shadow: 0 0px 5px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
 
   &:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+  }
+
+  @media (max-width: ${BREAKPOINTS.TABLET_LANDSCAPE}) {
+    padding: 14px 30px;
+    font-size: 15px;
+  }
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    padding: 14px 26px;
+    font-size: 15px;
+    border-radius: 10px;
+  }
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    padding: 12px 20px;
+    font-size: 14px;
+    gap: 6px;
+    border-radius: 8px;
   }
 `;
 

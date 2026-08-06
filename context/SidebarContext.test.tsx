@@ -33,7 +33,6 @@ describe("SidebarContext", () => {
     expect(screen.getByTestId("collapsed")).toHaveTextContent("false");
     expect(screen.getByTestId("drawer")).toHaveTextContent("false");
 
-    // Toggle Sidebar
     act(() => {
       screen.getByText("Toggle Sidebar").click();
     });
@@ -41,7 +40,6 @@ describe("SidebarContext", () => {
     expect(screen.getByTestId("collapsed")).toHaveTextContent("true");
     expect(localStorage.getItem("sidebar-collapsed")).toBe("true");
 
-    // Explicitly set collapsed
     act(() => {
       screen.getByText("Set Collapsed True").click();
     });
@@ -58,13 +56,11 @@ describe("SidebarContext", () => {
 
     expect(screen.getByTestId("drawer")).toHaveTextContent("false");
 
-    // Toggle Drawer Open
     act(() => {
       screen.getByText("Toggle Drawer").click();
     });
     expect(screen.getByTestId("drawer")).toHaveTextContent("true");
 
-    // Close Drawer
     act(() => {
       screen.getByText("Close Drawer").click();
     });

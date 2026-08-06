@@ -2,7 +2,6 @@ import { TextEncoder, TextDecoder } from "util";
 import { ReadableStream } from "stream/web";
 import { POST, OPTIONS } from "./route";
 import { getBotByPublicKey } from "../lib/bot";
-import { retrieveWebsiteContext } from "../lib/rag";
 import { sendOwnerNotification, sendUserEmail } from "../lib/sendEmail";
 import { getDb } from "../lib/db";
 import { runLeadAgent } from "../lib/agents/leadAgent";
@@ -18,7 +17,6 @@ if (typeof global.ReadableStream === "undefined") {
   (global as unknown as Record<string, unknown>).ReadableStream = ReadableStream as unknown as typeof global.ReadableStream;
 }
 
-// Polyfill Request and Response for JSDOM if needed
 if (typeof Request === "undefined") {
   (global as unknown as Record<string, unknown>).Request = class MockRequest {
     private body: unknown;
@@ -195,7 +193,7 @@ describe("Chat Route (/api/chat)", () => {
     });
 
     it("should return 429 when receptionist agent fails with quota error", async () => {
-      mockFindOneConvo.mockResolvedValueOnce(null); // New conversation
+      mockFindOneConvo.mockResolvedValueOnce(null);
       mockedRunLead.mockResolvedValueOnce({
         collectedInfo: {},
         missingFields: ["name", "email"],

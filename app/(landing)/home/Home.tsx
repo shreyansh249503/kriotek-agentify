@@ -12,6 +12,9 @@ import {
   RealTimeInsights,
   FeaturedCapability,
   HowItWork,
+  EverythingYouNeed,
+  BotOverview,
+  MakeItYours,
 } from "./sections";
 
 export const Home = () => {
@@ -21,11 +24,14 @@ export const Home = () => {
       <TrustedBy />
       <WhatAgentifyProvides />
       <RealTimeInsights />
+      <EverythingYouNeed />
+      <BotOverview />
       <FeaturedCapability />
       <HowItWork />
       {/* <Features /> */}
       {/* <SalesShowcase /> */}
       <LiveDemo />
+      <MakeItYours />
       {/* <HowItWorks /> */}
       <FinalCTA />
     </>

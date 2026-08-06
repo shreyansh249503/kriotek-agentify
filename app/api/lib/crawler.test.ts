@@ -70,7 +70,6 @@ jest.mock("cheerio", () => {
   };
 });
 
-// Import after cheerio mock
 import { crawlWebsite } from "./crawler";
 
 describe("crawlWebsite", () => {

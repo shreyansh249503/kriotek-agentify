@@ -2,7 +2,6 @@ import { POST } from "./route";
 import { createEmbedding } from "../lib/embeddings";
 import { getDb } from "../lib/db";
 
-// Polyfill Response for JSDOM
 if (typeof Response === "undefined" || !Response.json) {
   (global as unknown as Record<string, unknown>).Response = class MockResponse {
     static json(data: unknown, init?: { status?: number }) {
@@ -96,7 +95,7 @@ describe("POST /api/ingest-pdf", () => {
   });
 
   it("should return 400 Bad Request if extracted text is empty", async () => {
-    mockPdfRawText = "   "; // Empty / whitespace
+    mockPdfRawText = "   ";
     const file = createMockFile("dummy pdf bytes");
     const req = createMockRequest({ file, publicKey: "pk_test" });
 
@@ -116,7 +115,7 @@ describe("POST /api/ingest-pdf", () => {
   });
 
   it("should successfully extract text, generate embeddings, and save document chunks", async () => {
-    mockPdfRawText = "Extracted PDF content text " + "A".repeat(800); // 2 chunks
+    mockPdfRawText = "Extracted PDF content text " + "A".repeat(800);
     const file = createMockFile("valid pdf bytes");
     const req = createMockRequest({ file, publicKey: "pk_test" });
 
