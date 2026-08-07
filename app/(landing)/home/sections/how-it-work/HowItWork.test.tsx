@@ -5,6 +5,7 @@ import React from "react";
 jest.mock("next/image", () => ({
   __esModule: true,
   default: ({
+    priority,
     ...props
   }: React.ImgHTMLAttributes<HTMLImageElement> & { priority?: boolean }) => (
     // eslint-disable-next-line @next/next/no-img-element
