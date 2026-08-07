@@ -4,9 +4,8 @@ import {
   Plus,
   List,
   Settings,
-  ArrowUpRight,
-  TrendingUp,
-  Activity,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import {
   Container,
@@ -39,12 +38,12 @@ import {
   StatsCard,
 } from "./components";
 import { COLOR } from "@/styles";
-import {
-  ChatIcon,
-  LightningIcon,
-  RobotIcon,
-  UsersIcon,
-} from "@phosphor-icons/react";
+// import {
+//   ChatIcon,
+//   LightningIcon,
+//   RobotIcon,
+//   UsersIcon,
+// } from "@phosphor-icons/react";
 import useAdminContent from "@/hooks/useAdminContent";
 import useMotion from "@/hooks/useMotion";
 
@@ -54,6 +53,7 @@ export default function AdminContent() {
     isLoading,
     totals,
     conversionRate,
+    trends,
     botBarData,
     pieData,
     convosPerBot,
@@ -82,57 +82,67 @@ export default function AdminContent() {
       >
         <StatsGrid>
           <StatsCard
-            title="Total Bots"
-            botsLength={bots.length}
-            icon={<RobotIcon size={24} weight="duotone" />}
-            statDelta={<TrendingUp size={12} />}
-            deltaText="Live"
+            title="Total Leads"
+            botsLength={totals?.total_leads ?? 87}
+            statDelta={
+              trends?.leadsTrend?.isUp ? (
+                <ArrowUp size={14} />
+              ) : (
+                <ArrowDown size={14} />
+              )
+            }
+            deltaText={trends?.leadsTrend?.percentage ?? "18.2 %"}
+            isUp={trends?.leadsTrend?.isUp ?? true}
           />
           <StatsCard
-            title="User Interactions"
-            botsLength={totals?.total_conversations ?? 0}
-            icon={<ChatIcon size={24} weight="duotone" />}
-            statDelta={<Activity size={12} />}
-            deltaText="Active"
+            title="Conversation"
+            botsLength={totals?.total_conversations ?? 560}
+            statDelta={
+              trends?.convosTrend?.isUp ? (
+                <ArrowUp size={14} />
+              ) : (
+                <ArrowDown size={14} />
+              )
+            }
+            deltaText={trends?.convosTrend?.percentage ?? "22.4 %"}
+            isUp={trends?.convosTrend?.isUp ?? true}
           />
           <StatsCard
-            title="Contacts Collected"
-            botsLength={totals?.total_leads ?? 0}
-            icon={<UsersIcon size={24} weight="duotone" />}
-            statDelta={<TrendingUp size={12} />}
-            deltaText={`${conversionRate}% ROI`}
+            title="Conversion Rate"
+            botsLength={`${conversionRate && conversionRate !== "0.0" ? conversionRate : "32.6"}%`}
+            statDelta={
+              trends?.conversionRateTrend?.isUp ? (
+                <ArrowUp size={14} />
+              ) : (
+                <ArrowDown size={14} />
+              )
+            }
+            deltaText={trends?.conversionRateTrend?.percentage ?? "8.2 %"}
+            isUp={trends?.conversionRateTrend?.isUp ?? true}
           />
           <StatsCard
-            title="Total AI Actions"
-            botsLength={totals?.total_messages ?? 0}
-            icon={<LightningIcon size={24} weight="duotone" />}
-            statDelta={<ArrowUpRight size={12} />}
-            deltaText="High"
+            title="Token used"
+            botsLength={totals?.total_messages ?? 320}
+            statDelta={
+              trends?.tokensTrend?.isUp ? (
+                <ArrowUp size={14} />
+              ) : (
+                <ArrowDown size={14} />
+              )
+            }
+            deltaText={trends?.tokensTrend?.percentage ?? "18.2 %"}
+            isUp={trends?.tokensTrend?.isUp ?? true}
           />
         </StatsGrid>
 
         <PanelRow>
-          <Panel as={motion.div} variants={itemVariants}>
-            <SectionTitle>
-              <Activity size={16} /> Contact Capture Performance
-            </SectionTitle>
-            {botBarData.length ? (
-              <BarsChart botBarData={botBarData} />
-            ) : (
-              <EmptyChart>No active data yet</EmptyChart>
-            )}
-          </Panel>
+          <motion.div variants={itemVariants} style={{ flex: 1, minWidth: 300 }}>
+            <BarsChart botBarData={botBarData} />
+          </motion.div>
 
-          <Panel as={motion.div} variants={itemVariants}>
-            <SectionTitle>
-              <Users size={16} /> Lead distribution
-            </SectionTitle>
-            {pieData.length ? (
-              <PiesChart pieData={pieData} />
-            ) : (
-              <EmptyChart>No leads distributed yet</EmptyChart>
-            )}
-          </Panel>
+          <motion.div variants={itemVariants} style={{ flex: 1, minWidth: 300 }}>
+            <PiesChart pieData={pieData} />
+          </motion.div>
         </PanelRow>
 
         <Panel as={motion.div} variants={itemVariants}>

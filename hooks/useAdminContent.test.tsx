@@ -64,14 +64,18 @@ describe("useAdminContent hook", () => {
 
     expect(result.current.botBarData).toEqual([
       {
+        id: "bot-1",
         name: "Old Bot",
+        rawName: "Old Bot",
         Interactions: 10,
-        ContactsCollected: "2",
+        ContactsCollected: 2,
       },
       {
+        id: "bot-2",
         name: "New Bot Wi…",
+        rawName: "New Bot With A Very Long Name Indeed",
         Interactions: 10,
-        ContactsCollected: "3",
+        ContactsCollected: 3,
       },
     ]);
 

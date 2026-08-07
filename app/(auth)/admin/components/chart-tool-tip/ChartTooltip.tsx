@@ -7,19 +7,37 @@ import {
   ValueText,
 } from "./styled";
 
+export interface ChartTooltipItem {
+  name?: string;
+  value?: string | number;
+  fill?: string;
+  payload?: {
+    rawName?: string;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+}
+
+export interface ChartTooltipProps {
+  active?: boolean;
+  payload?: ChartTooltipItem[];
+  label?: string;
+}
+
 export const ChartTooltip = ({
   active,
   payload,
   label,
-}: {
-  active?: boolean;
-  payload?: { value: number; name: string; fill: string }[];
-  label?: string;
-}) => {
+}: ChartTooltipProps) => {
   if (!active || !payload?.length) return null;
+
+  const currentData = payload[0]?.payload;
+  const displayTitle =
+    currentData?.rawName || (label ? label.replace(/\u200B/g, "") : "");
+
   return (
     <TooltipContainer>
-      <TooltipLabel>{label}</TooltipLabel>
+      <TooltipLabel>{displayTitle}</TooltipLabel>
       {payload.map((p, i) => (
         <TooltipRow key={i}>
           <Indicator $fill={p.fill} $name={p.name} />

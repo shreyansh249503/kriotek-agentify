@@ -16,7 +16,8 @@ describe("StatsCard Component", () => {
 
     expect(screen.getByText("Total Bots")).toBeInTheDocument();
     expect(screen.getByText("12")).toBeInTheDocument();
-    expect(screen.getByText("+2 this week")).toBeInTheDocument();
+    expect(screen.getByText("+2")).toBeInTheDocument();
+    expect(screen.getByText("this week")).toBeInTheDocument();
     expect(screen.getByTestId("stat-icon")).toBeInTheDocument();
   });
 });

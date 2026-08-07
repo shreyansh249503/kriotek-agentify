@@ -1,13 +1,11 @@
 import {
   StatCard,
   StatCardTop,
-  StatDelta,
-  StatIconBox,
+  StatDeltaPill,
   StatLabel,
   StatValue,
 } from "./styled";
 import { motion } from "framer-motion";
-import { COLOR } from "@/styles";
 import { StatsCardProps } from "./type";
 
 export const StatsCard = ({
@@ -16,6 +14,7 @@ export const StatsCard = ({
   deltaText,
   icon,
   statDelta,
+  isUp = true,
 }: StatsCardProps) => {
   const itemVariants = {
     hidden: { y: 20, opacity: 0 },
@@ -29,16 +28,20 @@ export const StatsCard = ({
       },
     },
   } as const;
+
   return (
     <StatCard as={motion.div} variants={itemVariants}>
       <StatCardTop>
-        <StatIconBox $color={COLOR.DARK}>{icon}</StatIconBox>
-        <StatDelta $up>
-          {statDelta} {deltaText}
-        </StatDelta>
+        <StatLabel>{title}</StatLabel>
+        {icon && <div>{icon}</div>}
       </StatCardTop>
       <StatValue>{botsLength}</StatValue>
-      <StatLabel>{title}</StatLabel>
+      {(statDelta || deltaText) && (
+        <StatDeltaPill $up={isUp}>
+          {statDelta}
+          {deltaText && <span>{deltaText}</span>}
+        </StatDeltaPill>
+      )}
     </StatCard>
   );
 };

@@ -24,33 +24,32 @@ export const GlassPanel = styled.div`
   }
 `;
 
-export const StatCard = styled(GlassPanel)`
+export const StatCard = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  background-color: ${COLOR.BACKGROUND_2};
-  border: 1px solid ${COLOR.PRIMARY};
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
 
-  &::after {
-    content: "";
-    position: absolute;
-    bottom: 0;
-    right: 0;
-    width: 60px;
-    height: 60px;
-    background: radial-gradient(
-      circle at bottom right,
-      ${COLOR.PRIMARY}15,
-      transparent 70%
-    );
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.06);
+    border-color: #d1d5db;
   }
 
-  &:hover {
-    transform: translateY(-6px);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.06);
-    border-color: ${COLOR.PRIMARY}88;
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    padding: 20px;
+    border-radius: 14px;
+  }
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    padding: 16px;
+    border-radius: 12px;
   }
 `;
 
@@ -58,55 +57,35 @@ export const StatCardTop = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 4px;
+  margin-bottom: 12px;
 `;
 
 export const StatIconBox = styled.div<{ $color: string }>`
-  width: 48px;
-  height: 48px;
-  border-radius: 14px;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
   background: ${COLOR.LIGHT};
   display: flex;
   align-items: center;
   justify-content: center;
   color: ${({ $color }) => $color};
-  box-shadow:
-    0 4px 12px ${({ $color }) => $color}15,
-    inset 0 0 0 1px ${COLOR.BORDER};
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-
-  ${StatCard}:hover & {
-    transform: scale(1.1) rotate(-8deg);
-    color: ${COLOR.PRIMARY_HOVER};
-    box-shadow: 0 8px 16px ${COLOR.PRIMARY}22;
-  }
-
-  @media (max-width: ${BREAKPOINTS.MOBILE}) {
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
-  }
 `;
 
-export const StatDelta = styled.span<{ $up?: boolean }>`
-  font-size: 11px;
-  font-weight: 700;
-  color: ${({ $up }) => ($up ? COLOR.DARK : COLOR.TEXT_SECONDARY)};
-  background: ${({ $up }) => ($up ? "#f7fee7" : "#fef2f2")};
-  padding: 4px 10px;
-  border-radius: 99px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
+export const StatLabel = styled.p`
+  font-size: 14px;
+  font-weight: 500;
+  color: #6b7280;
+  margin: 0;
+  line-height: 1.2;
 `;
 
 export const StatValue = styled.p`
-  font-size: 34px;
-  font-weight: 800;
-  color: ${COLOR.DARK};
-  margin: 0;
-  line-height: 1;
-  letter-spacing: -1.2px;
+  font-size: 32px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 16px 0;
+  line-height: 1.1;
+  letter-spacing: -0.5px;
 
   @media (max-width: ${BREAKPOINTS.TABLET}) {
     font-size: 28px;
@@ -114,14 +93,27 @@ export const StatValue = styled.p`
 
   @media (max-width: ${BREAKPOINTS.MOBILE}) {
     font-size: 24px;
-    letter-spacing: -0.8px;
   }
 `;
 
-export const StatLabel = styled.p`
+export const StatDeltaPill = styled.div<{ $up?: boolean }>`
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border-radius: 8px;
+  background-color: ${({ $up = true }) => ($up ? "#f2f9ed" : "#fef2f2")};
+  color: ${({ $up = true }) => ($up ? "#558b2f" : "#ef4444")};
   font-size: 13px;
   font-weight: 600;
-  color: ${COLOR.TEXT_SECONDARY};
-  margin: 0;
-  opacity: 0.8;
+  width: fit-content;
+  line-height: 1;
+
+  svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+  }
 `;
+
+export const StatDelta = StatDeltaPill;

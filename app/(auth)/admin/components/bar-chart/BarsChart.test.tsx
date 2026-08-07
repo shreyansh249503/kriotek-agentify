@@ -1,4 +1,4 @@
-import { render } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { BarsChart } from "./BarsChart";
 import React from "react";
 
@@ -14,12 +14,16 @@ jest.mock("recharts", () => {
 });
 
 describe("BarsChart Component", () => {
-  it("should render bar chart container without crashing", () => {
+  it("should render Leads Over Time title, legends, select, and chart container", () => {
     const mockData = [
-      { name: "Bot 1", Interactions: 50, ContactsCollected: 12 },
+      { name: "Agentify", Interactions: 36, ContactsCollected: 24 },
     ];
 
     const { container } = render(<BarsChart botBarData={mockData} />);
     expect(container.firstChild).toBeInTheDocument();
+    expect(screen.getByText("Leads Over Time")).toBeInTheDocument();
+    expect(screen.getByText("Conversation")).toBeInTheDocument();
+    expect(screen.getByText("Leads")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Monthly")).toBeInTheDocument();
   });
 });

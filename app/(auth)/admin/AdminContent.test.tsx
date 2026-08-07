@@ -74,10 +74,10 @@ describe("AdminContent Component", () => {
 
     render(<AdminContent />);
 
-    expect(screen.getByText("Total Bots: 1")).toBeInTheDocument();
-    expect(screen.getByText("User Interactions: 50")).toBeInTheDocument();
-    expect(screen.getByText("Contacts Collected: 10")).toBeInTheDocument();
-    expect(screen.getByText("Total AI Actions: 200")).toBeInTheDocument();
+    expect(screen.getByText("Total Leads: 10")).toBeInTheDocument();
+    expect(screen.getByText("Conversation: 50")).toBeInTheDocument();
+    expect(screen.getByText("Conversion Rate: 20.0%")).toBeInTheDocument();
+    expect(screen.getByText("Token used: 200")).toBeInTheDocument();
 
     expect(screen.getByTestId("bars-chart")).toBeInTheDocument();
     expect(screen.getByTestId("pies-chart")).toBeInTheDocument();
@@ -101,8 +101,8 @@ describe("AdminContent Component", () => {
 
     render(<AdminContent />);
 
-    expect(screen.getByText("No active data yet")).toBeInTheDocument();
-    expect(screen.getByText("No leads distributed yet")).toBeInTheDocument();
+    expect(screen.getByTestId("bars-chart")).toBeInTheDocument();
+    expect(screen.getByTestId("pies-chart")).toBeInTheDocument();
     expect(screen.getByText("No bots deployed yet.")).toBeInTheDocument();
   });
 });

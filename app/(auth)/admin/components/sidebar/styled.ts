@@ -8,7 +8,7 @@ import Image from "next/image";
 export const SidebarContainer = styled.aside<{ $isCollapsed?: boolean }>`
   width: ${(props) => (props.$isCollapsed ? "100px" : "280px")};
   height: 100vh;
-  background-color: ${COLOR.DARK};
+  background-color: #131415;
   color: ${COLOR.WHITE};
   display: flex;
   flex-direction: column;
@@ -82,9 +82,8 @@ export const NavItem = styled(Link)<{ $active?: boolean }>`
   padding: 12px 16px;
   border-radius: 12px;
   text-decoration: none;
-  color: ${(props) => (props.$active ? COLOR.DARK : COLOR.WHITE)};
-  background-color: ${(props) =>
-    props.$active ? COLOR.PRIMARY : "transparent"};
+  color: ${(props) => (props.$active ? COLOR.WHITE : COLOR.WHITE)};
+  background-color: ${(props) => (props.$active ? "#27282C" : "transparent")};
   font-weight: 600;
   font-size: 15px;
   transition: all 0.2s ease;
@@ -97,13 +96,16 @@ export const NavItem = styled(Link)<{ $active?: boolean }>`
 
   &:hover {
     background-color: ${(props) =>
-      props.$active ? COLOR.PRIMARY : "rgba(255, 255, 255, 0.05)"};
+  props.$active ? "#27282C" : COLOR.PRIMARY};
+    color: ${(props) =>
+  props.$active ? COLOR.WHITE : COLOR.DARK};
     transform: ${(props) => (props.$active ? "none" : "translateX(4px)")};
   }
 
   svg {
     font-size: 22px;
     flex-shrink: 0;
+    color: ${(props) => (props.$active ? COLOR.PRIMARY : "inherit")};
   }
 
   @media (max-width: ${BREAKPOINTS.TABLET}) {
@@ -159,6 +161,7 @@ export const BottomSection = styled.div`
   margin-top: auto;
   padding-top: 24px;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
+  position: relative;
 `;
 
 export const LogoutButtonContainer = styled.div`
@@ -268,6 +271,7 @@ export const DrawerNavItem = styled(Link)<{ $active?: boolean }>`
   svg {
     font-size: 22px;
     flex-shrink: 0;
+    color: ${(props) => (props.$active ? COLOR.PRIMARY : "inherit")};
   }
 `;
 
@@ -296,3 +300,151 @@ export const DrawerLogoutButton = styled.button`
     flex-shrink: 0;
   }
 `;
+
+export const UserProfileWrapper = styled.div`
+  position: relative;
+  width: 100%;
+`;
+
+export const UserProfileTrigger = styled.div<{ $isCollapsed?: boolean; $isOpen?: boolean }>`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: ${(props) => (props.$isCollapsed ? "8px" : "10px 12px")};
+  border-radius: 12px;
+  cursor: pointer;
+  background-color: ${(props) => (props.$isOpen ? "#27282C" : "transparent")};
+  transition: all 0.2s ease;
+  user-select: none;
+  justify-content: ${(props) => (props.$isCollapsed ? "center" : "flex-start")};
+
+  &:hover {
+    background-color: #27282C;
+  }
+`;
+
+export const AvatarCircle = styled.div<{ $size?: string }>`
+  width: ${(props) => props.$size || "40px"};
+  height: ${(props) => props.$size || "40px"};
+  border-radius: 50%;
+  background: linear-gradient(135deg, #9333EA 0%, #A855F7 100%);
+  color: ${COLOR.WHITE};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: ${(props) => (props.$size === "36px" ? "13px" : "14px")};
+  flex-shrink: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 8px rgba(147, 51, 234, 0.3);
+`;
+
+export const UserProfileDetails = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+  flex: 1;
+`;
+
+export const UserProfileName = styled.span`
+  color: ${COLOR.WHITE};
+  font-weight: 600;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+`;
+
+export const UserProfileEmail = styled.span`
+  color: #9CA3AF;
+  font-weight: 400;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+`;
+
+export const PopoverCard = styled.div<{ $isCollapsed?: boolean }>`
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 0;
+  width: 270px;
+  background-color: #27282C;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5), 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 1050;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: popoverFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+  @keyframes popoverFadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(8px) scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    width: 240px;
+  }
+`;
+
+export const PopoverHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 4px 8px 4px;
+`;
+
+export const PopoverDivider = styled.div`
+  height: 1px;
+  background-color: rgba(255, 255, 255, 0.1);
+  margin: 2px 0;
+`;
+
+export const PopoverMenuList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+`;
+
+export const PopoverMenuItem = styled.div<{ $isDanger?: boolean }>`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  color: ${(props) => (props.$isDanger ? "#EF4444" : COLOR.WHITE)};
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  svg {
+    font-size: 18px;
+    flex-shrink: 0;
+    color: ${(props) => (props.$isDanger ? "#EF4444" : "rgba(255, 255, 255, 0.7)")};
+    transition: color 0.15s ease;
+  }
+
+  &:hover {
+    background-color: ${(props) =>
+      props.$isDanger ? "rgba(239, 68, 68, 0.12)" : "rgba(255, 255, 255, 0.08)"};
+
+    svg {
+      color: ${(props) => (props.$isDanger ? "#EF4444" : COLOR.WHITE)};
+    }
+  }
+`;
+

@@ -1,7 +1,8 @@
 export interface StatsCardProps {
-  botsLength: number;
+  botsLength: number | string;
   title: string;
-  deltaText: string;
-  icon: React.ReactNode;
-  statDelta: React.ReactNode;
+  deltaText?: string;
+  icon?: React.ReactNode;
+  statDelta?: React.ReactNode;
+  isUp?: boolean;
 }

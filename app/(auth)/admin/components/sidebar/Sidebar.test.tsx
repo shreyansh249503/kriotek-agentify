@@ -35,6 +35,14 @@ jest.mock("@/lib/supabase", () => ({
   supabase: {
     auth: {
       signOut: jest.fn().mockResolvedValue({ error: null }),
+      getUser: jest.fn().mockResolvedValue({
+        data: {
+          user: {
+            email: "rishabh2552002@gmail.com",
+            user_metadata: { name: "Rishabh Verma" },
+          },
+        },
+      }),
     },
   },
 }));
@@ -44,29 +52,38 @@ describe("Sidebar Component", () => {
     jest.clearAllMocks();
   });
 
-  it("should render navigation items (Dashboard, Create Bot, Bots, Leads, Live Support, Settings)", () => {
+  it("should render navigation items (Overview, Create Agent, Agents, Leads, Live Support)", async () => {
     render(<Sidebar />);
 
-    expect(screen.getAllByText("Dashboard")[0]).toBeInTheDocument();
-    expect(screen.getAllByText("Create Bot")[0]).toBeInTheDocument();
-    expect(screen.getAllByText("Bots")[0]).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getAllByText("Overview")[0]).toBeInTheDocument();
+    });
+    expect(screen.getAllByText("Create Agent")[0]).toBeInTheDocument();
+    expect(screen.getAllByText("Agents")[0]).toBeInTheDocument();
     expect(screen.getAllByText("Leads")[0]).toBeInTheDocument();
     expect(screen.getAllByText("Live Support")[0]).toBeInTheDocument();
-    expect(screen.getAllByText("Settings")[0]).toBeInTheDocument();
   });
 
-  it("should handle logout button click and redirect to /login", async () => {
+  it("should render user profile section and toggle popover menu on click", async () => {
     render(<Sidebar />);
 
-    const logoutButtons = screen.getAllByRole("button");
-    const logoutBtn = logoutButtons.find((btn) => btn.textContent?.includes("Logout"));
-    expect(logoutBtn).toBeDefined();
+    await waitFor(() => {
+      expect(screen.getAllByText("Rishabh Verma")[0]).toBeInTheDocument();
+    });
 
-    fireEvent.click(logoutBtn!);
+    const userProfileTrigger = screen.getAllByText("Rishabh Verma")[0];
+    fireEvent.click(userProfileTrigger);
+
+    expect(screen.getAllByText("Upgrade plan")[0]).toBeInTheDocument();
+    expect(screen.getAllByText("Profile")[0]).toBeInTheDocument();
+    expect(screen.getAllByText("Settings")[0]).toBeInTheDocument();
+    expect(screen.getAllByText("Help")[0]).toBeInTheDocument();
+
+    const logoutItem = screen.getAllByText("Log out")[0];
+    fireEvent.click(logoutItem);
 
     await waitFor(() => {
       expect(supabase.auth.signOut).toHaveBeenCalled();
-      expect(mockCloseDrawer).toHaveBeenCalled();
       expect(mockReplace).toHaveBeenCalledWith("/login");
     });
   });
