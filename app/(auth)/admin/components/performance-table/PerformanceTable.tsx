@@ -1,27 +1,26 @@
 "use client";
 
-import { COLOR } from "@/styles";
 import {
-  Badge,
-  BotEngagementChatText,
-  BotEngagementVolume,
-  BotEngagementVolumeText,
-  BotInitial,
-  BotListLink,
-  BotName,
-  BotROIBar,
-  BotROIContainer,
-  BotROIValue,
-  BotTableInitialContainer,
-  PerformanceTableSubWrapper,
   PerformanceTableWrapper,
+  PerformanceTableSubWrapper,
+  AgentCell,
+  AgentAvatar,
+  AgentName,
+  ChatsText,
+  LeadsText,
+  ConversionContainer,
+  ConversionRateText,
+  ConversionProgressBar,
+  ConversionProgressFill,
+  ManageButton,
+  ManageButtonText,
+  ManageButtonIcon,
   PaginationWrapper,
   PaginationButton,
   PaginationText,
+  EmptyStateContainer,
 } from "./styled";
-import { motion } from "framer-motion";
 import { ChevronRight, ChevronLeft } from "lucide-react";
-
 import { BotConvoStat, BotLeadStat } from "@/types/analytics";
 import { Bot } from "@/types/bot";
 import { useState } from "react";
@@ -49,31 +48,30 @@ export const PerformanceTable = ({
     setCurrentPage(page);
   };
 
+  const formatRate = (rateNum: number) => {
+    if (rateNum === 0 || isNaN(rateNum)) return "0%";
+    return Number.isInteger(rateNum) ? `${rateNum}%` : `${rateNum.toFixed(1)}%`;
+  };
+
   return (
     <PerformanceTableWrapper>
       <PerformanceTableSubWrapper>
         <thead>
           <tr>
-            <th>Bot Identity</th>
-            <th>User Interactions</th>
-            <th>Successful Conversions</th>
-            <th>Conversion Rate</th>
-            <th>Temporal Activity</th>
-            <th></th>
+            <th>Agent</th>
+            <th>Conversations</th>
+            <th>Leads</th>
+            <th>Conversion</th>
+            <th>Action</th>
           </tr>
         </thead>
         <tbody>
           {convosPerBot.length === 0 ? (
             <tr>
-              <td
-                colSpan={6}
-                style={{
-                  textAlign: "center",
-                  padding: "40px",
-                  color: COLOR.TEXT_SECONDARY,
-                }}
-              >
-                Start a conversation to see performance metrics.
+              <td colSpan={5}>
+                <EmptyStateContainer>
+                  Start a conversation to see performance metrics.
+                </EmptyStateContainer>
               </td>
             </tr>
           ) : (
@@ -82,81 +80,51 @@ export const PerformanceTable = ({
                 leadsPerBot.find((l) => l.bot_id === row.bot_id)?.total_leads ??
                 0;
               const bot = bots.find((b) => b.id === row.bot_id);
-              const rate =
+              const rawRate =
                 row.total_conversations > 0
-                  ? Math.min(
-                      (leads / row.total_conversations) * 100,
-                      100,
-                    ).toFixed(1)
-                  : "0.0";
+                  ? Math.min((leads / row.total_conversations) * 100, 100)
+                  : 0;
+              const formattedRate = formatRate(rawRate);
+              const formattedLeads = String(leads).padStart(2, "0");
 
               return (
                 <tr key={row.bot_id}>
                   <td>
-                    <BotTableInitialContainer>
-                      <BotInitial>
+                    <AgentCell>
+                      <AgentAvatar>
                         {row.bot_name.charAt(0).toUpperCase()}
-                      </BotInitial>
-                      <BotName>{row.bot_name}</BotName>
-                    </BotTableInitialContainer>
+                      </AgentAvatar>
+                      <AgentName>{row.bot_name}</AgentName>
+                    </AgentCell>
                   </td>
                   <td>
-                    <BotEngagementVolume>
-                      <BotEngagementChatText>
-                        {row.total_conversations} chats
-                      </BotEngagementChatText>
-                      <BotEngagementVolumeText>
-                        {row.total_messages} messages
-                      </BotEngagementVolumeText>
-                    </BotEngagementVolume>
+                    <ChatsText>{row.total_conversations} chats</ChatsText>
                   </td>
                   <td>
-                    <Badge $type={leads > 0 ? "success" : "primary"}>
-                      {leads} Leads
-                    </Badge>
+                    <LeadsText>{formattedLeads}</LeadsText>
                   </td>
                   <td>
-                    <BotROIContainer>
-                      <div>
-                        <BotROIValue>{rate}%</BotROIValue>
-                      </div>
-                      <BotROIBar>
-                        <motion.div
+                    <ConversionContainer>
+                      <ConversionRateText>{formattedRate}</ConversionRateText>
+                      <ConversionProgressBar>
+                        <ConversionProgressFill
                           initial={{ width: 0 }}
                           animate={{
-                            width: `${Math.min(Number(rate), 100)}%`,
+                            width: `${Math.min(rawRate, 100)}%`,
                           }}
-                          transition={{ duration: 1, delay: 0.5 }}
-                          style={{
-                            height: "100%",
-                            background: COLOR.PRIMARY,
-                          }}
+                          transition={{ duration: 0.8, ease: "easeOut" }}
                         />
-                      </BotROIBar>
-                    </BotROIContainer>
+                      </ConversionProgressBar>
+                    </ConversionContainer>
                   </td>
                   <td>
-                    <div
-                      style={{
-                        fontSize: 12,
-                        color: COLOR.TEXT_SECONDARY,
-                      }}
+                    <ManageButton
+                      href={bot ? `/admin/bot/${bot.id}/edit-bot` : `/admin/bots`}
+                      aria-label="Manage"
                     >
-                      <span style={{ display: "block" }}>
-                        Month: <strong>{row.conversations_this_month}</strong>
-                      </span>
-                      <span style={{ display: "block" }}>
-                        Week: <strong>{row.conversations_this_week}</strong>
-                      </span>
-                    </div>
-                  </td>
-                  <td style={{ textAlign: "right" }}>
-                    {bot && (
-                      <BotListLink href={`/admin/bot/${bot.id}/edit-bot`}>
-                        Manage{" "}
-                        <ChevronRight size={14} style={{ marginLeft: 4 }} />
-                      </BotListLink>
-                    )}
+                      <ManageButtonText>Manage</ManageButtonText>
+                      <ManageButtonIcon aria-hidden="true">➜</ManageButtonIcon>
+                    </ManageButton>
                   </td>
                 </tr>
               );
@@ -175,6 +143,7 @@ export const PerformanceTable = ({
           <PaginationButton
             onClick={() => goToPage(currentPage - 1)}
             disabled={currentPage === 1}
+            aria-label="Previous Page"
           >
             <ChevronLeft size={16} />
           </PaginationButton>
@@ -190,6 +159,7 @@ export const PerformanceTable = ({
           <PaginationButton
             onClick={() => goToPage(currentPage + 1)}
             disabled={currentPage === totalPages}
+            aria-label="Next Page"
           >
             <ChevronRight size={16} />
           </PaginationButton>

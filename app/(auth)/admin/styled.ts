@@ -75,6 +75,19 @@ export const SectionTitle = styled.h2`
   }
 `;
 
+export const PerformanceHeader = styled.h2`
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 20px 0;
+  letter-spacing: -0.2px;
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    font-size: 16px;
+    margin: 0 0 14px 0;
+  }
+`;
+
 export const EmptyChart = styled.div`
   height: 100%;
   display: flex;
@@ -216,8 +229,145 @@ export const PanelRow = styled.div`
   }
 `;
 
+export const PanelRow1 = styled.div`
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+
+  @media (max-width: ${BREAKPOINTS.TABLET}) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+export const PanelSubRow = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+`;
+
 export const Panel = styled(GlassPanel)`
   border: 1px solid ${COLOR.BORDER}44;
+  border-radius: 14px;
+`;
+
+export const PanelHeaderTitle = styled.h3`
+  font-size: 16px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 16px 0;
+  letter-spacing: -0.01em;
+`;
+
+export const RecentActivityList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+export const ActivityIconWrapper = styled.div`
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: #f1f5f9;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+`;
+
+export const ActivityTitle = styled.span`
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #1e293b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.2s ease;
+`;
+
+export const ActivityTimestamp = styled.span`
+  font-size: 12px;
+  font-weight: 500;
+  color: #64748b;
+  margin-left: auto;
+  white-space: nowrap;
+  flex-shrink: 0;
+`;
+
+export const RecentActivityItem = styled(Link)`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  color: inherit;
+
+  &:hover {
+    background: #f8fafc;
+
+    ${ActivityIconWrapper} {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+
+    ${ActivityTitle} {
+      color: #0f172a;
+    }
+  }
+`;
+
+export const QuickActionsRow = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+export const QuickActionBtn = styled(Link)`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 10px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 0;
+
+  &:hover {
+    border-color: #cbd5e1;
+    background: #f8fafc;
+  }
+`;
+
+export const QuickActionGreenIcon = styled.div`
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: #f3fae8;
+  border: 1px solid #d9f2ba;
+  color: #84cc16;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+`;
+
+export const QuickActionLabel = styled.span`
+  font-size: 12px;
+  font-weight: 600;
+  color: #1e293b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 `;
 
 export const ChartWrapper = styled.div`

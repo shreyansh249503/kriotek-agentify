@@ -1,14 +1,17 @@
 import { renderHook } from "@testing-library/react";
-import useAdminContent from "./useAdminContent";
+import useAdminContent, { formatTimeAgo } from "./useAdminContent";
 import { useBots } from "@/hooks/useBot";
 import { useAnalytics } from "@/hooks/useAnalytics";
+import { useLeads } from "@/hooks/useLead";
 
 jest.mock("@/hooks/useBot");
 jest.mock("@/hooks/useAnalytics");
+jest.mock("@/hooks/useLead");
 
 describe("useAdminContent hook", () => {
   const mockedUseBots = useBots as jest.Mock;
   const mockedUseAnalytics = useAnalytics as jest.Mock;
+  const mockedUseLeads = useLeads as jest.Mock;
 
   const mockBots = [
     { id: "bot-1", name: "Old Bot", created_at: "2025-01-01T00:00:00Z" },
@@ -34,13 +37,19 @@ describe("useAdminContent hook", () => {
     ],
   };
 
+  const mockLeads = [
+    { id: "lead-1", name: "John Doe", email: "john@example.com", created_at: "2025-06-02T00:00:00Z" },
+  ];
+
   beforeEach(() => {
     jest.clearAllMocks();
+    mockedUseLeads.mockReturnValue({ data: [], isLoading: false });
   });
 
-  it("should return isLoading true when bots or analytics are loading", () => {
+  it("should return isLoading true when bots, analytics, or leads are loading", () => {
     mockedUseBots.mockReturnValue({ data: [], isLoading: true });
     mockedUseAnalytics.mockReturnValue({ data: undefined, isLoading: false });
+    mockedUseLeads.mockReturnValue({ data: [], isLoading: false });
 
     const { result } = renderHook(() => useAdminContent());
     expect(result.current.isLoading).toBe(true);
@@ -49,6 +58,7 @@ describe("useAdminContent hook", () => {
   it("should process and return admin content correctly when data is available", () => {
     mockedUseBots.mockReturnValue({ data: mockBots, isLoading: false });
     mockedUseAnalytics.mockReturnValue({ data: mockAnalytics, isLoading: false });
+    mockedUseLeads.mockReturnValue({ data: mockLeads, isLoading: false });
 
     const { result } = renderHook(() => useAdminContent());
 
@@ -82,11 +92,27 @@ describe("useAdminContent hook", () => {
     expect(result.current.recentBots).toHaveLength(4);
     expect(result.current.recentBots[0].id).toBe("bot-2");
     expect(result.current.recentBots[1].id).toBe("bot-5");
+
+    expect(result.current.recentActivities).toHaveLength(4);
+    expect(result.current.recentActivities[0].type).toBe("lead");
+    expect(result.current.recentActivities[0].href).toBe("/admin/leads");
+  });
+
+  it("should return fallback recentActivities when bots and leads are empty", () => {
+    mockedUseBots.mockReturnValue({ data: [], isLoading: false });
+    mockedUseAnalytics.mockReturnValue({ data: undefined, isLoading: false });
+    mockedUseLeads.mockReturnValue({ data: [], isLoading: false });
+
+    const { result } = renderHook(() => useAdminContent());
+    expect(result.current.recentActivities).toHaveLength(4);
+    expect(result.current.recentActivities[0].title).toBe("New Lead Captured");
+    expect(result.current.recentActivities[0].href).toBe("/admin/leads");
   });
 
   it("should return 0.0 conversionRate when total_conversations is 0 or missing", () => {
     mockedUseBots.mockReturnValue({ data: [], isLoading: false });
     mockedUseAnalytics.mockReturnValue({ data: { totals: { total_conversations: 0, total_leads: 0 } }, isLoading: false });
+    mockedUseLeads.mockReturnValue({ data: [], isLoading: false });
 
     const { result } = renderHook(() => useAdminContent());
     expect(result.current.conversionRate).toBe("0.0");
@@ -95,6 +121,7 @@ describe("useAdminContent hook", () => {
   it("should format dates correctly using formatDate helper", () => {
     mockedUseBots.mockReturnValue({ data: [], isLoading: false });
     mockedUseAnalytics.mockReturnValue({ data: undefined, isLoading: false });
+    mockedUseLeads.mockReturnValue({ data: [], isLoading: false });
 
     const { result } = renderHook(() => useAdminContent());
     const formatted = result.current.formatDate("2025-01-15T00:00:00Z");
@@ -102,5 +129,14 @@ describe("useAdminContent hook", () => {
     expect(formatted).toContain("15");
     expect(formatted).toContain("2025");
     expect(result.current.formatDate("")).toBe("");
+  });
+
+  it("should calculate formatTimeAgo correctly", () => {
+    expect(formatTimeAgo("invalid", "02 min ago")).toBe("02 min ago");
+    expect(formatTimeAgo(new Date(), "Just now")).toBe("Just now");
+    const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000);
+    expect(formatTimeAgo(fiveMinAgo)).toBe("05 min ago");
+    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+    expect(formatTimeAgo(twoHoursAgo)).toBe("02 hr ago");
   });
 });

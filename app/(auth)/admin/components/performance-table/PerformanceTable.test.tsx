@@ -46,8 +46,12 @@ describe("PerformanceTable Component", () => {
 
     expect(screen.getByText("Bot 1")).toBeInTheDocument();
     expect(screen.getAllByText("10 chats")[0]).toBeInTheDocument();
-    expect(screen.getByText("5 Leads")).toBeInTheDocument();
-    expect(screen.getByText("50.0%")).toBeInTheDocument();
+    expect(screen.getByText("05")).toBeInTheDocument();
+    expect(screen.getByText("50%")).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: "Manage" })[0]).toHaveAttribute(
+      "href",
+      "/admin/bot/bot-1/edit-bot"
+    );
 
     expect(screen.getByText("Showing 1 to 5 of 7 results")).toBeInTheDocument();
 

@@ -6,6 +6,8 @@ export interface Bot {
   tone: string;
   primary_color: string;
   created_at: string;
+  updated_at?: string;
+  user_id?: string;
   contact_enabled: boolean;
   contact_email: string;
   contact_prompt: string;

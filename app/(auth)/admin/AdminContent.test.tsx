@@ -69,6 +69,15 @@ describe("AdminContent Component", () => {
       convosPerBot: [],
       leadsPerBot: [],
       recentBots: [mockBot],
+      recentActivities: [
+        {
+          id: "act-1",
+          type: "lead",
+          title: "New Lead Captured",
+          timestamp: "02 min ago",
+          href: "/admin/leads",
+        },
+      ],
       formatDate: () => "Jan 1, 2026",
     });
 
@@ -82,10 +91,14 @@ describe("AdminContent Component", () => {
     expect(screen.getByTestId("bars-chart")).toBeInTheDocument();
     expect(screen.getByTestId("pies-chart")).toBeInTheDocument();
     expect(screen.getByTestId("performance-table")).toBeInTheDocument();
-    expect(screen.getByText("Assistant One")).toBeInTheDocument();
+    expect(screen.getByText("Agent Performance")).toBeInTheDocument();
+    expect(screen.getByText("Recent Activity")).toBeInTheDocument();
+    expect(screen.getByText("Quick Actions")).toBeInTheDocument();
+    expect(screen.getByText("New Lead Captured")).toBeInTheDocument();
+    expect(screen.getByText("Create Bot")).toBeInTheDocument();
   });
 
-  it("should render empty fallback state when botBarData, pieData and recentBots are empty", () => {
+  it("should render empty fallback state when charts are empty", () => {
     mockUseAdminContent.mockReturnValue({
       bots: [],
       isLoading: false,
@@ -96,6 +109,7 @@ describe("AdminContent Component", () => {
       convosPerBot: [],
       leadsPerBot: [],
       recentBots: [],
+      recentActivities: [],
       formatDate: () => "",
     });
 
@@ -103,6 +117,8 @@ describe("AdminContent Component", () => {
 
     expect(screen.getByTestId("bars-chart")).toBeInTheDocument();
     expect(screen.getByTestId("pies-chart")).toBeInTheDocument();
-    expect(screen.getByText("No bots deployed yet.")).toBeInTheDocument();
+    expect(screen.getByText("Agent Performance")).toBeInTheDocument();
+    expect(screen.getByText("Recent Activity")).toBeInTheDocument();
+    expect(screen.getByText("Quick Actions")).toBeInTheDocument();
   });
 });

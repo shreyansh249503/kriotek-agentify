@@ -1,33 +1,35 @@
 import { motion } from "framer-motion";
 import {
-  Users,
   Plus,
-  List,
-  Settings,
   ArrowUp,
   ArrowDown,
+  Newspaper,
+  BookOpen,
+  Bot,
+  MessageSquareShare,
+  Sparkles,
+  Upload,
 } from "lucide-react";
 import {
   Container,
   StatsGrid,
   DashboardWrapper,
-  SectionTitle,
+  PerformanceHeader,
   PanelRow,
   Panel,
-  BotListItem,
-  BotListItemLeft,
-  BotInitial,
-  BotListName,
-  BotListDate,
-  BotListLink,
-  QuickActionsGrid,
-  QuickActionCard,
-  QuickActionIcon,
-  QuickActionText,
-  QuickActionTitle,
-  QuickActionDesc,
+  PanelHeaderTitle,
+  RecentActivityList,
+  RecentActivityItem,
+  ActivityIconWrapper,
+  ActivityTitle,
+  ActivityTimestamp,
+  QuickActionsRow,
+  QuickActionBtn,
+  QuickActionGreenIcon,
+  QuickActionLabel,
   LoadingContainer,
-  EmptyChart,
+  PanelSubRow,
+  PanelRow1,
 } from "./styled";
 
 import { Loader } from "@/components";
@@ -37,13 +39,6 @@ import {
   PiesChart,
   StatsCard,
 } from "./components";
-import { COLOR } from "@/styles";
-// import {
-//   ChatIcon,
-//   LightningIcon,
-//   RobotIcon,
-//   UsersIcon,
-// } from "@phosphor-icons/react";
 import useAdminContent from "@/hooks/useAdminContent";
 import useMotion from "@/hooks/useMotion";
 
@@ -58,7 +53,7 @@ export default function AdminContent() {
     pieData,
     convosPerBot,
     leadsPerBot,
-    recentBots,
+    recentActivities,
     formatDate,
   } = useAdminContent();
 
@@ -136,96 +131,86 @@ export default function AdminContent() {
         </StatsGrid>
 
         <PanelRow>
-          <motion.div variants={itemVariants} style={{ flex: 1, minWidth: 300 }}>
+          <motion.div
+            variants={itemVariants}
+            style={{ flex: 1, minWidth: 300 }}
+          >
             <BarsChart botBarData={botBarData} />
           </motion.div>
 
-          <motion.div variants={itemVariants} style={{ flex: 1, minWidth: 300 }}>
+          <motion.div
+            variants={itemVariants}
+            style={{ flex: 1, minWidth: 300 }}
+          >
             <PiesChart pieData={pieData} />
           </motion.div>
         </PanelRow>
 
-        <Panel as={motion.div} variants={itemVariants}>
-          <SectionTitle>
-            <List size={16} /> Detailed Bot Performance
-          </SectionTitle>
-
-          <PerformanceTable
-            convosPerBot={convosPerBot}
-            leadsPerBot={leadsPerBot}
-            bots={bots}
-          />
-        </Panel>
-
-        <PanelRow>
+        <PanelRow1>
           <Panel as={motion.div} variants={itemVariants}>
-            <SectionTitle>
-              <Plus size={16} /> Recent Deployments
-            </SectionTitle>
+            <PerformanceHeader>Agent Performance</PerformanceHeader>
 
-            {!recentBots.length ? (
-              <p style={{ fontSize: 14, color: COLOR.TEXT_SECONDARY }}>
-                No bots deployed yet.
-              </p>
-            ) : (
-              recentBots.map((bot) => (
-                <BotListItem key={bot.id}>
-                  <BotListItemLeft>
-                    <BotInitial>{bot.name[0].toUpperCase()}</BotInitial>
-                    <div>
-                      <BotListName>{bot.name}</BotListName>
-                      <BotListDate>{formatDate(bot.created_at)}</BotListDate>
-                    </div>
-                  </BotListItemLeft>
-
-                  <BotListLink href={`/admin/bot/${bot.id}/edit-bot`}>
-                    Configure
-                  </BotListLink>
-                </BotListItem>
-              ))
-            )}
+            <PerformanceTable
+              convosPerBot={convosPerBot}
+              leadsPerBot={leadsPerBot}
+              bots={bots}
+            />
           </Panel>
 
-          <Panel as={motion.div} variants={itemVariants}>
-            <SectionTitle>
-              <Plus size={16} /> Quick Operations
-            </SectionTitle>
+          <PanelSubRow>
+            {/* Top Card: Recent Activity */}
+            <Panel as={motion.div} variants={itemVariants}>
+              <PanelHeaderTitle>Recent Activity</PanelHeaderTitle>
 
-            <QuickActionsGrid>
-              {[
-                {
-                  href: "/admin/new",
-                  icon: <Plus size={20} />,
-                  title: "New Assistant",
-                  desc: "Build a custom AI agent",
-                  color: COLOR.PRIMARY,
-                },
-                {
-                  href: "/admin/bots",
-                  icon: <List size={20} />,
-                  title: "Fleet Manager",
-                  desc: "Monitor all your bots",
-                  color: COLOR.PRIMARY_HOVER,
-                },
-                {
-                  href: "/admin/settings",
-                  icon: <Settings size={20} />,
-                  title: "Control Center",
-                  desc: "Platform configurations",
-                  color: COLOR.DARK,
-                },
-              ].map((a) => (
-                <QuickActionCard key={a.href} href={a.href}>
-                  <QuickActionIcon $color={a.color}>{a.icon}</QuickActionIcon>
-                  <QuickActionText>
-                    <QuickActionTitle>{a.title}</QuickActionTitle>
-                    <QuickActionDesc>{a.desc}</QuickActionDesc>
-                  </QuickActionText>
-                </QuickActionCard>
-              ))}
-            </QuickActionsGrid>
-          </Panel>
-        </PanelRow>
+              <RecentActivityList>
+                {recentActivities.map((act) => {
+                  let Icon = Newspaper;
+                  if (act.type === "knowledge") Icon = BookOpen;
+                  else if (act.type === "bot") Icon = Bot;
+                  else if (act.type === "escalation") Icon = MessageSquareShare;
+
+                  return (
+                    <RecentActivityItem key={act.id} href={act.href}>
+                      <ActivityIconWrapper>
+                        <Icon size={18} />
+                      </ActivityIconWrapper>
+                      <ActivityTitle title={act.title}>{act.title}</ActivityTitle>
+                      <ActivityTimestamp>{act.timestamp}</ActivityTimestamp>
+                    </RecentActivityItem>
+                  );
+                })}
+              </RecentActivityList>
+            </Panel>
+
+            {/* Bottom Card: Quick Actions */}
+            <Panel as={motion.div} variants={itemVariants}>
+              <PanelHeaderTitle>Quick Actions</PanelHeaderTitle>
+
+              <QuickActionsRow>
+                <QuickActionBtn href="/admin/new">
+                  <QuickActionGreenIcon>
+                    <Plus size={15} strokeWidth={2.5} />
+                  </QuickActionGreenIcon>
+                  <QuickActionLabel>Create Bot</QuickActionLabel>
+                </QuickActionBtn>
+
+                <QuickActionBtn href="/demo">
+                  <QuickActionGreenIcon>
+                    <Sparkles size={15} strokeWidth={2.2} />
+                  </QuickActionGreenIcon>
+                  <QuickActionLabel>Custom widget</QuickActionLabel>
+                </QuickActionBtn>
+
+                <QuickActionBtn href="/admin/bots">
+                  <QuickActionGreenIcon>
+                    <Upload size={15} strokeWidth={2.2} />
+                  </QuickActionGreenIcon>
+                  <QuickActionLabel title="Upload knowledge">Upload knowl...</QuickActionLabel>
+                </QuickActionBtn>
+              </QuickActionsRow>
+            </Panel>
+          </PanelSubRow>
+        </PanelRow1>
       </DashboardWrapper>
     </Container>
   );

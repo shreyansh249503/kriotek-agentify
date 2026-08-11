@@ -82,7 +82,7 @@ export const StatLabel = styled.p`
 export const StatValue = styled.p`
   font-size: 32px;
   font-weight: 700;
-  color: #111827;
+  color: ${COLOR.DARK};
   margin: 0 0 16px 0;
   line-height: 1.1;
   letter-spacing: -0.5px;

@@ -9,7 +9,6 @@ export const HeaderWrapper = styled.header`
   display: flex;
   align-items: center;
   background-color: ${COLOR.WHITE};
-  border-bottom: 1px solid ${COLOR.BORDER};
   position: sticky;
   top: 0;
   z-index: 900;

@@ -95,11 +95,13 @@ export const NavItem = styled(Link)<{ $active?: boolean }>`
   }
 
   &:hover {
-    background-color: ${(props) =>
-  props.$active ? "#27282C" : COLOR.PRIMARY};
-    color: ${(props) =>
-  props.$active ? COLOR.WHITE : COLOR.DARK};
+    background-color: ${(props) => (props.$active ? "#27282C" : "#27282C")};
+    color: ${(props) => (props.$active ? COLOR.WHITE : COLOR.WHITE)};
     transform: ${(props) => (props.$active ? "none" : "translateX(4px)")};
+
+    svg {
+      color: ${COLOR.PRIMARY};
+    }
   }
 
   svg {
@@ -375,7 +377,7 @@ export const PopoverCard = styled.div<{ $isCollapsed?: boolean }>`
   width: 270px;
   background-color: #27282C;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 16px;
+  border-radius: 12px;
   padding: 16px;
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5), 0 4px 12px rgba(0, 0, 0, 0.3);
   z-index: 1050;
@@ -425,7 +427,7 @@ export const PopoverMenuItem = styled.div<{ $isDanger?: boolean }>`
   gap: 12px;
   padding: 10px 12px;
   border-radius: 10px;
-  color: ${(props) => (props.$isDanger ? "#EF4444" : COLOR.WHITE)};
+  color: ${(props) => (props.$isDanger ? COLOR.WHITE : COLOR.WHITE)};
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -434,16 +436,19 @@ export const PopoverMenuItem = styled.div<{ $isDanger?: boolean }>`
   svg {
     font-size: 18px;
     flex-shrink: 0;
-    color: ${(props) => (props.$isDanger ? "#EF4444" : "rgba(255, 255, 255, 0.7)")};
+    color: ${(props) =>
+      props.$isDanger ? COLOR.WHITE : "rgba(255, 255, 255, 0.7)"};
     transition: color 0.15s ease;
   }
 
   &:hover {
     background-color: ${(props) =>
-      props.$isDanger ? "rgba(239, 68, 68, 0.12)" : "rgba(255, 255, 255, 0.08)"};
+      props.$isDanger
+        ? "rgba(255, 255, 255, 0.08)"
+        : "rgba(255, 255, 255, 0.08)"};
 
     svg {
-      color: ${(props) => (props.$isDanger ? "#EF4444" : COLOR.WHITE)};
+      color: ${(props) => (props.$isDanger ? COLOR.WHITE : COLOR.WHITE)};
     }
   }
 `;
