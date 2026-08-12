@@ -11,7 +11,12 @@ import {
   HeaderTitleWrapper,
 } from "./styled";
 import { usePathname } from "next/navigation";
-import { SquaresFourIcon, ListIcon, HouseIcon } from "@phosphor-icons/react";
+import {
+  SquaresFourIcon,
+  ListIcon,
+  HouseIcon,
+  PlusIcon,
+} from "@phosphor-icons/react";
 import { useSidebar } from "@/context/SidebarContext";
 import { Breadcrumbs } from "../breadcrumbs";
 import { BlackButton } from "@/components";
@@ -23,6 +28,11 @@ export const Adminheader = () => {
   const getPageTitle = () => {
     if (pathname === "/admin") return "Dashboard";
   };
+
+  const isBotsPage =
+    pathname === "/admin/bots" ||
+    pathname.startsWith("/admin/bots/") ||
+    pathname.startsWith("/admin/bot/");
 
   return (
     <HeaderWrapper>
@@ -41,10 +51,17 @@ export const Adminheader = () => {
           </HeaderTitleWrapper>
         </HeaderContainer>
         <ButtonWrapper>
-          <BlackButton href={"/"} style={{ padding: "10px 18px" }}>
-            Go to Home
-            <HouseIcon size={18} weight="bold" />
-          </BlackButton>
+          {isBotsPage ? (
+            <BlackButton href={"/admin/new"} style={{ padding: "10px 18px" }}>
+              <PlusIcon size={18} weight="bold" />
+              New AI Agent
+            </BlackButton>
+          ) : (
+            <BlackButton href={"/"} style={{ padding: "10px 18px" }}>
+              Go to Home
+              <HouseIcon size={18} weight="bold" />
+            </BlackButton>
+          )}
         </ButtonWrapper>
       </InnerHeaderwrapper>
     </HeaderWrapper>

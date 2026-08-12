@@ -54,7 +54,7 @@ export const PerformanceTable = ({
   };
 
   return (
-    <PerformanceTableWrapper>
+    <PerformanceTableWrapper data-testid="performance-table">
       <PerformanceTableSubWrapper>
         <thead>
           <tr>
@@ -69,7 +69,7 @@ export const PerformanceTable = ({
           {convosPerBot.length === 0 ? (
             <tr>
               <td colSpan={5}>
-                <EmptyStateContainer>
+                <EmptyStateContainer data-testid="performance-empty-state">
                   Start a conversation to see performance metrics.
                 </EmptyStateContainer>
               </td>
@@ -88,26 +88,27 @@ export const PerformanceTable = ({
               const formattedLeads = String(leads).padStart(2, "0");
 
               return (
-                <tr key={row.bot_id}>
+                <tr key={row.bot_id} data-testid="performance-row">
                   <td>
                     <AgentCell>
                       <AgentAvatar>
                         {row.bot_name.charAt(0).toUpperCase()}
                       </AgentAvatar>
-                      <AgentName>{row.bot_name}</AgentName>
+                      <AgentName data-testid="perf-agent-name">{row.bot_name}</AgentName>
                     </AgentCell>
                   </td>
                   <td>
-                    <ChatsText>{row.total_conversations} chats</ChatsText>
+                    <ChatsText data-testid="perf-chats">{row.total_conversations} chats</ChatsText>
                   </td>
                   <td>
-                    <LeadsText>{formattedLeads}</LeadsText>
+                    <LeadsText data-testid="perf-leads">{formattedLeads}</LeadsText>
                   </td>
                   <td>
                     <ConversionContainer>
-                      <ConversionRateText>{formattedRate}</ConversionRateText>
+                      <ConversionRateText data-testid="perf-conversion-rate">{formattedRate}</ConversionRateText>
                       <ConversionProgressBar>
                         <ConversionProgressFill
+                          data-testid="perf-conversion-fill"
                           initial={{ width: 0 }}
                           animate={{
                             width: `${Math.min(rawRate, 100)}%`,
@@ -119,6 +120,7 @@ export const PerformanceTable = ({
                   </td>
                   <td>
                     <ManageButton
+                      data-testid="perf-manage-btn"
                       href={bot ? `/admin/bot/${bot.id}/edit-bot` : `/admin/bots`}
                       aria-label="Manage"
                     >

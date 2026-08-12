@@ -6,50 +6,68 @@ import {
   SearchBar,
   EmptyState,
   Pagination,
-  StatusBadge,
-  PrimaryButton,
-  SecondaryButton,
 } from "@/components";
 import {
-  TableContainer,
-  StyledTable,
-  TableHead,
-  TableRow,
-  TableHeader,
-  TableBody,
-  TableCell,
-  BotName,
-  BotDescription,
-  ActionCellWrapper,
   ControlsContainer,
   BotsContainer,
   LoadingContainer,
-  BotIconWrapper,
   GlobalBotsStyle,
-  TableWrapper,
+  AgentsContainer,
+  EmptyBotsWrapper,
+  EmptyBannerCard,
+  EmptyLogoCircle,
+  EmptyMiniChatWindow,
+  EmptyMiniChatHeader,
+  EmptyMiniAvatar,
+  EmptyMiniChatTitle,
+  EmptyMiniChatBody,
+  EmptyMiniBotBubble,
+  EmptyMiniUserBubble,
+  EmptyMiniBotResponseBubble,
+  EmptyTitle,
+  EmptyDescription,
+  EmptyNewAgentButton,
+  AgentsEmptyContainer,
 } from "./styled";
-import { RobotIcon, SpinnerIcon } from "@phosphor-icons/react";
+import { RobotIcon, Plus } from "@phosphor-icons/react";
 import { useBots } from "@/hooks/useBot";
 import { useRouter } from "next/navigation";
+import { BotCard } from "../components";
 
-type LoadingAction = { botId: string; type: "edit" | "ingest" } | null;
+const AgentifyIcon = ({ size = 36 }: { size?: number }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 36 36"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-label="Agentify Logo"
+  >
+    <path
+      d="M12.5 28C12.5 28 14.8 17.5 22 9C19 13.5 17.5 19 18 28C15.5 28 12.5 28 12.5 28Z"
+      fill="#111111"
+    />
+    <path
+      d="M20.5 17C23.5 20.5 26.5 24 28 28C25.5 28 22.5 28 22.5 28C22 23 21 19.5 20.5 17Z"
+      fill="#111111"
+    />
+  </svg>
+);
 
 export default function BotsPage() {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [loadingAction, setLoadingAction] = useState<LoadingAction>(null);
   const pageSize = 8;
 
   const { data: bots, isLoading } = useBots();
 
-  const handleNavigate = async (
-    href: string,
-    botId: string,
-    type: "edit" | "ingest",
-  ) => {
-    setLoadingAction({ botId, type });
-    router.push(href);
+  const handleEdit = (botId: string) => {
+    router.push(`/admin/bot/${botId}/edit-bot`);
+  };
+
+  const handleIngest = (publicKey: string) => {
+    router.push(`/admin/bots/${publicKey}/ingest`);
   };
 
   const handleSearch = (query: string) => {
@@ -59,9 +77,10 @@ export default function BotsPage() {
 
   const filteredBots = useMemo(() => {
     return (bots ?? []).filter((bot) => {
-      const matchesSearch = bot.name
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase());
+      const matchesSearch =
+        bot.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (bot.description && bot.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (bot.company_name && bot.company_name.toLowerCase().includes(searchTerm.toLowerCase()));
       return matchesSearch;
     });
   }, [bots, searchTerm]);
@@ -79,6 +98,52 @@ export default function BotsPage() {
       </LoadingContainer>
     );
   }
+
+  const hasNoBotsAtAll = !bots || bots.length === 0;
+
+  if (hasNoBotsAtAll && !searchTerm) {
+    return (
+      <AgentsEmptyContainer>
+        <GlobalBotsStyle />
+        <EmptyBotsWrapper>
+          <EmptyBannerCard>
+            <EmptyLogoCircle>
+              <AgentifyIcon size={100} />
+            </EmptyLogoCircle>
+
+            <EmptyMiniChatWindow>
+              <EmptyMiniChatHeader>
+                <EmptyMiniAvatar>
+                  <AgentifyIcon size={20} />
+                </EmptyMiniAvatar>
+                <EmptyMiniChatTitle>AI Bot</EmptyMiniChatTitle>
+              </EmptyMiniChatHeader>
+
+              <EmptyMiniChatBody>
+                <EmptyMiniBotBubble />
+                <EmptyMiniUserBubble />
+                <EmptyMiniBotResponseBubble />
+              </EmptyMiniChatBody>
+            </EmptyMiniChatWindow>
+          </EmptyBannerCard>
+
+          <EmptyTitle>No agents yet...</EmptyTitle>
+          <EmptyDescription>
+            Create your first AI Agent to start automating support, generating leads, and answering customer questions
+          </EmptyDescription>
+
+          <EmptyNewAgentButton
+            type="button"
+            onClick={() => router.push("/admin/new")}
+          >
+            <Plus size={16} weight="bold" />
+            <span>New AI agent</span>
+          </EmptyNewAgentButton>
+        </EmptyBotsWrapper>
+      </AgentsEmptyContainer>
+    );
+  }
+
   return (
     <BotsContainer>
       <GlobalBotsStyle />
@@ -87,121 +152,32 @@ export default function BotsPage() {
       </ControlsContainer>
 
       {filteredBots.length > 0 ? (
-        <TableContainer>
-          <TableWrapper>
-            <StyledTable>
-              <TableHead>
-                <TableRow>
-                  <TableHeader>Name</TableHeader>
-                  <TableHeader>Description</TableHeader>
-                  <TableHeader>Contact Lead</TableHeader>
-                  <TableHeader style={{ textAlign: "center" }}>
-                    Actions
-                  </TableHeader>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {currentBots.map((bot) => {
-                  const isEditLoading =
-                    loadingAction?.botId === bot.id &&
-                    loadingAction?.type === "edit";
-                  const isIngestLoading =
-                    loadingAction?.botId === bot.id &&
-                    loadingAction?.type === "ingest";
-
-                  return (
-                    <TableRow key={bot.id}>
-                      <TableCell>
-                        <BotName>
-                          <BotIconWrapper $color={bot.primary_color}>
-                            <RobotIcon size={20} />
-                          </BotIconWrapper>
-                          {bot.name}
-                        </BotName>
-                      </TableCell>
-                      <TableCell>
-                        <BotDescription>{bot.description}</BotDescription>
-                      </TableCell>
-                      <TableCell>
-                        {bot.contact_enabled ? (
-                          <StatusBadge status="active">Enabled</StatusBadge>
-                        ) : (
-                          <StatusBadge status="inactive">Disabled</StatusBadge>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <ActionCellWrapper>
-                          <SecondaryButton
-                            type="button"
-                            style={{ padding: "9px 26px" }}
-                            disabled={!!loadingAction}
-                            onClick={() =>
-                              handleNavigate(
-                                `/admin/bot/${bot.id}/edit-bot`,
-                                bot.id,
-                                "edit",
-                              )
-                            }
-                          >
-                            {isEditLoading ? (
-                              <SpinnerIcon size={14} className="spin" />
-                            ) : (
-                              "Edit"
-                            )}
-                          </SecondaryButton>
-                          <PrimaryButton
-                            type="button"
-                            style={{ padding: "10px 20px" }}
-                            disabled={!!loadingAction}
-                            onClick={() =>
-                              handleNavigate(
-                                `/admin/bots/${bot.public_key}/ingest`,
-                                bot.id,
-                                "ingest",
-                              )
-                            }
-                          >
-                            {isIngestLoading ? (
-                              <SpinnerIcon size={14} className="spin" />
-                            ) : (
-                              "Ingest"
-                            )}
-                          </PrimaryButton>
-                        </ActionCellWrapper>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </StyledTable>
-          </TableWrapper>
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={setCurrentPage}
-            pageSize={pageSize}
-            totalItems={filteredBots.length}
-          />
-        </TableContainer>
+        <>
+          <AgentsContainer>
+            {currentBots.map((bot) => (
+              <BotCard
+                key={bot.id}
+                bot={bot}
+                onEdit={() => handleEdit(bot.id)}
+                onIngest={() => handleIngest(bot.public_key)}
+              />
+            ))}
+          </AgentsContainer>
+          {totalPages > 1 && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              pageSize={pageSize}
+              totalItems={filteredBots.length}
+            />
+          )}
+        </>
       ) : (
         <EmptyState
           icon={<RobotIcon size={48} weight="duotone" />}
-          title={
-            searchTerm
-              ? `No bots found matching "${searchTerm}"`
-              : "No bots created yet"
-          }
-          description={
-            searchTerm
-              ? "Try adjusting your search terms or filters"
-              : "Get started by creating your first AI bot assistant."
-          }
-          actionLabel={!searchTerm ? "Create New Bot" : undefined}
-          onAction={
-            !searchTerm
-              ? () => (window.location.href = "/admin/new")
-              : undefined
-          }
+          title={`No bots found matching "${searchTerm}"`}
+          description="Try adjusting your search terms or filters"
         />
       )}
     </BotsContainer>

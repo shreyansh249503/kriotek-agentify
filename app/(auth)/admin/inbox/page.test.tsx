@@ -105,6 +105,7 @@ describe("InboxPage Component", () => {
 
     expect(screen.getAllByText("Alice")[0]).toBeInTheDocument();
     expect(screen.getAllByText("Hello, I need help")[0]).toBeInTheDocument();
+    expect(screen.getAllByText("manual_takeover")[0]).toBeInTheDocument();
   });
 
   it("should handle sending a reply", async () => {

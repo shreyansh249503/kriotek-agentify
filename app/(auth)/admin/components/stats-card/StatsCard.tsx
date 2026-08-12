@@ -29,15 +29,17 @@ export const StatsCard = ({
     },
   } as const;
 
+  const slug = title.toLowerCase().replace(/\s+/g, "-");
+
   return (
-    <StatCard as={motion.div} variants={itemVariants}>
+    <StatCard as={motion.div} variants={itemVariants} data-testid={`stats-card-${slug}`}>
       <StatCardTop>
-        <StatLabel>{title}</StatLabel>
+        <StatLabel data-testid="stat-label">{title}</StatLabel>
         {icon && <div>{icon}</div>}
       </StatCardTop>
-      <StatValue>{botsLength}</StatValue>
+      <StatValue data-testid="stat-value">{botsLength}</StatValue>
       {(statDelta || deltaText) && (
-        <StatDeltaPill $up={isUp}>
+        <StatDeltaPill $up={isUp} data-testid="stat-delta">
           {statDelta}
           {deltaText && <span>{deltaText}</span>}
         </StatDeltaPill>

@@ -54,7 +54,6 @@ export default function AdminContent() {
     convosPerBot,
     leadsPerBot,
     recentActivities,
-    formatDate,
   } = useAdminContent();
 
   const { containerVariants, itemVariants } = useMotion();
@@ -75,7 +74,7 @@ export default function AdminContent() {
         initial="hidden"
         animate="visible"
       >
-        <StatsGrid>
+        <StatsGrid data-testid="stats-grid">
           <StatsCard
             title="Total Leads"
             botsLength={totals?.total_leads ?? 87}
@@ -104,7 +103,7 @@ export default function AdminContent() {
           />
           <StatsCard
             title="Conversion Rate"
-            botsLength={`${conversionRate && conversionRate !== "0.0" ? conversionRate : "32.6"}%`}
+            botsLength={totals ? `${conversionRate}%` : "32.6%"}
             statDelta={
               trends?.conversionRateTrend?.isUp ? (
                 <ArrowUp size={14} />
@@ -162,7 +161,7 @@ export default function AdminContent() {
             <Panel as={motion.div} variants={itemVariants}>
               <PanelHeaderTitle>Recent Activity</PanelHeaderTitle>
 
-              <RecentActivityList>
+              <RecentActivityList data-testid="recent-activity-list">
                 {recentActivities.map((act) => {
                   let Icon = Newspaper;
                   if (act.type === "knowledge") Icon = BookOpen;
@@ -170,12 +169,12 @@ export default function AdminContent() {
                   else if (act.type === "escalation") Icon = MessageSquareShare;
 
                   return (
-                    <RecentActivityItem key={act.id} href={act.href}>
+                    <RecentActivityItem key={act.id} href={act.href} data-testid="recent-activity-item">
                       <ActivityIconWrapper>
                         <Icon size={18} />
                       </ActivityIconWrapper>
-                      <ActivityTitle title={act.title}>{act.title}</ActivityTitle>
-                      <ActivityTimestamp>{act.timestamp}</ActivityTimestamp>
+                      <ActivityTitle title={act.title} data-testid="recent-activity-title">{act.title}</ActivityTitle>
+                      <ActivityTimestamp data-testid="recent-activity-timestamp">{act.timestamp}</ActivityTimestamp>
                     </RecentActivityItem>
                   );
                 })}
@@ -186,22 +185,22 @@ export default function AdminContent() {
             <Panel as={motion.div} variants={itemVariants}>
               <PanelHeaderTitle>Quick Actions</PanelHeaderTitle>
 
-              <QuickActionsRow>
-                <QuickActionBtn href="/admin/new">
+              <QuickActionsRow data-testid="quick-actions-row">
+                <QuickActionBtn href="/admin/new" data-testid="quick-action-create-bot">
                   <QuickActionGreenIcon>
                     <Plus size={15} strokeWidth={2.5} />
                   </QuickActionGreenIcon>
                   <QuickActionLabel>Create Bot</QuickActionLabel>
                 </QuickActionBtn>
 
-                <QuickActionBtn href="/demo">
+                <QuickActionBtn href="/demo" data-testid="quick-action-custom-widget">
                   <QuickActionGreenIcon>
                     <Sparkles size={15} strokeWidth={2.2} />
                   </QuickActionGreenIcon>
                   <QuickActionLabel>Custom widget</QuickActionLabel>
                 </QuickActionBtn>
 
-                <QuickActionBtn href="/admin/bots">
+                <QuickActionBtn href="/admin/bots" data-testid="quick-action-upload-knowledge">
                   <QuickActionGreenIcon>
                     <Upload size={15} strokeWidth={2.2} />
                   </QuickActionGreenIcon>

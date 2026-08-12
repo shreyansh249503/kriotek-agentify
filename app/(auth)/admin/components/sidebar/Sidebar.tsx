@@ -5,7 +5,6 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   SignOutIcon,
   GearIcon,
-  PlusCircleIcon,
   BrainIcon,
   AddressBookIcon,
   ChatsIcon,
@@ -127,12 +126,6 @@ export const Sidebar = () => {
       href: "/admin",
       isActive: pathname === "/admin",
       icon: (weight: "fill" | "regular") => <HouseLineIcon weight={weight} />,
-    },
-    {
-      label: "Create Agent",
-      href: "/admin/new",
-      isActive: pathname === "/admin/new",
-      icon: (weight: "fill" | "regular") => <PlusCircleIcon weight={weight} />,
     },
     {
       label: "Agents",

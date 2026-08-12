@@ -34,6 +34,76 @@ export const ControlsContainer = styled.div`
   margin-bottom: 16px;
 `;
 
+export const ActionsGroup = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    width: 100%;
+    justify-content: flex-start;
+  }
+`;
+
+export const FilterSelect = styled.select`
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid ${COLOR.BORDER};
+  background-color: ${COLOR.WHITE};
+  color: ${COLOR.DARK};
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: ${COLOR.PRIMARY};
+  }
+
+  &:focus {
+    border-color: ${COLOR.PRIMARY};
+    box-shadow: 0 0 0 2px ${COLOR.PRIMARY}44;
+  }
+`;
+
+export const ExportButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 12px;
+  border: 1px solid ${COLOR.DARK};
+  background-color: ${COLOR.DARK};
+  color: ${COLOR.WHITE};
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+
+  &:hover:not(:disabled) {
+    background-color: ${COLOR.PRIMARY};
+    color: ${COLOR.DARK};
+    border-color: ${COLOR.PRIMARY};
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px ${COLOR.PRIMARY}33;
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    border-color: ${COLOR.BORDER};
+    background-color: ${COLOR.BORDER};
+    color: ${COLOR.TEXT_SECONDARY};
+  }
+`;
+
 export const TableContainer = styled.div`
   width: 100%;
   background-color: ${COLOR.WHITE};
@@ -53,7 +123,7 @@ export const TableContainer = styled.div`
 export const TableWrapper = styled.div`
   width: 100%;
   overflow-x: auto;
-  
+
   &::-webkit-scrollbar {
     height: 6px;
     width: 6px;
@@ -88,7 +158,7 @@ export const TableHead = styled.thead`
   border-bottom: 1px solid ${COLOR.BORDER}88;
 `;
 
-export const TableHeader = styled.th`
+export const TableHeader = styled.th<{ $clickable?: boolean }>`
   padding: 20px 24px;
   font-size: 11px;
   font-weight: 700;
@@ -96,6 +166,17 @@ export const TableHeader = styled.th`
   text-transform: uppercase;
   letter-spacing: 1px;
   white-space: nowrap;
+  user-select: none;
+  cursor: ${(props) => (props.$clickable ? "pointer" : "default")};
+  transition: color 0.2s ease;
+
+  ${(props) =>
+    props.$clickable &&
+    `
+    &:hover {
+      color: ${COLOR.PRIMARY};
+    }
+  `}
 `;
 
 export const TableBody = styled.tbody`
@@ -161,3 +242,4 @@ export const DateText = styled.div`
   color: ${COLOR.TEXT_SECONDARY};
   white-space: nowrap;
 `;
+

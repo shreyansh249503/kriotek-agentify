@@ -1,3 +1,4 @@
+import { In } from "typeorm";
 import { getDb } from "@/app/api/lib/db";
 import { Conversation } from "@/app/api/lib/entities";
 import { getUserFromRequest } from "@/app/api/lib/auth";
@@ -26,7 +27,7 @@ export async function GET(req: Request) {
     const convos = await dataSource.getRepository<Conversation>("Conversation").find({
       relations: ["bot"],
       where: {
-        state: "manual",
+        state: In(["manual", "manual_takeover"]),
         bot: {
           user_id: user.id,
         },

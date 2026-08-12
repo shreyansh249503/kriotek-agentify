@@ -113,6 +113,31 @@ export const ConvoBotBadge = styled.span`
   margin-top: 2px;
 `;
 
+export const ConvoStatusBadge = styled.span<{ $status?: string }>`
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background-color: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+
+  &::before {
+    content: "";
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: #d97706;
+  }
+`;
+
+
 export const ChatPanel = styled.div`
   flex: 1;
   display: flex;

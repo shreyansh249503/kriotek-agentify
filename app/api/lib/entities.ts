@@ -4,6 +4,7 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
+  UpdateDateColumn,
   OneToMany,
   ManyToOne,
   JoinColumn,
@@ -57,6 +58,18 @@ export class Bot {
 
   @Column({ type: "jsonb", nullable: true, name: "ecommerce_products" })
   ecommerce_products!: Product[];
+
+  @Column({ type: "varchar", name: "company_name", nullable: true })
+  company_name?: string;
+
+  @Column({ type: "timestamp", name: "last_trained_at", nullable: true })
+  last_trained_at?: Date;
+
+  @CreateDateColumn({ name: "created_at" })
+  created_at!: Date;
+
+  @UpdateDateColumn({ name: "updated_at" })
+  updated_at!: Date;
 
   @OneToMany(() => Lead, (lead) => lead.bot)
   leads!: Lead[];

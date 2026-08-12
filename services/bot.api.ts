@@ -30,3 +30,17 @@ export const updateBot = async (id: string, data: UpdateBotInput) => {
 
   return response.data;
 };
+
+export const deleteBot = async (id: string) => {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  const response = await axiosInstance.delete(`/api/bots/${id}`, {
+    headers: {
+      Authorization: `Bearer ${session?.access_token}`,
+    },
+  });
+
+  return response.data;
+};

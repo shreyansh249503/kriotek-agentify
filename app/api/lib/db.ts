@@ -17,11 +17,22 @@ export const AppDataSource =
     ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : undefined,
   });
 
-if (process.env.NODE_ENV !== "production") globalForTypeorm.AppDataSource = AppDataSource;
+let dbMigrationRun = false;
 
 export const getDb = async () => {
   if (!AppDataSource.isInitialized) {
     await AppDataSource.initialize();
+  }
+  if (!dbMigrationRun && AppDataSource.isInitialized) {
+    dbMigrationRun = true;
+    await AppDataSource.query(`
+      ALTER TABLE bots ADD COLUMN IF NOT EXISTS last_trained_at TIMESTAMPTZ;
+      ALTER TABLE bots ADD COLUMN IF NOT EXISTS company_name VARCHAR;
+      ALTER TABLE bots ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
+      ALTER TABLE bots ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+    `).catch((err) => {
+      console.log("Migration columns error:", err);
+    });
   }
   return AppDataSource;
 };

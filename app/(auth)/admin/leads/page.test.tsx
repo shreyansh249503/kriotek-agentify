@@ -8,7 +8,13 @@ jest.mock("@/components", () => {
   const original = jest.requireActual("@/components");
   return {
     ...original,
-    SearchBar: ({ onSearch, placeholder }: { onSearch: (q: string) => void; placeholder?: string }) => (
+    SearchBar: ({
+      onSearch,
+      placeholder,
+    }: {
+      onSearch: (q: string) => void;
+      placeholder?: string;
+    }) => (
       <input
         placeholder={placeholder || "Search..."}
         onChange={(e) => onSearch(e.target.value)}
@@ -88,7 +94,60 @@ describe("LeadsPage Component", () => {
     fireEvent.change(searchInput, { target: { value: "NonExistent" } });
 
     expect(
-      screen.getByText('No leads found matching "NonExistent"')
+      screen.getByText('No leads found matching "NonExistent"'),
     ).toBeInTheDocument();
   });
+
+  it("should sort leads by date ascending and descending", () => {
+    mockUseLeads.mockReturnValue({
+      data: mockLeads,
+      isLoading: false,
+    });
+
+    render(<LeadsPage />);
+
+    // Default is descending (newest first: Jane Smith Jan 2 -> John Doe Jan 1)
+    const rowsInitial = screen.getAllByTestId("lead-row");
+    expect(rowsInitial[0]).toHaveTextContent("Jane Smith");
+    expect(rowsInitial[1]).toHaveTextContent("John Doe");
+
+    // Click date header to toggle sorting to ascending (oldest first: John Doe Jan 1 -> Jane Smith Jan 2)
+    const dateHeader = screen.getByTestId("sort-date-header");
+    fireEvent.click(dateHeader);
+
+    const rowsSortedAsc = screen.getAllByTestId("lead-row");
+    expect(rowsSortedAsc[0]).toHaveTextContent("John Doe");
+    expect(rowsSortedAsc[1]).toHaveTextContent("Jane Smith");
+
+    // Change sort select back to newest first
+    const sortSelect = screen.getByTestId("sort-order-select");
+    fireEvent.change(sortSelect, { target: { value: "desc" } });
+
+    const rowsSortedDesc = screen.getAllByTestId("lead-row");
+    expect(rowsSortedDesc[0]).toHaveTextContent("Jane Smith");
+    expect(rowsSortedDesc[1]).toHaveTextContent("John Doe");
+  });
+
+  it("should handle CSV export without crashing", () => {
+    const createObjectURLMock = jest.fn().mockReturnValue("blob:mock-url");
+    const revokeObjectURLMock = jest.fn();
+    window.URL.createObjectURL = createObjectURLMock;
+    window.URL.revokeObjectURL = revokeObjectURLMock;
+
+    mockUseLeads.mockReturnValue({
+      data: mockLeads,
+      isLoading: false,
+    });
+
+    render(<LeadsPage />);
+
+    const exportBtn = screen.getByTestId("export-csv-btn");
+    expect(exportBtn).toBeEnabled();
+
+    fireEvent.click(exportBtn);
+
+    expect(createObjectURLMock).toHaveBeenCalled();
+    expect(revokeObjectURLMock).toHaveBeenCalled();
+  });
 });
+

@@ -47,7 +47,12 @@ export async function POST(req: Request) {
     );
   }
 
-  const { collectedText, products } = await crawlWebsite(url, publicKey, 40, !!extractProducts);
+  const { collectedText, products } = await crawlWebsite(
+    url,
+    publicKey,
+    40,
+    !!extractProducts,
+  );
 
   if (!collectedText || collectedText.length < 200) {
     return Response.json(
@@ -64,7 +69,7 @@ export async function POST(req: Request) {
       const isDup = mergedProducts.some(
         (p) =>
           (p.url && p.url === newProduct.url) ||
-          (p.name.toLowerCase() === newProduct.name.toLowerCase())
+          p.name.toLowerCase() === newProduct.name.toLowerCase(),
       );
       if (!isDup) {
         mergedProducts.push(newProduct);

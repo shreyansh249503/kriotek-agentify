@@ -59,7 +59,7 @@ export const PiesChart = ({
   const totalValue = formattedData.reduce((sum, d) => sum + d.value, 0);
 
   return (
-    <ChartCard>
+    <ChartCard data-testid="leads-by-source-card">
       <ChartHeader>
         <ChartTitle>Leads by Source</ChartTitle>
       </ChartHeader>

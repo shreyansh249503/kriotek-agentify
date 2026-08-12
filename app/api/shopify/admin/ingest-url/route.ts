@@ -11,11 +11,7 @@ import {
   getShopFromSession,
 } from "../../lib/verifySessionToken";
 
-
-const {
-  NEXT_PUBLIC_SUPABASE_URL,
-  SUPABASE_SERVICE_ROLE_KEY,
-} = process.env;
+const { NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = process.env;
 
 export async function POST(req: NextRequest) {
   await setupCollection();
@@ -30,7 +26,7 @@ export async function POST(req: NextRequest) {
   const shop = getShopFromSession(session);
   const supabase = createClient(
     NEXT_PUBLIC_SUPABASE_URL!,
-    SUPABASE_SERVICE_ROLE_KEY!
+    SUPABASE_SERVICE_ROLE_KEY!,
   );
 
   try {
@@ -41,7 +37,10 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (!storeData?.bot_id) {
-      return NextResponse.json({ error: "No bot linked to this store" }, { status: 400 });
+      return NextResponse.json(
+        { error: "No bot linked to this store" },
+        { status: 400 },
+      );
     }
 
     const { url } = await req.json();
@@ -56,7 +55,10 @@ export async function POST(req: NextRequest) {
     });
 
     if (!bot || !bot.public_key) {
-      return NextResponse.json({ error: "Bot not found or missing public key" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Bot not found or missing public key" },
+        { status: 404 },
+      );
     }
 
     const publicKey = bot.public_key;
@@ -77,7 +79,7 @@ export async function POST(req: NextRequest) {
     if (!collectedText || collectedText.length < 200) {
       return NextResponse.json(
         { error: "No readable content found on this page" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -97,6 +99,9 @@ export async function POST(req: NextRequest) {
   } catch (e) {
     console.error("Error in Shopify ingest-url:", e);
     const errorMessage = e instanceof Error ? e.message : String(e);
-    return NextResponse.json({ error: "Internal server error", details: errorMessage }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal server error", details: errorMessage },
+      { status: 500 },
+    );
   }
 }

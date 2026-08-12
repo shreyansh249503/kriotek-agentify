@@ -1,4 +1,4 @@
-import { Page } from '@playwright/test';
+import { Page, BrowserContext } from '@playwright/test';
 
 export const SUPABASE_STORAGE_KEY = 'sb-bhyrxyzokssibgeznojo-auth-token';
 
@@ -33,14 +33,16 @@ export const MOCK_SESSION = {
 /**
  * Sets an authenticated session in localStorage before page load.
  */
-export async function setAuthenticatedSession(page: Page) {
+export async function setAuthenticatedSession(page: Page | BrowserContext) {
   await page.addInitScript(
-    ({ key, session }) => {
+    ({ key, session }: { key: string; session: typeof MOCK_SESSION }) => {
       try {
         if (!window.sessionStorage.getItem('__test_logged_out__')) {
           window.localStorage.setItem(key, JSON.stringify(session));
         }
-      } catch (e) {}
+      } catch {
+        // Ignore storage access errors in restricted browser contexts
+      }
     },
     { key: SUPABASE_STORAGE_KEY, session: MOCK_SESSION }
   );
@@ -50,7 +52,7 @@ export async function setAuthenticatedSession(page: Page) {
  * Helper to intercept common Supabase Auth endpoints for reliable test execution.
  */
 export async function mockSupabaseAuth(
-  page: Page,
+  page: Page | BrowserContext,
   options?: {
     signupSuccess?: boolean;
     signupErrorMsg?: string;

@@ -1,7 +1,7 @@
 import "../lib/promise-polyfill";
 import { createEmbedding } from "../lib/embeddings";
 import { getDb } from "../lib/db";
-import { BotDocument } from "../lib/entities";
+import { Bot, BotDocument } from "../lib/entities";
 import PDFParser from "pdf2json";
 
 function extractTextFromPdf(buffer: Buffer): Promise<string> {
@@ -61,6 +61,19 @@ export async function POST(req: Request) {
       await repo.save(doc);
     })
   );
+
+  try {
+    const botRepo = db.getRepository<Bot>("Bot");
+    if (botRepo && typeof botRepo.findOne === "function") {
+      const bot = await botRepo.findOne({ where: { public_key: publicKey } });
+      if (bot) {
+        bot.last_trained_at = new Date();
+        await botRepo.save(bot);
+      }
+    }
+  } catch {
+    await db.query(`UPDATE bots SET last_trained_at = NOW() WHERE public_key = $1`, [publicKey]).catch(() => {});
+  }
 
   return Response.json({ status: "ok", chunks: chunks.length });
 }

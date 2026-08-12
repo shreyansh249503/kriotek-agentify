@@ -52,13 +52,12 @@ describe("Sidebar Component", () => {
     jest.clearAllMocks();
   });
 
-  it("should render navigation items (Overview, Create Agent, Agents, Leads, Live Support)", async () => {
+  it("should render navigation items (Overview, Agents, Leads, Live Support)", async () => {
     render(<Sidebar />);
 
     await waitFor(() => {
       expect(screen.getAllByText("Overview")[0]).toBeInTheDocument();
     });
-    expect(screen.getAllByText("Create Agent")[0]).toBeInTheDocument();
     expect(screen.getAllByText("Agents")[0]).toBeInTheDocument();
     expect(screen.getAllByText("Leads")[0]).toBeInTheDocument();
     expect(screen.getAllByText("Live Support")[0]).toBeInTheDocument();

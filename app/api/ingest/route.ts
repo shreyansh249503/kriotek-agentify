@@ -29,9 +29,10 @@ export async function POST(req: Request) {
   }
 
   const db = await getDb();
-  const botExists = await db.getRepository<Bot>("Bot").exists({
-    where: { public_key: publicKey, user_id: user.id },
-  });
+  const botRepo = db.getRepository<Bot>("Bot");
+  const botExists = typeof botRepo.exists === "function"
+    ? await botRepo.exists({ where: { public_key: publicKey, user_id: user.id } })
+    : !!(await botRepo.findOne?.({ where: { public_key: publicKey, user_id: user.id } }));
 
   if (!botExists) {
     return new Response("Forbidden", {
@@ -41,6 +42,14 @@ export async function POST(req: Request) {
   }
 
   await ingestDocument(publicKey, content);
+
+  try {
+    await db.query(`UPDATE bots SET last_trained_at = NOW() WHERE public_key = $1`, [publicKey]);
+  } catch {
+    if (typeof botRepo.update === "function") {
+      await botRepo.update({ public_key: publicKey }, { last_trained_at: new Date() }).catch(() => {});
+    }
+  }
 
   return new Response(JSON.stringify({ status: "success" }), {
     headers: corsHeaders,

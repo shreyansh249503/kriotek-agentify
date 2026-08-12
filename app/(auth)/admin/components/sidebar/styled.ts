@@ -97,7 +97,6 @@ export const NavItem = styled(Link)<{ $active?: boolean }>`
   &:hover {
     background-color: ${(props) => (props.$active ? "#27282C" : "#27282C")};
     color: ${(props) => (props.$active ? COLOR.WHITE : COLOR.WHITE)};
-    transform: ${(props) => (props.$active ? "none" : "translateX(4px)")};
 
     svg {
       color: ${COLOR.PRIMARY};

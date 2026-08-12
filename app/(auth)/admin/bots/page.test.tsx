@@ -34,6 +34,7 @@ describe("BotsPage Component", () => {
       public_key: "pk_1",
       name: "Alpha Bot",
       description: "First assistant",
+      company_name: "Alpha Corp",
       tone: "friendly",
       primary_color: "#111",
       created_at: "2026-01-01",
@@ -47,6 +48,7 @@ describe("BotsPage Component", () => {
       public_key: "pk_2",
       name: "Beta Bot",
       description: "Second assistant",
+      company_name: "Beta Corp",
       tone: "professional",
       primary_color: "#222",
       created_at: "2026-01-02",
@@ -72,7 +74,7 @@ describe("BotsPage Component", () => {
     expect(container).toBeInTheDocument();
   });
 
-  it("should render bot table with bot details and handle search filtering", () => {
+  it("should render bot cards with bot details and handle search filtering", () => {
     mockUseBots.mockReturnValue({
       data: mockBots,
       isLoading: false,
@@ -80,17 +82,16 @@ describe("BotsPage Component", () => {
 
     render(<BotsPage />);
 
-    expect(screen.getByText("Alpha Bot")).toBeInTheDocument();
-    expect(screen.getByText("Beta Bot")).toBeInTheDocument();
-    expect(screen.getByText("First assistant")).toBeInTheDocument();
-    expect(screen.getByText("Enabled")).toBeInTheDocument();
-    expect(screen.getByText("Disabled")).toBeInTheDocument();
+    expect(screen.getAllByText("Alpha Bot").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("Beta Bot").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText("Alpha Corp")).toBeInTheDocument();
+    expect(screen.getByText("Beta Corp")).toBeInTheDocument();
 
     const searchInput = screen.getByPlaceholderText("Search bots...");
     fireEvent.change(searchInput, { target: { value: "Alpha" } });
 
-    expect(screen.getByText("Alpha Bot")).toBeInTheDocument();
-    expect(screen.queryByText("Beta Bot")).not.toBeInTheDocument();
+    expect(screen.getAllByText("Alpha Bot").length).toBeGreaterThanOrEqual(1);
+    expect(screen.queryByText("Beta Corp")).not.toBeInTheDocument();
   });
 
   it("should render empty state when search returns no matches", () => {
@@ -109,7 +110,27 @@ describe("BotsPage Component", () => {
     ).toBeInTheDocument();
   });
 
-  it("should handle navigation when Edit button is clicked", async () => {
+  it("should render 'No agents yet...' custom empty state when there are no bots and navigate on button click", () => {
+    mockUseBots.mockReturnValue({
+      data: [],
+      isLoading: false,
+    });
+
+    render(<BotsPage />);
+
+    expect(screen.getByText("No agents yet...")).toBeInTheDocument();
+    expect(
+      screen.getByText(/Create your first AI Agent to start automating support/i)
+    ).toBeInTheDocument();
+
+    const newAgentBtn = screen.getByRole("button", { name: /new ai agent/i });
+    expect(newAgentBtn).toBeInTheDocument();
+
+    fireEvent.click(newAgentBtn);
+    expect(mockPush).toHaveBeenCalledWith("/admin/new");
+  });
+
+  it("should handle navigation when Edit button is clicked in menu", async () => {
     mockUseBots.mockReturnValue({
       data: mockBots,
       isLoading: false,
@@ -117,15 +138,18 @@ describe("BotsPage Component", () => {
 
     render(<BotsPage />);
 
-    const editButtons = screen.getAllByRole("button", { name: "Edit" });
-    fireEvent.click(editButtons[0]);
+    const menuButtons = screen.getAllByLabelText("More options");
+    fireEvent.click(menuButtons[0]);
+
+    const editBtn = screen.getByRole("button", { name: "Edit" });
+    fireEvent.click(editBtn);
 
     await waitFor(() => {
       expect(mockPush).toHaveBeenCalledWith("/admin/bot/bot-1/edit-bot");
     });
   });
 
-  it("should handle navigation when Ingest button is clicked", async () => {
+  it("should handle navigation when Ingest button is clicked in menu", async () => {
     mockUseBots.mockReturnValue({
       data: mockBots,
       isLoading: false,
@@ -133,8 +157,11 @@ describe("BotsPage Component", () => {
 
     render(<BotsPage />);
 
-    const ingestButtons = screen.getAllByRole("button", { name: "Ingest" });
-    fireEvent.click(ingestButtons[1]);
+    const menuButtons = screen.getAllByLabelText("More options");
+    fireEvent.click(menuButtons[1]);
+
+    const ingestBtn = screen.getByRole("button", { name: "Ingest" });
+    fireEvent.click(ingestBtn);
 
     await waitFor(() => {
       expect(mockPush).toHaveBeenCalledWith("/admin/bots/pk_2/ingest");

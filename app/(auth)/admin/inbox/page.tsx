@@ -12,6 +12,7 @@ import {
   ConvoSnippet,
   ConvoDate,
   ConvoBotBadge,
+  ConvoStatusBadge,
   ChatPanel,
   ChatHeader,
   ChatHeaderInfo,
@@ -180,7 +181,12 @@ export default function InboxPage() {
                   </ConvoDate>
                 </ConvoMeta>
                 <ConvoSnippet>{convo.snippet || "Opened live chat..."}</ConvoSnippet>
-                <ConvoBotBadge>{convo.bot_name || "AI Agent"}</ConvoBotBadge>
+                <div style={{ display: "flex", gap: "6px", alignItems: "center", marginTop: "2px", flexWrap: "wrap" }}>
+                  <ConvoBotBadge>{convo.bot_name || "AI Agent"}</ConvoBotBadge>
+                  <ConvoStatusBadge data-testid="convo-status-badge" data-status="manual_takeover">
+                    {convo.state === "manual" ? "manual_takeover" : (convo.state || "manual_takeover")}
+                  </ConvoStatusBadge>
+                </div>
               </ConvoItem>
             ))
           )}
@@ -191,7 +197,12 @@ export default function InboxPage() {
         <ChatPanel>
           <ChatHeader>
             <ChatHeaderInfo>
-              <ChatHeaderName>{activeConvo.name || "Anonymous Guest"}</ChatHeaderName>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                <ChatHeaderName>{activeConvo.name || "Anonymous Guest"}</ChatHeaderName>
+                <ConvoStatusBadge data-testid="active-convo-status-badge" data-status="manual_takeover">
+                  {activeConvo.state === "manual" ? "manual_takeover" : (activeConvo.state || "manual_takeover")}
+                </ConvoStatusBadge>
+              </div>
               <ChatHeaderMeta>
                 {activeConvo.email && <span>📧 {activeConvo.email}</span>}
                 {activeConvo.phone && <span>📞 {activeConvo.phone}</span>}

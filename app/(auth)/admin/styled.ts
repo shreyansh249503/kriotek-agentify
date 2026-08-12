@@ -344,7 +344,7 @@ export const QuickActionBtn = styled(Link)`
 
   &:hover {
     border-color: #cbd5e1;
-    background: #f8fafc;
+    /* background: #f8fafc; */
   }
 `;
 

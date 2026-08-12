@@ -1,20 +1,25 @@
-import { GET, PUT } from "./route";
+import { GET, PUT, DELETE } from "./route";
 import { getDb } from "../../lib/db";
+import { getUserFromRequest } from "../../lib/auth";
 
 jest.mock("../../lib/db");
+jest.mock("../../lib/auth");
 
 describe("API: /api/bots/[id]", () => {
   const mockBotRepo = {
     findOne: jest.fn(),
     update: jest.fn(),
   };
+  const mockDbQuery = jest.fn().mockResolvedValue([]);
 
   beforeEach(() => {
     jest.clearAllMocks();
     jest.spyOn(console, "log").mockImplementation(() => {});
     (getDb as jest.Mock).mockResolvedValue({
       getRepository: jest.fn().mockReturnValue(mockBotRepo),
+      query: mockDbQuery,
     });
+    (getUserFromRequest as jest.Mock).mockResolvedValue({ id: "user_123" });
   });
 
   describe("GET", () => {
@@ -98,6 +103,48 @@ describe("API: /api/bots/[id]", () => {
         ecommerce_products: undefined,
       });
       expect(data).toEqual({ status: "ok" });
+    });
+  });
+
+  describe("DELETE", () => {
+    it("should return 401 Unauthorized if user is not authenticated", async () => {
+      (getUserFromRequest as jest.Mock).mockResolvedValueOnce(null);
+
+      const params = Promise.resolve({ id: "bot_123" });
+      const req = new Request("http://localhost/api/bots/bot_123", { method: "DELETE" });
+      const res = await DELETE(req, { params });
+      const data = await res.json();
+
+      expect(res.status).toBe(401);
+      expect(data.error).toBe("Unauthorized");
+    });
+
+    it("should return 404 if bot is not found for user", async () => {
+      mockBotRepo.findOne.mockResolvedValueOnce(null);
+
+      const params = Promise.resolve({ id: "bot_123" });
+      const req = new Request("http://localhost/api/bots/bot_123", { method: "DELETE" });
+      const res = await DELETE(req, { params });
+      const data = await res.json();
+
+      expect(res.status).toBe(404);
+      expect(data.error).toBe("Bot not found");
+    });
+
+    it("should delete bot and related records when authenticated", async () => {
+      const validUuid = "123e4567-e89b-12d3-a456-426614174000";
+      const mockBot = { id: validUuid, public_key: "pk_123", name: "Bot To Delete" };
+      mockBotRepo.findOne.mockResolvedValueOnce(mockBot);
+
+      const params = Promise.resolve({ id: validUuid });
+      const req = new Request(`http://localhost/api/bots/${validUuid}`, { method: "DELETE" });
+      const res = await DELETE(req, { params });
+      const data = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(data.message).toBe("Bot deleted successfully");
+      expect(mockDbQuery).toHaveBeenCalledWith("DELETE FROM bot_documents WHERE public_key = $1", ["pk_123"]);
+      expect(mockDbQuery).toHaveBeenCalledWith("DELETE FROM bots WHERE id = $1", [validUuid]);
     });
   });
 });

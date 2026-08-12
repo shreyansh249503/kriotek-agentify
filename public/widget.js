@@ -1414,11 +1414,12 @@
   }
 
   function startIntervalPolling() {
-    console.log("Agentify: Starting short-polling fallback (every 4000ms)...");
+    console.log("Agentify: Starting short-polling fallback...");
     if (pollInterval) clearInterval(pollInterval);
+    pollConversation(currentConversationId);
     pollInterval = setInterval(async () => {
       await pollConversation(currentConversationId);
-    }, 4000);
+    }, 1200);
   }
 
   function initRealtimeChannel(id) {
@@ -1471,7 +1472,7 @@
               messages.scrollTop = messages.scrollHeight;
             }
 
-            if (newState !== "manual" && currentConvoState === "manual") {
+            if (newState !== "manual" && newState !== "manual_takeover" && (currentConvoState === "manual" || currentConvoState === "manual_takeover")) {
               console.log("Agentify: Conversation switched back to AI mode. Stopping manual channel.");
               currentConvoState = newState;
               stopPolling();
@@ -1634,7 +1635,7 @@
         messages.scrollTop = messages.scrollHeight;
       }
 
-      if (newState !== "manual" && currentConvoState === "manual") {
+      if (newState !== "manual" && newState !== "manual_takeover" && (currentConvoState === "manual" || currentConvoState === "manual_takeover")) {
         currentConvoState = newState;
         stopPolling();
         input.placeholder = "Type your message...";
@@ -1860,7 +1861,7 @@
         renderedCount = history.length;
       }
 
-      if (currentConvoState === "manual") {
+      if (currentConvoState === "manual" || currentConvoState === "manual_takeover") {
         input.placeholder = "Type a message to support...";
         startPolling();
       } else {
@@ -1888,7 +1889,7 @@
     renderedCount += 1;
     updateEndChatStatus();
 
-    if (currentConvoState === "manual") {
+    if (currentConvoState === "manual" || currentConvoState === "manual_takeover") {
       try {
         await fetch(`${API_BASE_URL}/api/chat`, {
           method: "POST",

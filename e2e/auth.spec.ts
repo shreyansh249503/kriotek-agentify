@@ -223,7 +223,7 @@ test.describe('Authentication & Authorization Flow', () => {
       await page.evaluate(() => {
         try {
           window.sessionStorage.setItem('__test_logged_out__', 'true');
-        } catch (e) {}
+        } catch {}
       });
       await logoutItem.click();
 

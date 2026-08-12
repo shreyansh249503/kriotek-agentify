@@ -71,7 +71,7 @@ export async function POST(req: Request) {
     { role: "user" as const, content: message },
   ];
 
-  if (convo.state === "manual") {
+  if (convo.state === "manual" || convo.state === "manual_takeover") {
     await convoRepo.update(convo.id, {
       message_count: convo.message_count + 1,
       messages: JSON.stringify(fullConversation),

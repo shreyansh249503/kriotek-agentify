@@ -26,7 +26,20 @@ export async function GET(req: Request) {
   }
 
   const db = await getDb();
-  const bots = await db.getRepository<Bot>("Bot").find({ where: { user_id: user.id } });
+  let bots: Bot[] = [];
+  try {
+    const rawRows = await db.query(
+      `SELECT * FROM bots WHERE user_id = $1 ORDER BY created_at DESC NULLS LAST`,
+      [user.id]
+    );
+    if (Array.isArray(rawRows)) {
+      bots = rawRows;
+    } else {
+      bots = await db.getRepository<Bot>("Bot").find({ where: { user_id: user.id } });
+    }
+  } catch {
+    bots = await db.getRepository<Bot>("Bot").find({ where: { user_id: user.id } });
+  }
 
   return new Response(JSON.stringify(bots), {
     headers: corsHeaders,
@@ -56,6 +69,8 @@ export async function POST(req: Request) {
     ecommerceEnabled = false,
     ecommercePrompt = "",
     ecommerceProducts = [],
+    companyName,
+    lastTrainedAt,
   } = body;
 
   const publicKey = nanoid(16);
@@ -77,6 +92,8 @@ export async function POST(req: Request) {
     ecommerce_enabled: ecommerceEnabled,
     ecommerce_prompt: ecommercePrompt,
     ecommerce_products: ecommerceProducts,
+    company_name: companyName,
+    last_trained_at: lastTrainedAt ? new Date(lastTrainedAt) : new Date(),
     user_id: user.id
   });
 

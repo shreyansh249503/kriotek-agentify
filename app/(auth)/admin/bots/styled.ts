@@ -2,6 +2,7 @@
 
 import { BREAKPOINTS, COLOR } from "@/styles";
 import { createGlobalStyle, keyframes, styled } from "styled-components";
+import CardImage from "@/assets/images/bot-card.jpg";
 
 const spin = keyframes`
   from { transform: rotate(0deg); }
@@ -29,6 +30,11 @@ export const BotsContainer = styled.div`
     padding: 24px 16px;
   }
 `;
+
+export const AgentsEmptyContainer = styled(BotsContainer)`
+  justify-content: center;
+`;
+
 export const LoadingContainer = styled(BotsContainer)`
   justify-content: center;
   align-items: center;
@@ -221,6 +227,189 @@ export const EditBotButton = styled.button`
     background-color: ${COLOR.PRIMARY}11;
     color: ${COLOR.DARK};
     transform: translateY(-2px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+`;
+
+export const AgentsContainer = styled.div`
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 24px;
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+`;
+
+export const EmptyBotsWrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 24px;
+  width: 100%;
+  text-align: center;
+`;
+
+export const EmptyBannerCard = styled.div`
+  width: 540px;
+  max-width: 100%;
+  height: 270px;
+  border-radius: 16px;
+  overflow: hidden;
+  position: relative;
+  background-image: url(${typeof CardImage === "string" ? CardImage : CardImage.src});
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 0 20px 0 28px;
+  margin-bottom: 28px;
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    width: 100%;
+    height: 175px;
+    padding: 0 14px 0 18px;
+  }
+`;
+
+export const EmptyLogoCircle = styled.div`
+  width: 100px;
+  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background-color: ${COLOR.WHITE};
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  border: 2px solid ${COLOR.WHITE};
+  margin-bottom: 100px;
+  margin-left: 30px;
+  flex-shrink: 0;
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    width: 62px;
+    height: 62px;
+    margin-bottom: 24px;
+  }
+`;
+
+export const EmptyMiniChatWindow = styled.div`
+  width: 250px;
+  height: 200px;
+  background-color: ${COLOR.WHITE};
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+  box-shadow: 0 -2px 14px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+
+  @media (max-width: ${BREAKPOINTS.MOBILE}) {
+    width: 160px;
+    height: 135px;
+  }
+`;
+
+export const EmptyMiniChatHeader = styled.div`
+  height: 36px;
+  background-color: #000000;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 8px;
+`;
+
+export const EmptyMiniAvatar = styled.div`
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: ${COLOR.WHITE};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+export const EmptyMiniChatTitle = styled.span`
+  font-size: 12px;
+  font-weight: 700;
+  color: ${COLOR.WHITE};
+`;
+
+export const EmptyMiniChatBody = styled.div`
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+`;
+
+export const EmptyMiniBotBubble = styled.div`
+  height: 18px;
+  width: 65%;
+  background-color: #e5e7eb;
+  border-radius: 4px;
+`;
+
+export const EmptyMiniUserBubble = styled.div`
+  height: 18px;
+  width: 75%;
+  background-color: #000000;
+  border-radius: 4px;
+  align-self: flex-end;
+  margin-top: 4px;
+`;
+
+export const EmptyMiniBotResponseBubble = styled.div`
+  height: 45px;
+  width: 70%;
+  background-color: #e5e7eb;
+  border-radius: 6px;
+  margin-top: 4px;
+`;
+
+export const EmptyTitle = styled.h2`
+  font-size: 22px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 10px 0;
+`;
+
+export const EmptyDescription = styled.p`
+  font-size: 14px;
+  color: #6b7280;
+  max-width: 460px;
+  line-height: 1.5;
+  margin: 0 0 28px 0;
+`;
+
+export const EmptyNewAgentButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background-color: ${COLOR.DARK};
+  color: #ffffff;
+  padding: 11px 22px;
+  border-radius: 8px;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+
+  &:hover {
+    background-color: #222222ff;
   }
 
   &:active {

@@ -40,7 +40,7 @@ export const BarsChart = ({ botBarData }: { botBarData?: BotBarData[] }) => {
     botBarData && botBarData.length > 0 ? botBarData : sampleData;
 
   return (
-    <ChartCard>
+    <ChartCard data-testid="leads-over-time-card">
       <ChartHeader>
         <div>
           <ChartTitle>Leads Over Time</ChartTitle>
@@ -57,6 +57,7 @@ export const BarsChart = ({ botBarData }: { botBarData?: BotBarData[] }) => {
         </div>
 
         <TimeframeSelect
+          data-testid="timeframe-select"
           value={timeframe}
           onChange={(e) => setTimeframe(e.target.value)}
         >

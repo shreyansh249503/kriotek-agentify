@@ -16,6 +16,8 @@ export interface Bot {
   ecommerce_enabled?: boolean;
   ecommerce_prompt?: string | null;
   ecommerce_products?: Product[];
+  company_name?: string | null;
+  last_trained_at?: string | null;
 }
 
 export interface Product {
@@ -41,6 +43,8 @@ export interface CreateBotInput {
   ecommerceEnabled?: boolean;
   ecommercePrompt?: string;
   ecommerceProducts?: Product[];
+  companyName?: string;
+  lastTrainedAt?: string;
 }
 
 export interface UpdateBotInput extends CreateBotInput {
