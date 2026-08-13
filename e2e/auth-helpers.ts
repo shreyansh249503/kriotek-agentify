@@ -21,8 +21,20 @@ export const MOCK_USER = {
   updated_at: '2026-01-01T00:00:00.000Z',
 };
 
+const MOCK_JWT_HEADER = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
+const MOCK_JWT_PAYLOAD = Buffer.from(
+  JSON.stringify({
+    sub: MOCK_USER.id,
+    aud: 'authenticated',
+    role: 'authenticated',
+    email: MOCK_USER.email,
+    exp: Math.floor(Date.now() / 1000) + 7200,
+  })
+).toString('base64url');
+const MOCK_VALID_JWT = `${MOCK_JWT_HEADER}.${MOCK_JWT_PAYLOAD}.mocksignature123456789`;
+
 export const MOCK_SESSION = {
-  access_token: 'mock-valid-access-token-playwright',
+  access_token: MOCK_VALID_JWT,
   token_type: 'bearer',
   expires_in: 7200,
   expires_at: Math.floor(Date.now() / 1000) + 7200,
@@ -30,27 +42,24 @@ export const MOCK_SESSION = {
   user: MOCK_USER,
 };
 
-/**
- * Sets an authenticated session in localStorage before page load.
- */
-export async function setAuthenticatedSession(page: Page | BrowserContext) {
+export async function setAuthenticatedSession(page: Page | BrowserContext, customUser?: typeof MOCK_USER) {
+  const session = customUser
+    ? { ...MOCK_SESSION, user: { ...MOCK_USER, ...customUser } }
+    : MOCK_SESSION;
+
   await page.addInitScript(
-    ({ key, session }: { key: string; session: typeof MOCK_SESSION }) => {
+    ({ key, sessionData }: { key: string; sessionData: typeof MOCK_SESSION }) => {
       try {
         if (!window.sessionStorage.getItem('__test_logged_out__')) {
-          window.localStorage.setItem(key, JSON.stringify(session));
+          window.localStorage.setItem(key, JSON.stringify(sessionData));
         }
       } catch {
-        // Ignore storage access errors in restricted browser contexts
       }
     },
-    { key: SUPABASE_STORAGE_KEY, session: MOCK_SESSION }
+    { key: SUPABASE_STORAGE_KEY, sessionData: session }
   );
 }
 
-/**
- * Helper to intercept common Supabase Auth endpoints for reliable test execution.
- */
 export async function mockSupabaseAuth(
   page: Page | BrowserContext,
   options?: {
@@ -58,8 +67,11 @@ export async function mockSupabaseAuth(
     signupErrorMsg?: string;
     loginSuccess?: boolean;
     loginErrorMsg?: string;
+    user?: typeof MOCK_USER;
+    onUpdateUser?: (updated: unknown) => void;
   }
 ) {
+  let currentUser = { ...MOCK_USER, ...(options?.user || {}) };
   const {
     signupSuccess = true,
     signupErrorMsg = 'Signup failed',
@@ -67,18 +79,29 @@ export async function mockSupabaseAuth(
     loginErrorMsg = 'Invalid login credentials',
   } = options || {};
 
+  await page.route('**/api/me', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+      },
+      body: JSON.stringify(currentUser),
+    });
+  });
+
   await page.route('**/auth/v1/signup*', async (route) => {
     if (signupSuccess) {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
-          id: MOCK_USER.id,
+          id: currentUser.id,
           aud: 'authenticated',
           role: 'authenticated',
-          email: MOCK_USER.email,
-          user_metadata: MOCK_USER.user_metadata,
-          created_at: MOCK_USER.created_at,
+          email: currentUser.email,
+          user_metadata: currentUser.user_metadata,
+          created_at: currentUser.created_at,
           session: null,
         }),
       });
@@ -96,12 +119,12 @@ export async function mockSupabaseAuth(
     }
   });
 
-  await page.route('**/auth/v1/token?grant_type=password*', async (route) => {
+  await page.route('**/auth/v1/token*', async (route) => {
     if (loginSuccess) {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify(MOCK_SESSION),
+        body: JSON.stringify({ ...MOCK_SESSION, user: currentUser }),
       });
     } else {
       await route.fulfill({
@@ -118,11 +141,32 @@ export async function mockSupabaseAuth(
   });
 
   await page.route('**/auth/v1/user*', async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify(MOCK_USER),
-    });
+    if (route.request().method() === 'PUT') {
+      const putData = route.request().postDataJSON() || {};
+      if (putData.data) {
+        currentUser = {
+          ...currentUser,
+          user_metadata: {
+            ...currentUser.user_metadata,
+            ...putData.data,
+          },
+        };
+      }
+      if (options?.onUpdateUser) {
+        options.onUpdateUser(putData);
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(currentUser),
+      });
+    } else {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(currentUser),
+      });
+    }
   });
 
   await page.route('**/auth/v1/logout*', async (route) => {

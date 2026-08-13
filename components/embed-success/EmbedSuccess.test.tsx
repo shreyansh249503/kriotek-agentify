@@ -1,6 +1,5 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { EmbedSuccess } from "./EmbedSuccess";
-import React from "react";
 
 jest.mock("@phosphor-icons/react", () => ({
   CopyIcon: () => <span data-testid="copy-icon">CopyIcon</span>,

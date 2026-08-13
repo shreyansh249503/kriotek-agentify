@@ -7,7 +7,7 @@ export const HeaderContainer = styled.header`
   width: 100%;
   position: fixed;
   top: 0;
-  z-index: 1000;
+  z-index: 10000;
   background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -34,10 +34,11 @@ export const InnerHeaderwrapper = styled.div`
   }
 `;
 
-export const LogoContainer = styled.div`
+export const LogoContainer = styled(Link)`
   display: flex;
   align-items: center;
   cursor: pointer;
+  text-decoration: none;
   transition: transform 0.3s ease;
 
   &:hover {
@@ -117,7 +118,7 @@ export const MenuButton = styled.button`
   align-items: center;
   justify-content: center;
   transition: all 0.3s ease;
-  z-index: 99999;
+  z-index: 1000000;
 
   @media (max-width: ${BREAKPOINTS.TABLET}) {
     display: flex;
@@ -137,9 +138,10 @@ export const DrawerOverlay = styled.div<{ $isOpen: boolean }>`
   height: 100vh;
   background: rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(4px);
-  z-index: 1000;
+  z-index: 999998;
   opacity: ${({ $isOpen }) => ($isOpen ? 1 : 0)};
   visibility: ${({ $isOpen }) => ($isOpen ? "visible" : "hidden")};
+  pointer-events: ${({ $isOpen }) => ($isOpen ? "auto" : "none")};
   transition: all 0.4s ease;
 `;
 
@@ -150,13 +152,14 @@ export const DrawerContent = styled.div<{ $isOpen: boolean }>`
   width: 300px;
   height: 100vh;
   background: ${COLOR.WHITE};
-  z-index: 1001;
+  z-index: 999999;
   padding: 40px 24px;
   display: flex;
   flex-direction: column;
   gap: 32px;
   box-shadow: -10px 0 30px rgba(0, 0, 0, 0.1);
   transform: translateX(${({ $isOpen }) => ($isOpen ? "0" : "100%")});
+  pointer-events: ${({ $isOpen }) => ($isOpen ? "auto" : "none")};
   transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 
   @media (max-width: 480px) {
@@ -226,7 +229,7 @@ export const PersonLogo = styled(Image)`
   }
 `;
 
-export const DashboardButton = styled.p`
+export const DashboardButton = styled(Link)`
   width: fit-content;
   text-decoration: none;
   color: ${COLOR.TEXT_SECONDARY};

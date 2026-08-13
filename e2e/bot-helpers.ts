@@ -143,7 +143,6 @@ export async function mockBotAPIs(
     : [...(options?.leadsList ?? MOCK_LEADS)];
 
 
-  // Mock Supabase PostgREST table queries for bots
   await page.route('**/rest/v1/bots*', async (route) => {
     await route.fulfill({
       status: 200,
@@ -152,7 +151,6 @@ export async function mockBotAPIs(
     });
   });
 
-  // Mock GET/POST /api/bots
   await page.route('**/api/bots', async (route) => {
     if (route.request().method() === 'POST') {
       const postData = route.request().postDataJSON() || {};
@@ -179,7 +177,6 @@ export async function mockBotAPIs(
     }
   });
 
-  // Mock GET/PUT /api/bots/*
   await page.route('**/api/bots/*', async (route) => {
     if (route.request().method() === 'PUT') {
       const putData = route.request().postDataJSON() || {};
@@ -205,7 +202,6 @@ export async function mockBotAPIs(
     }
   });
 
-  // Mock /api/leads
   await page.route('**/api/leads*', async (route) => {
     await route.fulfill({
       status: 200,
@@ -217,7 +213,6 @@ export async function mockBotAPIs(
     });
   });
 
-  // Mock /api/analytics
   await page.route('**/api/analytics*', async (route) => {
     let analyticsPayload;
     if (typeof options?.analytics === 'function') {
@@ -279,7 +274,6 @@ export async function mockBotAPIs(
     });
   });
 
-  // Mock /api/upload
   await page.route('**/api/upload*', async (route) => {
     await route.fulfill({
       status: 200,
@@ -290,7 +284,6 @@ export async function mockBotAPIs(
     });
   });
 
-  // Mock logo and product image binary downloads to avoid network timeouts
   await page.route(/(mock-uploaded-logo\.png|headphones\.jpg|smartwatch\.jpg|mock-.*\.png|mock-.*\.jpg|\/images\/.*\.jpg)/, async (route) => {
     const pngPixel = Buffer.from(
       'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
@@ -303,7 +296,6 @@ export async function mockBotAPIs(
     });
   });
 
-  // Mock /api/ingest-url
   await page.route('**/api/ingest-url*', async (route) => {
     await route.fulfill({
       status: 200,
@@ -316,7 +308,6 @@ export async function mockBotAPIs(
     });
   });
 
-  // Mock /api/ingest-pdf
   await page.route('**/api/ingest-pdf*', async (route) => {
     await route.fulfill({
       status: 200,
@@ -328,7 +319,6 @@ export async function mockBotAPIs(
     });
   });
 
-  // Mock /api/ingest (raw text)
   await page.route('**/api/ingest', async (route) => {
     await route.fulfill({
       status: 200,
@@ -340,7 +330,6 @@ export async function mockBotAPIs(
     });
   });
 
-  // Mock /api/public/bot/* (used by widget.js)
   await page.route('**/api/public/bot/*', async (route) => {
     const url = route.request().url();
     const pubKey = url.split('/api/public/bot/')[1]?.split('?')[0];
@@ -362,7 +351,6 @@ export async function mockBotAPIs(
     });
   });
 
-  // Mock /api/public/history (used by widget.js)
   await page.route('**/api/public/history*', async (route) => {
     await route.fulfill({
       status: 200,
@@ -374,7 +362,6 @@ export async function mockBotAPIs(
     });
   });
 
-  // Mock /api/chat/switch-to-manual
   await page.route('**/api/chat/switch-to-manual*', async (route) => {
     const postData = route.request().postDataJSON() || {};
     const { conversationId } = postData;
@@ -417,7 +404,6 @@ export async function mockBotAPIs(
     });
   });
 
-  // Mock /api/admin/conversations/:id/reply
   await page.route('**/api/admin/conversations/*/reply', async (route) => {
     const url = route.request().url();
     const match = url.match(/\/api\/admin\/conversations\/([^/]+)\/reply/);
@@ -448,7 +434,6 @@ export async function mockBotAPIs(
     });
   });
 
-  // Mock /api/admin/conversations/:id/close
   await page.route('**/api/admin/conversations/*/close', async (route) => {
     const url = route.request().url();
     const match = url.match(/\/api\/admin\/conversations\/([^/]+)\/close/);
@@ -477,7 +462,6 @@ export async function mockBotAPIs(
     });
   });
 
-  // Mock /api/admin/conversations/:id (GET single conversation)
   await page.route(/\/api\/admin\/conversations\/[a-zA-Z0-9_-]+$/, async (route) => {
     const url = route.request().url();
     const id = url.split('/api/admin/conversations/')[1]?.split('?')[0];
@@ -510,7 +494,6 @@ export async function mockBotAPIs(
     }
   });
 
-  // Mock /api/admin/conversations (GET list of active conversations)
   await page.route(/\/api\/admin\/conversations(\?.*)?$/, async (route) => {
     const activeConvos = conversationsStore
       .filter((c) => c.state === 'manual' || c.state === 'manual_takeover')
@@ -536,7 +519,6 @@ export async function mockBotAPIs(
     });
   });
 
-  // Mock /api/public/conversation/*
   await page.route('**/api/public/conversation/*', async (route) => {
     const url = route.request().url();
     const id = url.split('/api/public/conversation/')[1]?.split('?')[0];
@@ -566,7 +548,6 @@ export async function mockBotAPIs(
     }
   });
 
-  // Mock /api/chat
   let chatCallIndex = 0;
   await page.route('**/api/chat*', async (route) => {
     let postData: { message?: string; conversationId?: string; publicKey?: string } = {};

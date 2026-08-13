@@ -1,6 +1,5 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { ColorPicker } from "./ColorPicker";
-import React from "react";
 
 describe("ColorPicker Component", () => {
   const mockOnChange = jest.fn();

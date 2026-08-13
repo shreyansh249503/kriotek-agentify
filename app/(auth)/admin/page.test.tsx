@@ -1,6 +1,5 @@
 import { render, screen } from "@testing-library/react";
 import AdminPage from "./page";
-import React from "react";
 
 jest.mock("./AdminContent", () => {
   return function MockAdminContent() {

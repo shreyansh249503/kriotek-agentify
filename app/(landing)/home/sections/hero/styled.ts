@@ -1,6 +1,7 @@
 import styled, { keyframes } from "styled-components";
 import { BREAKPOINTS, COLOR } from "@/styles";
 import Image from "next/image";
+import Link from "next/link";
 
 const fadeIn = keyframes`
   from { opacity: 0; transform: translateY(20px); }
@@ -370,7 +371,7 @@ export const CTAContainer = styled.div`
   }
 `;
 
-export const WatchDemoButton = styled.button`
+export const WatchDemoButton = styled(Link)`
   width: fit-content;
   display: inline-flex;
   align-items: center;

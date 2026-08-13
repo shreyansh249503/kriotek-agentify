@@ -1,6 +1,5 @@
 import { render, screen } from "@testing-library/react";
 import { StatusBadge } from "./StatusBadge";
-import React from "react";
 
 describe("StatusBadge Component", () => {
   it("should render active status badge correctly", () => {

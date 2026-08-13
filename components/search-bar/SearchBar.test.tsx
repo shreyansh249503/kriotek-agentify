@@ -1,6 +1,5 @@
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import { SearchBar } from "./SearchBar";
-import React from "react";
 
 describe("SearchBar Component", () => {
   beforeEach(() => {

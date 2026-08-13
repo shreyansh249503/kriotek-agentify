@@ -2,7 +2,6 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import SettingsPage from "./page";
 import { useCurrentUser } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
-import React from "react";
 
 jest.mock("@/hooks/useAuth");
 jest.mock("@/lib/supabase", () => ({

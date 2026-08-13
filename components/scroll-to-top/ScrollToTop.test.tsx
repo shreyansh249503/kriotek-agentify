@@ -1,6 +1,5 @@
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import { ScrollToTop } from "./ScrollToTop";
-import React from "react";
 
 describe("ScrollToTop Component", () => {
   beforeEach(() => {

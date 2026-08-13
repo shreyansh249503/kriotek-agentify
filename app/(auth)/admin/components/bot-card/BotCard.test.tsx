@@ -48,17 +48,13 @@ describe("BotCard Component", () => {
       />
     );
 
-    // Bot name displayed in top banner & mini chat
     const botNameElements = screen.getAllByText("Agentify's Bot");
     expect(botNameElements.length).toBeGreaterThanOrEqual(1);
 
-    // Company name in bottom info
     expect(screen.getByText("Agentify Pvt Ltd")).toBeInTheDocument();
 
-    // Trained time
     expect(screen.getByText("Last trained 2 min ago")).toBeInTheDocument();
 
-    // Logo image
     const images = screen.getAllByRole("img");
     expect(images[0]).toHaveAttribute("src", "https://example.com/logo.png");
   });
@@ -174,12 +170,10 @@ describe("BotCard Component", () => {
 
     fireEvent.click(deleteBtn);
 
-    // Confirmation modal should be visible
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(screen.getByText("Delete Bot")).toBeInTheDocument();
     expect(screen.getByText(/Are you sure you want to delete/i)).toBeInTheDocument();
 
-    // Clicking cancel closes the modal without calling onDelete
     const cancelBtn = screen.getByRole("button", { name: "Cancel" });
     fireEvent.click(cancelBtn);
 
@@ -239,11 +233,9 @@ describe("formatTrainedTime helper", () => {
     const threeDaysAgo = new Date(now - 3 * 24 * 60 * 60 * 1000).toISOString();
     expect(formatTrainedTime(threeDaysAgo)).toBe("3 days ago");
 
-    // Pre-formatted relative strings
     expect(formatTrainedTime("5 min ago")).toBe("5 min ago");
     expect(formatTrainedTime("Last trained 1 hr ago")).toBe("1 hr ago");
 
-    // Numeric timestamp strings
     expect(formatTrainedTime(String(now - 5 * 60 * 1000))).toBe("5 min ago");
   });
 });

@@ -1,6 +1,5 @@
 import { render, screen } from "@testing-library/react";
 import { Breadcrumbs } from "./Breadcrumbs";
-import React from "react";
 
 let mockPathname = "/admin/bots";
 jest.mock("next/navigation", () => ({

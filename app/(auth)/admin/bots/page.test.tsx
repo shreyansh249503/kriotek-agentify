@@ -2,7 +2,6 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import BotsPage from "./page";
 import { useBots } from "@/hooks/useBot";
 import { useRouter } from "next/navigation";
-import React from "react";
 import { Bot } from "@/types/bot";
 
 jest.mock("@/hooks/useBot");

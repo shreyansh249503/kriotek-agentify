@@ -30,6 +30,8 @@ describe("receptionistAgent", () => {
     leads: [],
     conversations: [],
     shopify_stores: [],
+    created_at: new Date(),
+    updated_at: new Date(),
   };
 
   it("should configure streamText without shopify tools when isShopifyConnected is false", () => {

@@ -1,6 +1,5 @@
 import { render, screen, act } from "@testing-library/react";
 import { SidebarProvider, useSidebar } from "./SidebarContext";
-import React from "react";
 
 const TestComponent = () => {
   const { isCollapsed, toggleSidebar, setIsCollapsed, isDrawerOpen, toggleDrawer, closeDrawer } =

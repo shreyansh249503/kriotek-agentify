@@ -1,7 +1,6 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { ContactSettingsSection } from "./ContactSettingsSection";
 import { CreateBotInput } from "@/types/bot";
-import React from "react";
 
 describe("ContactSettingsSection Component", () => {
   const disabledForm: CreateBotInput = {

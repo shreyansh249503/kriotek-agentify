@@ -1,6 +1,5 @@
 import { render, screen, act } from "@testing-library/react";
 import { BreadcrumbProvider, useBreadcrumb } from "./BreadcrumbContext";
-import React from "react";
 
 const TestComponent = () => {
   const { meta, setBreadcrumbMeta } = useBreadcrumb();

@@ -1,6 +1,5 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { CustomSelect } from "./CustomSelect";
-import React from "react";
 
 describe("CustomSelect Component", () => {
   const options = [

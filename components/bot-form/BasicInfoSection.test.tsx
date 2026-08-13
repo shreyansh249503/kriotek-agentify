@@ -1,7 +1,6 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { BasicInfoSection } from "./BasicInfoSection";
 import { CreateBotInput } from "@/types/bot";
-import React from "react";
 
 describe("BasicInfoSection Component", () => {
   const initialForm: CreateBotInput = {

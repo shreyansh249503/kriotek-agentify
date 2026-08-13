@@ -39,7 +39,6 @@ test.describe("Leads Management Flow", () => {
         },
       ];
 
-      // 1. Setup API mocks with dynamic leads store
       await mockBotAPIs(page, {
         bot: LEADS_BOT,
         botsList: [LEADS_BOT],
@@ -62,7 +61,6 @@ test.describe("Leads Management Flow", () => {
         },
       });
 
-      // 2. Open customer demo playground and submit contact information
       await page.goto(`/demo?botId=${LEADS_BOT.id}`, {
         waitUntil: "domcontentloaded",
       });
@@ -86,27 +84,22 @@ test.describe("Leads Management Flow", () => {
       await expect(chatInput).toBeVisible({ timeout: 15000 });
       await expect(sendButton).toBeVisible({ timeout: 15000 });
 
-      // Customer sends contact information
       await chatInput.fill(
         "Hi, my name is Marcus Vance and my email is marcus.vance@example.com",
       );
       await sendButton.click();
 
-      // Verify confirmation in chat
       await expect(
         messagesContainer.getByText(
           /Thank you Marcus! We have saved your contact details./i,
         ),
       ).toBeVisible({ timeout: 15000 });
 
-      // 3. Admin visits /admin/leads
       await page.goto("/admin/leads", { waitUntil: "domcontentloaded" });
 
-      // Verify leads table is displayed
       const leadsTable = page.getByTestId("leads-table");
       await expect(leadsTable).toBeVisible({ timeout: 15000 });
 
-      // Verify newly captured contact appears with correct details
       const marcusRow = page
         .getByTestId("lead-row")
         .filter({ hasText: "Marcus Vance" });
@@ -155,26 +148,22 @@ test.describe("Leads Management Flow", () => {
 
       await page.goto("/admin/leads", { waitUntil: "domcontentloaded" });
 
-      // Verify all initial rows are displayed
       const rows = page.getByTestId("lead-row");
       await expect(rows).toHaveCount(3);
 
       const searchInput = page.getByPlaceholder("Search leads...");
       await expect(searchInput).toBeVisible({ timeout: 10000 });
 
-      // 1. Search by customer name
       await searchInput.fill("Sarah");
       await expect(rows).toHaveCount(1);
       await expect(rows.first()).toContainText("Sarah Connor");
       await expect(page.getByText("John Connor")).not.toBeVisible();
 
-      // 2. Search by email address
       await searchInput.fill("resistance.org");
       await expect(rows).toHaveCount(1);
       await expect(rows.first()).toContainText("John Connor");
       await expect(rows.first()).toContainText("john.c@resistance.org");
 
-      // 3. Search by bot name
       await searchInput.fill("Billing Bot");
       await expect(rows).toHaveCount(1);
       await expect(rows.first()).toContainText("Kyle Reese");
@@ -182,14 +171,12 @@ test.describe("Leads Management Flow", () => {
         "Billing Bot",
       );
 
-      // 4. Search with non-matching query -> verify empty state
       await searchInput.fill("NonExistentTerm123");
       await expect(rows).toHaveCount(0);
       await expect(
         page.getByText(/No leads found matching "NonExistentTerm123"/i),
       ).toBeVisible();
 
-      // 5. Clear search query -> all rows restored
       await searchInput.fill("");
       await expect(rows).toHaveCount(3);
     });
@@ -230,12 +217,10 @@ test.describe("Leads Management Flow", () => {
       const rows = page.getByTestId("lead-row");
       await expect(rows).toHaveCount(3);
 
-      // Default sort order is "Newest First" (desc)
       await expect(rows.nth(0)).toContainText("Newest Lead");
       await expect(rows.nth(1)).toContainText("Middle Lead");
       await expect(rows.nth(2)).toContainText("Oldest Lead");
 
-      // Change sort order via Select dropdown to "Oldest First"
       const sortSelect = page.getByTestId("sort-order-select");
       await sortSelect.selectOption("asc");
 
@@ -243,7 +228,6 @@ test.describe("Leads Management Flow", () => {
       await expect(rows.nth(1)).toContainText("Middle Lead");
       await expect(rows.nth(2)).toContainText("Newest Lead");
 
-      // Click Date table header to toggle back to "Newest First"
       const dateHeader = page.getByTestId("sort-date-header");
       await dateHeader.click();
 
@@ -284,15 +268,12 @@ test.describe("Leads Management Flow", () => {
       await expect(exportBtn).toBeVisible({ timeout: 10000 });
       await expect(exportBtn).toBeEnabled();
 
-      // Trigger and intercept download event
       const downloadPromise = page.waitForEvent("download");
       await exportBtn.click();
       const download = await downloadPromise;
 
-      // Verify downloaded filename
       expect(download.suggestedFilename()).toBe("agentify-leads.csv");
 
-      // Verify CSV contents
       const stream = await download.createReadStream();
       expect(stream).not.toBeNull();
 
@@ -317,7 +298,6 @@ test.describe("Leads Management Flow", () => {
     test("Test pagination controls when lead list exceeds page size", async ({
       page,
     }) => {
-      // Create 12 mock leads (pageSize is 8)
       const twelveLeads: MockLead[] = Array.from({ length: 12 }, (_, i) => ({
         id: `lead-page-${i + 1}`,
         bot_name: "Support Assistant",
@@ -334,11 +314,9 @@ test.describe("Leads Management Flow", () => {
       await page.goto("/admin/leads", { waitUntil: "domcontentloaded" });
 
       const rows = page.getByTestId("lead-row");
-      // Page 1 should display 8 items
       await expect(rows).toHaveCount(8);
       await expect(rows.first()).toContainText("Customer 01");
 
-      // Find pagination Next button
       const nextBtn = page
         .getByRole("button", { name: "Next page" })
         .or(page.locator('button[aria-label="Next page"]'))
@@ -346,7 +324,6 @@ test.describe("Leads Management Flow", () => {
       await expect(nextBtn).toBeVisible();
       await nextBtn.click();
 
-      // Page 2 should display remaining 4 items
       await expect(rows).toHaveCount(4);
       await expect(rows.first()).toContainText("Customer 09");
     });

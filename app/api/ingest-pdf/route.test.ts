@@ -86,7 +86,7 @@ describe("POST /api/ingest-pdf", () => {
   });
 
   it("should return 400 Bad Request if file or publicKey is missing", async () => {
-    const req = createMockRequest({ publicKey: "pk_test" }); // Missing file
+    const req = createMockRequest({ publicKey: "pk_test" });
     const res = (await POST(req)) as unknown as { status: number; json: () => Promise<Record<string, unknown>> };
     const data = await res.json();
 

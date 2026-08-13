@@ -324,11 +324,12 @@ export const BotCard = ({
             </MenuButton>
 
             {isMenuOpen && (
-              <DropdownMenu role="menu">
+              <DropdownMenu role="menu" onMouseDown={(e) => e.stopPropagation()}>
                 <DropdownItem
                   type="button"
                   role="button"
                   aria-label="Edit"
+                  onMouseDown={(e) => e.stopPropagation()}
                   onClick={handleEditClick}
                 >
                   <PencilSimple size={15} weight="bold" />
@@ -339,6 +340,7 @@ export const BotCard = ({
                   type="button"
                   role="button"
                   aria-label="Ingest"
+                  onMouseDown={(e) => e.stopPropagation()}
                   onClick={handleIngestClick}
                 >
                   <Brain size={15} weight="bold" />
@@ -349,6 +351,7 @@ export const BotCard = ({
                   type="button"
                   role="button"
                   aria-label="Copy Key"
+                  onMouseDown={(e) => e.stopPropagation()}
                   onClick={handleCopyKey}
                 >
                   {copied ? (
@@ -364,6 +367,7 @@ export const BotCard = ({
                   role="button"
                   aria-label="Delete"
                   $danger
+                  onMouseDown={(e) => e.stopPropagation()}
                   onClick={handleDeleteClick}
                 >
                   <Trash size={15} weight="bold" />

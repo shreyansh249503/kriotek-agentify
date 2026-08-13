@@ -1,6 +1,5 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { Pagination } from "./Pagination";
-import React from "react";
 
 describe("Pagination Component", () => {
   it("should return null if totalPages is 1 or less", () => {

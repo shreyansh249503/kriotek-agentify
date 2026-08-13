@@ -2,7 +2,6 @@ import { render, screen } from "@testing-library/react";
 import AdminContent from "./AdminContent";
 import useAdminContent from "@/hooks/useAdminContent";
 import useMotion from "@/hooks/useMotion";
-import React from "react";
 import { Bot } from "@/types/bot";
 
 jest.mock("@/hooks/useAdminContent");

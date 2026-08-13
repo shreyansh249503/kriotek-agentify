@@ -158,7 +158,7 @@ describe("Chat Route (/api/chat)", () => {
 
   describe("POST /api/chat", () => {
     it("should return 400 Bad Request if publicKey or message is missing", async () => {
-      const req = createRequest({ message: "Hello" }); // Missing publicKey
+      const req = createRequest({ message: "Hello" });
       const res = await POST(req as unknown as Request);
       const data = await res.json();
 

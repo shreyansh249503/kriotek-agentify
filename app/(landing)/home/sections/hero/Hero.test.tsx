@@ -10,6 +10,12 @@ jest.mock("next/image", () => ({
   ),
 }));
 
+jest.mock("next/navigation", () => ({
+  useRouter: () => ({
+    push: jest.fn(),
+  }),
+}));
+
 jest.mock("@/components", () => ({
   BlackButton: ({ children, href }: { children: React.ReactNode; href: string }) => (
     <a href={href}>{children}</a>

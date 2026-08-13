@@ -1,6 +1,5 @@
 import { render, screen } from "@testing-library/react";
 import { StatsCard } from "./StatsCard";
-import React from "react";
 
 describe("StatsCard Component", () => {
   it("should render stat title, length value, delta text, and icon", () => {

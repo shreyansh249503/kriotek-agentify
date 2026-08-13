@@ -1,3 +1,5 @@
+"use client";
+
 import { BlackButton } from "@/components";
 import {
   AICircle,
@@ -114,7 +116,7 @@ export const Hero = () => {
           </TagContainer>
           <CTAContainer>
             <BlackButton href="/signup">Built Your Free Agent</BlackButton>
-            <WatchDemoButton>Watch Demo</WatchDemoButton>
+            <WatchDemoButton href="/demo">Watch Demo</WatchDemoButton>
           </CTAContainer>
         </HeroContent>
         <HeroChatBotContainer>

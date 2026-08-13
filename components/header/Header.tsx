@@ -29,30 +29,71 @@ export const Header = () => {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      setUser(data.session?.user || null);
+      if (data.session?.user) {
+        setUser(data.session.user);
+      } else {
+        try {
+          const raw = window.localStorage.getItem(
+            "sb-bhyrxyzokssibgeznojo-auth-token",
+          );
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed.user) {
+              setUser(parsed.user);
+            }
+          }
+        } catch {}
+      }
     });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user || null);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   const closeMenu = () => setIsMenuOpen(false);
+  const closeMenuWithDelay = () => {
+    setTimeout(() => {
+      setIsMenuOpen(false);
+    }, 100);
+  };
 
   return (
     <HeaderContainer>
       <InnerHeaderwrapper>
-        <LogoContainer onClick={() => router.push("/")}>
+        <LogoContainer href="/" data-testid="header-logo-link">
           <Logo src={BotLogo} alt="Agentigy Logo" width={140} />
         </LogoContainer>
 
         <NavLinks>
-          <LinkTag href="/work-in-progress">Products</LinkTag>
-          <LinkTag href="/work-in-progress">Solution</LinkTag>
-          <LinkTag href="/pricing">Pricing</LinkTag>
-          <LinkTag href="/work-in-progress">Enterprise</LinkTag>
+          <LinkTag href="/#features" data-testid="nav-features-link">
+            Features
+          </LinkTag>
+          <LinkTag href="/pricing" data-testid="nav-pricing-link">
+            Pricing
+          </LinkTag>
+          <LinkTag href="/about" data-testid="nav-about-link">
+            About
+          </LinkTag>
+          <LinkTag href="/contact" data-testid="nav-contact-link">
+            Contact
+          </LinkTag>
         </NavLinks>
 
         <LoginSignupContainer>
           {user ? (
-            <DashboardButton onClick={() => router.push("/admin")}>
+            <DashboardButton
+              href="/admin"
+              onClick={() => router.push("/admin")}
+              data-testid="desktop-dashboard-btn"
+            >
               Dashboard
             </DashboardButton>
           ) : (
@@ -65,42 +106,74 @@ export const Header = () => {
           )}
         </LoginSignupContainer>
 
-        <MenuButton onClick={toggleMenu}>
+        <MenuButton
+          onClick={toggleMenu}
+          aria-label="Toggle navigation menu"
+          data-testid="menu-toggle-btn"
+        >
           {isMenuOpen ? <X size={28} /> : <List size={28} />}
         </MenuButton>
       </InnerHeaderwrapper>
 
       <DrawerOverlay $isOpen={isMenuOpen} onClick={closeMenu} />
-      <DrawerContent $isOpen={isMenuOpen}>
+      <DrawerContent $isOpen={isMenuOpen} data-testid="drawer-content">
         <DrawerLinks>
-          <LinkTag href="/#features" onClick={closeMenu}>
+          <LinkTag
+            href="/#features"
+            onClick={closeMenuWithDelay}
+            data-testid="drawer-features-link"
+          >
             Features
           </LinkTag>
-          <LinkTag href="/#benefits" onClick={closeMenu}>
-            Benefits
-          </LinkTag>
-          <LinkTag href="/pricing" onClick={closeMenu}>
+          <LinkTag
+            href="/pricing"
+            onClick={closeMenuWithDelay}
+            data-testid="drawer-pricing-link"
+          >
             Pricing
           </LinkTag>
-          <LinkTag href="/demo" onClick={closeMenu}>
-            Live Demo
+          <LinkTag
+            href="/about"
+            onClick={closeMenuWithDelay}
+            data-testid="drawer-about-link"
+          >
+            About
           </LinkTag>
-          <LinkTag href="/work-in-progress" onClick={closeMenu}>
-            Docs
+          <LinkTag
+            href="/contact"
+            onClick={closeMenuWithDelay}
+            data-testid="drawer-contact-link"
+          >
+            Contact
+          </LinkTag>
+          <LinkTag
+            href="/demo"
+            onClick={closeMenuWithDelay}
+            data-testid="drawer-live-demo"
+          >
+            Live Demo
           </LinkTag>
         </DrawerLinks>
 
         <DrawerAuth>
           {user ? (
-            <AuthButton href="/admin" $variant="primary" onClick={closeMenu}>
+            <AuthButton
+              href="/admin"
+              $variant="primary"
+              onClick={closeMenuWithDelay}
+            >
               Go to Dashboard
             </AuthButton>
           ) : (
             <>
-              <AuthButton href="/login" onClick={closeMenu}>
+              <AuthButton href="/login" onClick={closeMenuWithDelay}>
                 Login
               </AuthButton>
-              <AuthButton href="/signup" $variant="primary" onClick={closeMenu}>
+              <AuthButton
+                href="/signup"
+                $variant="primary"
+                onClick={closeMenuWithDelay}
+              >
                 Sign Up
               </AuthButton>
             </>

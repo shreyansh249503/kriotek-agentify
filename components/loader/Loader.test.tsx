@@ -1,6 +1,5 @@
 import { render } from "@testing-library/react";
 import { Loader } from "./Loader";
-import React from "react";
 
 describe("Loader Component", () => {
   it("should render default loader component", () => {

@@ -72,7 +72,7 @@ const CARDS = [
 
 export const EverythingYouNeed = () => {
   return (
-    <EveryThingYouNeedMainContainer>
+    <EveryThingYouNeedMainContainer id="features">
       <EverythingYouNeedSectionHeader>
         <EverythingYouNeedTitleBtn>
           Everything You Need

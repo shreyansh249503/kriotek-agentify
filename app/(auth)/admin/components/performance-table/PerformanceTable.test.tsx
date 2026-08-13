@@ -1,7 +1,6 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { PerformanceTable } from "./PerformanceTable";
 import { Bot } from "@/types/bot";
-import React from "react";
 
 describe("PerformanceTable Component", () => {
   it("should render empty state message when convosPerBot is empty", () => {

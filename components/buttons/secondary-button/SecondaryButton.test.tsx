@@ -1,6 +1,5 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { SecondaryButton } from "./SecondaryButton";
-import React from "react";
 
 describe("SecondaryButton Component", () => {
   it("should render button with children and handle click events", () => {

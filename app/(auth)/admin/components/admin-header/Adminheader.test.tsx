@@ -1,6 +1,5 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { Adminheader } from "./Adminheader";
-import React from "react";
 import { usePathname } from "next/navigation";
 
 const mockToggleSidebar = jest.fn();

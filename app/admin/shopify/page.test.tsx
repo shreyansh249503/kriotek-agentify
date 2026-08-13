@@ -136,7 +136,6 @@ describe("ShopifyDashboard Page", () => {
       expect(screen.getByText("Shopify Assistant")).toBeInTheDocument();
     });
 
-    // Test button navigation callbacks
     const editBotBtn = screen.getByRole("button", { name: "Edit bot" });
     fireEvent.click(editBotBtn);
     expect(mockPush).toHaveBeenCalledWith("/admin/shopify/bot");

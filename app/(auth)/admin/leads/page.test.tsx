@@ -1,7 +1,6 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import LeadsPage from "./page";
 import { useLeads } from "@/hooks/useLead";
-import React from "react";
 
 jest.mock("@/hooks/useLead");
 jest.mock("@/components", () => {
@@ -106,12 +105,10 @@ describe("LeadsPage Component", () => {
 
     render(<LeadsPage />);
 
-    // Default is descending (newest first: Jane Smith Jan 2 -> John Doe Jan 1)
     const rowsInitial = screen.getAllByTestId("lead-row");
     expect(rowsInitial[0]).toHaveTextContent("Jane Smith");
     expect(rowsInitial[1]).toHaveTextContent("John Doe");
 
-    // Click date header to toggle sorting to ascending (oldest first: John Doe Jan 1 -> Jane Smith Jan 2)
     const dateHeader = screen.getByTestId("sort-date-header");
     fireEvent.click(dateHeader);
 
@@ -119,7 +116,6 @@ describe("LeadsPage Component", () => {
     expect(rowsSortedAsc[0]).toHaveTextContent("John Doe");
     expect(rowsSortedAsc[1]).toHaveTextContent("Jane Smith");
 
-    // Change sort select back to newest first
     const sortSelect = screen.getByTestId("sort-order-select");
     fireEvent.change(sortSelect, { target: { value: "desc" } });
 

@@ -2,7 +2,6 @@ import { render, screen } from "@testing-library/react";
 import { BarsChart } from "./BarsChart";
 import React from "react";
 
-// Mock recharts ResponsiveContainer
 jest.mock("recharts", () => {
   const OriginalModule = jest.requireActual("recharts");
   return {

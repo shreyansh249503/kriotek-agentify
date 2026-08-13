@@ -26,14 +26,11 @@ test.describe('Live Support & Human Agent Handoff Flow', () => {
       let lastAdminReply = '';
       let conversationResolved = false;
 
-      // 1. Setup API mocks with bot and dynamic handoff state
       await mockBotAPIs(page, {
         bot: HANDOFF_BOT,
         botsList: [HANDOFF_BOT],
         chatResponses: [
-          // When customer asks for a human, receptionist responds with SHOW_SUPPORT_BUTTON
           "Sure, I can connect you to our customer support. Please click the button below to start the support session. [SHOW_SUPPORT_BUTTON]",
-          // Fallback if needed
           "Message sent to customer support.",
         ],
         onSwitchToManual: () => {
@@ -47,10 +44,8 @@ test.describe('Live Support & Human Agent Handoff Flow', () => {
         },
       });
 
-      // 2. Open customer demo playground
       await page.goto(`/demo?botId=${HANDOFF_BOT.id}`, { waitUntil: 'domcontentloaded' });
 
-      // Verify launcher button and open widget
       const launcherBtn = page.locator('button').filter({ has: page.locator('img[alt="chat"]') }).first();
       await expect(launcherBtn).toBeVisible({ timeout: 20000 });
 
@@ -67,16 +62,13 @@ test.describe('Live Support & Human Agent Handoff Flow', () => {
       await expect(chatInput).toBeVisible({ timeout: 15000 });
       await expect(sendButton).toBeVisible({ timeout: 15000 });
 
-      // 3. Customer requests human assistance in chat
       await chatInput.fill('Can I speak with a human support agent please?');
       await sendButton.click();
 
-      // Verify user message in chat
       await expect(
         messagesContainer.getByText('Can I speak with a human support agent please?')
       ).toBeVisible({ timeout: 10000 });
 
-      // Verify bot response offering customer support handoff button
       await expect(
         messagesContainer.getByText(/Sure, I can connect you to our customer support/i)
       ).toBeVisible({ timeout: 15000 });
@@ -84,10 +76,8 @@ test.describe('Live Support & Human Agent Handoff Flow', () => {
       const handoffBtn = messagesContainer.locator('button').filter({ hasText: /Talk to customer support/i }).first();
       await expect(handoffBtn).toBeVisible({ timeout: 10000 });
 
-      // 4. Trigger manual handoff by clicking "Talk to customer support"
       await handoffBtn.click();
 
-      // Verify handoff state in widget
       await expect(
         messagesContainer.getByText(/Connecting to support representative/i)
       ).toBeVisible({ timeout: 10000 });
@@ -95,7 +85,6 @@ test.describe('Live Support & Human Agent Handoff Flow', () => {
       await expect(chatInput).toHaveAttribute('placeholder', 'Type a message to support...', { timeout: 10000 });
       expect(manualHandoffTriggered).toBe(true);
 
-      // Customer sends urgent message to support
       await chatInput.fill('Hello support team, my order item arrived damaged, please help.');
       await sendButton.click();
 
@@ -103,31 +92,24 @@ test.describe('Live Support & Human Agent Handoff Flow', () => {
         messagesContainer.getByText('Hello support team, my order item arrived damaged, please help.')
       ).toBeVisible({ timeout: 10000 });
 
-      // 5. Navigate to Admin Inbox (/admin/inbox) to verify live conversation
       await page.goto('/admin/inbox', { waitUntil: 'domcontentloaded' });
 
-      // Verify Sidebar header indicates active handover count
       await expect(page.getByText(/Active Handovers/i)).toBeVisible({ timeout: 20000 });
 
-      // Verify status badge with text manual_takeover is visible
       const statusBadge = page.locator('[data-testid="convo-status-badge"]').first();
       await expect(statusBadge).toBeVisible({ timeout: 15000 });
       await expect(statusBadge).toHaveText(/manual_takeover/i);
 
-      // Verify bot name badge
       await expect(page.getByText('Apex Concierge AI').first()).toBeVisible({ timeout: 10000 });
 
-      // 6. Verify conversation details in Chat Panel
       const activeHeaderStatusBadge = page.locator('[data-testid="active-convo-status-badge"]').first();
       await expect(activeHeaderStatusBadge).toBeVisible({ timeout: 15000 });
       await expect(activeHeaderStatusBadge).toHaveText(/manual_takeover/i);
 
-      // Verify transfer system message in admin chat view
       await expect(
         page.getByText(/Chat transferred to customer support/i).first()
       ).toBeVisible({ timeout: 15000 });
 
-      // 7. Live operator sends reply from /admin/inbox
       const replyInput = page.getByPlaceholder('Type your reply to customer...');
       await expect(replyInput).toBeVisible({ timeout: 15000 });
 
@@ -135,11 +117,9 @@ test.describe('Live Support & Human Agent Handoff Flow', () => {
       const replySendBtn = replyInput.locator('..').locator('button[type="submit"]');
       await replySendBtn.click();
 
-      // Verify reply mutation was called
       await expect(replyInput).toHaveValue('', { timeout: 10000 });
       expect(lastAdminReply).toBe('Hello! This is agent Sarah from support. I will issue an immediate replacement for you.');
 
-      // 8. Admin marks conversation as resolved / revert to AI
       const resolveBtn = page.getByRole('button', { name: /Mark Resolved \/ Revert to AI/i });
       await expect(resolveBtn).toBeVisible({ timeout: 15000 });
       await resolveBtn.click();
@@ -208,10 +188,8 @@ test.describe('Live Support & Human Agent Handoff Flow', () => {
 
       await page.goto('/admin/inbox', { waitUntil: 'domcontentloaded' });
 
-      // Verify Active Handovers (2) count in sidebar
       await expect(page.getByText('Active Handovers (2)')).toBeVisible({ timeout: 20000 });
 
-      // Verify both conversations are listed with manual_takeover status badge
       await expect(page.getByText('Michael Scott').first()).toBeVisible({ timeout: 15000 });
       await expect(page.getByText('Dwight Schrute').first()).toBeVisible({ timeout: 15000 });
 
@@ -220,15 +198,12 @@ test.describe('Live Support & Human Agent Handoff Flow', () => {
       await expect(statusBadges.first()).toHaveText(/manual_takeover/i);
       await expect(statusBadges.nth(1)).toHaveText(/manual_takeover/i);
 
-      // Verify first conversation is active by default
       await expect(page.getByText('📧 michael@dundermifflin.com')).toBeVisible({ timeout: 15000 });
       await expect(page.getByText('📞 +1 555-0199')).toBeVisible({ timeout: 15000 });
       await expect(page.getByText('I need to return paper reams').first()).toBeVisible({ timeout: 15000 });
 
-      // Click second conversation
       await page.getByText('Dwight Schrute').first().click();
 
-      // Verify active header updates to Dwight Schrute
       await expect(page.getByText('📧 dwight@dundermifflin.com')).toBeVisible({ timeout: 15000 });
       await expect(page.getByText('📞 +1 555-0200')).toBeVisible({ timeout: 15000 });
       await expect(page.getByText('Question regarding beet seed delivery').first()).toBeVisible({ timeout: 15000 });
@@ -251,7 +226,6 @@ test.describe('Live Support & Human Agent Handoff Flow', () => {
       const sharedStore: MockConversation[] = [];
       let closedConversationId = '';
 
-      // Setup mock API backend across the entire browser context
       await setSessionViaInitScript(context);
       await mockSupabaseAuth(context);
       await mockBotAPIs(context, {
@@ -270,7 +244,6 @@ test.describe('Live Support & Human Agent Handoff Flow', () => {
       const customerPage = await context.newPage();
       const adminPage = await context.newPage();
 
-      // 1. Customer opens widget on /demo and requests live human support
       await customerPage.goto(`/demo?botId=${SUPPORT_BOT.id}`, { waitUntil: 'domcontentloaded' });
 
       const launcherBtn = customerPage.locator('button').filter({ has: customerPage.locator('img[alt="chat"]') }).first();
@@ -292,7 +265,6 @@ test.describe('Live Support & Human Agent Handoff Flow', () => {
       await customerInput.fill('I have a critical issue with my subscription payment');
       await customerSendBtn.click();
 
-      // Bot offers support button and customer triggers handoff
       const handoffBtn = customerMessages.locator('button').filter({ hasText: /Talk to customer support/i }).first();
       await expect(handoffBtn).toBeVisible({ timeout: 15000 });
       await handoffBtn.click();
@@ -301,7 +273,6 @@ test.describe('Live Support & Human Agent Handoff Flow', () => {
         customerMessages.getByText(/Connecting to support representative/i)
       ).toBeVisible({ timeout: 10000 });
 
-      // 2. Admin opens /admin/inbox and observes live customer conversation
       await adminPage.goto('/admin/inbox', { waitUntil: 'domcontentloaded' });
 
       await expect(adminPage.getByText(/Active Handovers/i)).toBeVisible({ timeout: 20000 });
@@ -309,7 +280,6 @@ test.describe('Live Support & Human Agent Handoff Flow', () => {
       await expect(statusBadge).toBeVisible({ timeout: 15000 });
       await expect(statusBadge).toHaveText(/manual_takeover/i);
 
-      // 3. Admin enters reply in /admin/inbox
       const adminReplyInput = adminPage.getByPlaceholder('Type your reply to customer...');
       await expect(adminReplyInput).toBeVisible({ timeout: 15000 });
 
@@ -320,35 +290,28 @@ test.describe('Live Support & Human Agent Handoff Flow', () => {
 
       await expect(adminReplyInput).toHaveValue('', { timeout: 10000 });
 
-      // 4. Verify message appears in public customer chat widget in real time
       await expect(
         customerMessages.getByText(adminReplyText)
       ).toBeVisible({ timeout: 15000 });
 
-      // 5. Customer replies back to operator
       const customerReplyText = 'Thank you Alex! That fixed the billing issue immediately.';
       await customerInput.fill(customerReplyText);
       await customerSendBtn.click();
 
-      // Verify customer reply appears in admin inbox
       await expect(
         adminPage.getByText(customerReplyText).first()
       ).toBeVisible({ timeout: 15000 });
 
-      // 6. Admin closes conversation -> conversation updates to closed
       const resolveBtn = adminPage.getByRole('button', { name: /Mark Resolved \/ Revert to AI/i });
       await expect(resolveBtn).toBeVisible({ timeout: 15000 });
       await resolveBtn.click();
 
       await expect.poll(() => Boolean(closedConversationId), { timeout: 15000 }).toBe(true);
 
-      // 7. Verify conversation updates to closed
-      // Customer widget receives session end system message
       await expect(
         customerMessages.getByText(/The support session has ended\. Thank you!/i)
       ).toBeVisible({ timeout: 15000 });
 
-      // Admin inbox reflects closed status / empty active list
       await expect(adminPage.getByText('No active support requests')).toBeVisible({ timeout: 15000 });
 
       await customerPage.close();

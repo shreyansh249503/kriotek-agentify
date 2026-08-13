@@ -3,7 +3,6 @@ import { Sidebar } from "./Sidebar";
 import { supabase } from "@/lib/supabase";
 import React from "react";
 
-// Mock next/image
 jest.mock("next/image", () => ({
   __esModule: true,
   default: (props: React.ImgHTMLAttributes<HTMLImageElement>) => (

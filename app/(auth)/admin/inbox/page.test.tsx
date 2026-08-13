@@ -7,7 +7,6 @@ import {
   useCloseConversation,
 } from "@/hooks/useInbox";
 import { supabase } from "@/lib/supabase";
-import React from "react";
 
 jest.mock("@/hooks/useInbox");
 jest.mock("@/lib/supabase", () => ({

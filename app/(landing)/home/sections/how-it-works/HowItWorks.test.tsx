@@ -1,6 +1,5 @@
 import { render, screen } from "@testing-library/react";
 import { HowItWorks } from "./HowItWorks";
-import React from "react";
 
 jest.mock("../../components", () => ({
   InstructionCard: ({

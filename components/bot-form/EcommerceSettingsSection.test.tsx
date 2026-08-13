@@ -1,7 +1,6 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { EcommerceSettingsSection } from "./EcommerceSettingsSection";
 import { CreateBotInput } from "@/types/bot";
-import React from "react";
 
 jest.mock("@/lib/supabase", () => ({
   supabase: {

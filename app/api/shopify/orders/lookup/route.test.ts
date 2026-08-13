@@ -66,8 +66,8 @@ describe("API: /api/shopify/orders/lookup", () => {
 
   it("should resolve bot_id via public_key when bot_id is not provided", async () => {
     mockSingle
-      .mockResolvedValueOnce({ data: { id: "bot_resolved" } }) // bots table
-      .mockResolvedValueOnce({ data: { shop: "shop.myshopify.com", access_token: "token_123" } }); // shopify_stores table
+      .mockResolvedValueOnce({ data: { id: "bot_resolved" } }) 
+      .mockResolvedValueOnce({ data: { shop: "shop.myshopify.com", access_token: "token_123" } });
 
     (global.fetch as jest.Mock).mockResolvedValueOnce({
       ok: true,
