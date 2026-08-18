@@ -129,13 +129,11 @@ export default function ShopifyDashboard() {
       <Page title="Agentify">
         <Layout>
           <Layout.Section>
-            <Banner
-              title="Shopify App Bridge Required"
-              tone="warning"
-            >
+            <Banner title="Shopify App Bridge Required" tone="warning">
               <p>
-                This dashboard can only be accessed within the Shopify Admin portal iframe. 
-                Please open your Shopify store admin and navigate to <strong>Apps &rarr; Agentify</strong> to manage your chatbot.
+                This dashboard can only be accessed within the Shopify Admin
+                portal iframe. Please open your Shopify store admin and navigate
+                to <strong>Apps &rarr; Agentify</strong> to manage your chatbot.
               </p>
             </Banner>
           </Layout.Section>
@@ -155,10 +153,13 @@ export default function ShopifyDashboard() {
       }
     >
       <BlockStack gap="500">
-
         {syncMessage && (
-          <Banner 
-            tone={syncMessage.includes("failed") || syncMessage.includes("error") ? "critical" : "success"} 
+          <Banner
+            tone={
+              syncMessage.includes("failed") || syncMessage.includes("error")
+                ? "critical"
+                : "success"
+            }
             onDismiss={() => setSyncMessage("")}
           >
             {syncMessage}
@@ -167,7 +168,10 @@ export default function ShopifyDashboard() {
 
         {!data?.bot && (
           <Banner tone="warning" title="No bot configured yet">
-            <p>Set up your first bot to start capturing leads and recommending products.</p>
+            <p>
+              Set up your first bot to start capturing leads and recommending
+              products.
+            </p>
           </Banner>
         )}
 
@@ -175,7 +179,9 @@ export default function ShopifyDashboard() {
           <Layout.Section variant="oneThird">
             <Card>
               <BlockStack gap="200">
-                <Text variant="headingMd" as="h2">Conversations</Text>
+                <Text variant="headingMd" as="h2">
+                  Conversations
+                </Text>
                 <Text variant="heading2xl" as="p">
                   {data?.stats.total_conversations ?? 0}
                 </Text>
@@ -186,7 +192,9 @@ export default function ShopifyDashboard() {
           <Layout.Section variant="oneThird">
             <Card>
               <BlockStack gap="200">
-                <Text variant="headingMd" as="h2">Leads captured</Text>
+                <Text variant="headingMd" as="h2">
+                  Leads captured
+                </Text>
                 <Text variant="heading2xl" as="p">
                   {data?.stats.total_leads ?? 0}
                 </Text>
@@ -197,7 +205,9 @@ export default function ShopifyDashboard() {
           <Layout.Section variant="oneThird">
             <Card>
               <BlockStack gap="200">
-                <Text variant="headingMd" as="h2">Products synced</Text>
+                <Text variant="headingMd" as="h2">
+                  Products synced
+                </Text>
                 <Text variant="heading2xl" as="p">
                   {data?.stats.products_synced ?? 0}
                 </Text>
@@ -211,7 +221,9 @@ export default function ShopifyDashboard() {
             <Layout.Section>
               <Card>
                 <BlockStack gap="400">
-                  <Text variant="headingMd" as="h2">Performance trends</Text>
+                  <Text variant="headingMd" as="h2">
+                    Performance trends
+                  </Text>
                   <div style={{ height: "300px", marginTop: "16px" }}>
                     <ResponsiveContainer width="100%" height="100%">
                       <AreaChart
@@ -219,17 +231,48 @@ export default function ShopifyDashboard() {
                         margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
                       >
                         <defs>
-                          <linearGradient id="colorConvos" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.2}/>
-                            <stop offset="95%" stopColor="#4f46e5" stopOpacity={0}/>
+                          <linearGradient
+                            id="colorConvos"
+                            x1="0"
+                            y1="0"
+                            x2="0"
+                            y2="1"
+                          >
+                            <stop
+                              offset="5%"
+                              stopColor="#4f46e5"
+                              stopOpacity={0.2}
+                            />
+                            <stop
+                              offset="95%"
+                              stopColor="#4f46e5"
+                              stopOpacity={0}
+                            />
                           </linearGradient>
-                          <linearGradient id="colorLeads" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.2}/>
-                            <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                          <linearGradient
+                            id="colorLeads"
+                            x1="0"
+                            y1="0"
+                            x2="0"
+                            y2="1"
+                          >
+                            <stop
+                              offset="5%"
+                              stopColor="#10b981"
+                              stopOpacity={0.2}
+                            />
+                            <stop
+                              offset="95%"
+                              stopColor="#10b981"
+                              stopOpacity={0}
+                            />
                           </linearGradient>
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
-                        <XAxis dataKey="month" tick={{ fontSize: 12, fill: "#6b7280" }} />
+                        <XAxis
+                          dataKey="month"
+                          tick={{ fontSize: 12, fill: "#6b7280" }}
+                        />
                         <YAxis tick={{ fontSize: 12, fill: "#6b7280" }} />
                         <Tooltip />
                         <Legend />
@@ -266,7 +309,9 @@ export default function ShopifyDashboard() {
               <Card>
                 <BlockStack gap="300">
                   <InlineStack align="space-between">
-                    <Text variant="headingMd" as="h2">Bot configuration</Text>
+                    <Text variant="headingMd" as="h2">
+                      Bot configuration
+                    </Text>
                     <Badge tone="success">Active</Badge>
                   </InlineStack>
                   <Text as="p" variant="bodyMd">
@@ -277,16 +322,23 @@ export default function ShopifyDashboard() {
                     {data.bot.ecommerce_enabled ? "Enabled" : "Disabled"}
                   </Text>
                   <InlineStack gap="300">
-                    <Button onClick={() => router.push("/admin/shopify/bot")}>Edit bot</Button>
-                    <Button onClick={() => router.push("/admin/shopify/leads")}>View leads</Button>
-                    <Button onClick={() => router.push("/admin/shopify/training")}>Training data</Button>
+                    <Button onClick={() => router.push("/admin/shopify/bot")}>
+                      Edit bot
+                    </Button>
+                    <Button onClick={() => router.push("/admin/shopify/leads")}>
+                      View leads
+                    </Button>
+                    <Button
+                      onClick={() => router.push("/admin/shopify/training")}
+                    >
+                      Training data
+                    </Button>
                   </InlineStack>
                 </BlockStack>
               </Card>
             </Layout.Section>
           </Layout>
         )}
-
       </BlockStack>
     </Page>
   );

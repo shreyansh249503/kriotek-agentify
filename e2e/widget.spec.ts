@@ -52,7 +52,12 @@ test.describe('Widget & Demo Playground Flow', () => {
       const widgetContainer = page.locator('#ai-widget').last();
       await expect(widgetContainer).toBeAttached({ timeout: 20000 });
 
-      await launcherBtn.click({ force: true });
+      const isOpen = await widgetContainer.evaluate((el) => {
+        return window.getComputedStyle(el).display === 'flex';
+      }).catch(() => false);
+      if (!isOpen) {
+        await launcherBtn.click({ force: true });
+      }
 
       await expect(widgetContainer).toHaveCSS('display', 'flex', { timeout: 15000 });
 
@@ -525,6 +530,656 @@ test.describe('Widget & Demo Playground Flow', () => {
       ).toBeVisible({ timeout: 15000 });
 
       await expect(messagesContainer.locator('.order-journey-card-container')).toHaveCount(0);
+    });
+  });
+
+  // =========================================================================
+  // E2E-9.1: Widget Session Continuity on Page Reload
+  // =========================================================================
+  test.describe('E2E-9.1: Widget Session Continuity on Page Reload', () => {
+    const CONTINUITY_BOT: Bot = {
+      ...MOCK_BOT,
+      id: 'b8888888-9999-0000-aaaa-bbbbbbbbbbbb',
+      public_key: 'pk_continuity_bot_888',
+      name: 'Continuity Assistant',
+      primary_color: '#4f46e5',
+      ecommerce_enabled: true,
+    };
+
+    test('should persist conversation session ID and restore entire message history after page reload', async ({
+      page,
+    }) => {
+      const chatRequests: { message: string; conversationId?: string; publicKey?: string }[] = [];
+
+      await mockBotAPIs(page, {
+        bot: CONTINUITY_BOT,
+        botsList: [CONTINUITY_BOT],
+        onChatMessage: (req) => {
+          chatRequests.push(req);
+        },
+        chatResponses: [
+          'Hello! I can assist you with your inquiry. What is your question?',
+          'Thanks for the follow-up! We have recorded your account ID #12345.',
+        ],
+      });
+
+      // 1. Visit demo page
+      await page.goto(`/demo?botId=${CONTINUITY_BOT.id}`, { waitUntil: 'domcontentloaded' });
+
+      // 2. Open widget
+      const launcherBtn = page.locator('button').filter({ has: page.locator('img[alt="chat"]') }).first();
+      await expect(launcherBtn).toBeVisible({ timeout: 20000 });
+
+      const widgetContainer = page.locator('#ai-widget').last();
+      await expect(widgetContainer).toBeAttached({ timeout: 20000 });
+
+      const isOpenInitial = await widgetContainer.evaluate((el) => {
+        return window.getComputedStyle(el).display === 'flex';
+      }).catch(() => false);
+      if (!isOpenInitial) {
+        await launcherBtn.click({ force: true });
+      }
+      await expect(widgetContainer).toHaveCSS('display', 'flex', { timeout: 15000 });
+
+      const chatInput = widgetContainer.locator('#ai-input');
+      const sendButton = widgetContainer.locator('#bot-send-btn');
+      const messagesContainer = widgetContainer.locator('#ai-messages');
+
+      await expect(chatInput).toBeVisible({ timeout: 15000 });
+      await expect(sendButton).toBeVisible({ timeout: 15000 });
+
+      // 3. Send first message
+      const initialMessage = 'Hello, can you help me update my account?';
+      await chatInput.fill(initialMessage);
+      await sendButton.click();
+
+      // Assert user message and bot response in UI
+      await expect(messagesContainer.getByText(initialMessage)).toBeVisible({ timeout: 10000 });
+      await expect(
+        messagesContainer.getByText('Hello! I can assist you with your inquiry. What is your question?')
+      ).toBeVisible({ timeout: 15000 });
+
+      // Assert first request conversationId
+      expect(chatRequests.length).toBe(1);
+      const initialSessionId = chatRequests[0].conversationId;
+      expect(initialSessionId).toBeTruthy();
+
+      // Assert localStorage contains current session ID
+      const storedSessionIdBeforeReload = await page.evaluate(
+        (key) => window.localStorage.getItem(key),
+        `chat_conversation_id_${CONTINUITY_BOT.public_key}`
+      );
+      expect(storedSessionIdBeforeReload).toBe(initialSessionId);
+
+      // 4. Reload page
+      await page.reload({ waitUntil: 'domcontentloaded' });
+
+      // 5. Assert session ID in localStorage is preserved
+      const storedSessionIdAfterReload = await page.evaluate(
+        (key) => window.localStorage.getItem(key),
+        `chat_conversation_id_${CONTINUITY_BOT.public_key}`
+      );
+      expect(storedSessionIdAfterReload).toBe(initialSessionId);
+
+      // 6. Re-open widget
+      const reloadedLauncher = page.locator('button').filter({ has: page.locator('img[alt="chat"]') }).first();
+      await expect(reloadedLauncher).toBeVisible({ timeout: 20000 });
+
+      const reloadedWidget = page.locator('#ai-widget').last();
+      await expect(reloadedWidget).toBeAttached({ timeout: 20000 });
+
+      const isVisible = await reloadedWidget.evaluate((el) => {
+        return window.getComputedStyle(el).display === 'flex';
+      }).catch(() => false);
+      if (!isVisible) {
+        await reloadedLauncher.click({ force: true });
+      }
+      await expect(reloadedWidget).toHaveCSS('display', 'flex', { timeout: 15000 });
+
+      const reloadedMessagesContainer = reloadedWidget.locator('#ai-messages');
+
+      // 7. Assert previous message history is restored and visible
+      await expect(reloadedMessagesContainer.getByText(initialMessage)).toBeVisible({ timeout: 15000 });
+      await expect(
+        reloadedMessagesContainer.getByText('Hello! I can assist you with your inquiry. What is your question?')
+      ).toBeVisible({ timeout: 15000 });
+
+      // 8. Send second message
+      const reloadedChatInput = reloadedWidget.locator('#ai-input');
+      const reloadedSendBtn = reloadedWidget.locator('#bot-send-btn');
+      await expect(reloadedChatInput).toBeVisible({ timeout: 15000 });
+      await expect(reloadedSendBtn).toBeVisible({ timeout: 15000 });
+
+      const followUpMessage = 'My account ID is #12345.';
+      await reloadedChatInput.fill(followUpMessage);
+      await reloadedSendBtn.click();
+
+      // Assert follow-up user message and bot response
+      await expect(reloadedMessagesContainer.getByText(followUpMessage)).toBeVisible({ timeout: 10000 });
+      await expect(
+        reloadedMessagesContainer.getByText('Thanks for the follow-up! We have recorded your account ID #12345.')
+      ).toBeVisible({ timeout: 15000 });
+
+      // 9. Assert continuity: second chat request used the exact same conversation session ID
+      expect(chatRequests.length).toBe(2);
+      expect(chatRequests[1].conversationId).toBe(initialSessionId);
+      expect(chatRequests[1].message).toBe(followUpMessage);
+    });
+
+    test('should maintain session history continuity for embedded widget script on arbitrary host page reload', async ({
+      page,
+    }) => {
+      const chatRequests: { message: string; conversationId?: string; publicKey?: string }[] = [];
+
+      await mockBotAPIs(page, {
+        bot: CONTINUITY_BOT,
+        botsList: [CONTINUITY_BOT],
+        onChatMessage: (req) => {
+          chatRequests.push(req);
+        },
+        chatResponses: [
+          'Greetings from embedded widget!',
+          'Continuing embedded conversation.',
+        ],
+      });
+
+      // 1. Visit custom host page and inject widget
+      await page.goto('/work-in-progress', { waitUntil: 'domcontentloaded' });
+      await page.evaluate((pubKey) => {
+        const s = document.createElement('script');
+        s.src = '/widget.js';
+        s.setAttribute('bot-id', pubKey);
+        document.body.appendChild(s);
+      }, CONTINUITY_BOT.public_key);
+
+      const launcherBtn = page.locator('button').filter({ has: page.locator('img[alt="chat"]') }).first();
+      await expect(launcherBtn).toBeVisible({ timeout: 20000 });
+
+      const widgetContainer = page.locator('#ai-widget').last();
+      await expect(widgetContainer).toBeAttached({ timeout: 20000 });
+
+      const isOpen1 = await widgetContainer.evaluate((el) => {
+        return window.getComputedStyle(el).display === 'flex';
+      }).catch(() => false);
+      if (!isOpen1) {
+        await launcherBtn.click({ force: true });
+      }
+      await expect(widgetContainer).toHaveCSS('display', 'flex', { timeout: 15000 });
+
+      const chatInput = widgetContainer.locator('#ai-input');
+      const sendButton = widgetContainer.locator('#bot-send-btn');
+      const messagesContainer = widgetContainer.locator('#ai-messages');
+
+      await expect(chatInput).toBeVisible({ timeout: 15000 });
+      await expect(sendButton).toBeVisible({ timeout: 15000 });
+
+      await chatInput.fill('First embedded message');
+      await sendButton.click();
+
+      await expect(messagesContainer.getByText('First embedded message')).toBeVisible({ timeout: 10000 });
+      await expect(messagesContainer.getByText('Greetings from embedded widget!')).toBeVisible({ timeout: 15000 });
+
+      const firstSessionId = chatRequests[0].conversationId;
+      expect(firstSessionId).toBeTruthy();
+
+      // 2. Reload page & re-inject widget
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      await page.evaluate((pubKey) => {
+        const s = document.createElement('script');
+        s.src = '/widget.js';
+        s.setAttribute('bot-id', pubKey);
+        document.body.appendChild(s);
+      }, CONTINUITY_BOT.public_key);
+
+      const reloadedLauncher = page.locator('button').filter({ has: page.locator('img[alt="chat"]') }).first();
+      await expect(reloadedLauncher).toBeVisible({ timeout: 20000 });
+
+      const reloadedWidget = page.locator('#ai-widget').last();
+      await expect(reloadedWidget).toBeAttached({ timeout: 20000 });
+
+      const isVisible = await reloadedWidget.evaluate((el) => {
+        return window.getComputedStyle(el).display === 'flex';
+      }).catch(() => false);
+      if (!isVisible) {
+        await reloadedLauncher.click({ force: true });
+      }
+      await expect(reloadedWidget).toHaveCSS('display', 'flex', { timeout: 15000 });
+
+      const reloadedMessages = reloadedWidget.locator('#ai-messages');
+      await expect(reloadedMessages.getByText('First embedded message')).toBeVisible({ timeout: 15000 });
+      await expect(reloadedMessages.getByText('Greetings from embedded widget!')).toBeVisible({ timeout: 15000 });
+
+      // 3. Send follow-up in reloaded embedded widget after full restoration
+      const reloadedInput = reloadedWidget.locator('#ai-input');
+      const reloadedSend = reloadedWidget.locator('#bot-send-btn');
+      await expect(reloadedInput).toBeVisible({ timeout: 15000 });
+      await expect(reloadedSend).toBeVisible({ timeout: 15000 });
+
+      await reloadedInput.click();
+      await reloadedInput.fill('Second embedded message');
+      await reloadedSend.click();
+
+      await expect(reloadedMessages.getByText('Second embedded message')).toBeVisible({ timeout: 10000 });
+      await expect(reloadedMessages.getByText('Continuing embedded conversation.')).toBeVisible({ timeout: 15000 });
+
+      expect(chatRequests.length).toBe(2);
+      expect(chatRequests[1].conversationId).toBe(firstSessionId);
+    });
+  });
+
+  // =========================================================================
+  // E2E-9.2: API Error Recovery & Quota Handling
+  // =========================================================================
+  test.describe('E2E-9.2: API Error Recovery & Quota Handling', () => {
+    const ERROR_BOT: Bot = {
+      ...MOCK_BOT,
+      id: 'b9999999-0000-1111-2222-333333333333',
+      public_key: 'pk_error_bot_999',
+      name: 'Resilient Assistant',
+      primary_color: '#dc2626',
+      ecommerce_enabled: true,
+    };
+
+    test('should render error card on HTTP 500 server error and successfully recover upon clicking retry', async ({
+      page,
+    }) => {
+      const chatRequests: { message: string; conversationId?: string; publicKey?: string }[] = [];
+
+      await mockBotAPIs(page, {
+        bot: ERROR_BOT,
+        botsList: [ERROR_BOT],
+        onChatMessage: (req) => {
+          chatRequests.push(req);
+        },
+        chatResponses: [
+          { status: 500, error: 'Internal Server Error' },
+          'Our return policy allows hassle-free returns within 30 days of delivery.',
+        ],
+      });
+
+      await page.goto(`/demo?botId=${ERROR_BOT.id}`, { waitUntil: 'domcontentloaded' });
+
+      const launcherBtn = page.locator('button').filter({ has: page.locator('img[alt="chat"]') }).first();
+      await expect(launcherBtn).toBeVisible({ timeout: 20000 });
+
+      const widgetContainer = page.locator('#ai-widget').last();
+      await expect(widgetContainer).toBeAttached({ timeout: 20000 });
+
+      const isOpen = await widgetContainer.evaluate((el) => {
+        return window.getComputedStyle(el).display === 'flex';
+      }).catch(() => false);
+      if (!isOpen) {
+        await launcherBtn.click({ force: true });
+      }
+      await expect(widgetContainer).toHaveCSS('display', 'flex', { timeout: 15000 });
+
+      const chatInput = widgetContainer.locator('#ai-input');
+      const sendButton = widgetContainer.locator('#bot-send-btn');
+      const messagesContainer = widgetContainer.locator('#ai-messages');
+
+      await expect(chatInput).toBeVisible({ timeout: 15000 });
+      await expect(sendButton).toBeVisible({ timeout: 15000 });
+
+      // 1. Send inquiry that triggers HTTP 500
+      const queryText = 'Can you explain your return policy?';
+      await chatInput.fill(queryText);
+      await sendButton.click();
+
+      // Assert user message is rendered
+      await expect(messagesContainer.getByText(queryText)).toBeVisible({ timeout: 10000 });
+
+      // Assert error card is rendered with retry button
+      const errorCard = messagesContainer.locator('.chat-error-card').first();
+      await expect(errorCard).toBeVisible({ timeout: 15000 });
+      await expect(errorCard.locator('.chat-error-title')).toContainText('Message Delivery Failed');
+      await expect(errorCard.locator('.chat-error-desc')).toContainText('An error occurred while communicating with the AI service');
+
+      const retryBtn = errorCard.locator('.chat-retry-btn');
+      await expect(retryBtn).toBeVisible();
+      await expect(retryBtn).toContainText('Retry');
+
+      expect(chatRequests.length).toBe(1);
+      expect(chatRequests[0].message).toBe(queryText);
+
+      // 2. Click Retry action
+      await retryBtn.click();
+
+      // Assert error card is dismissed and successful assistant response is streamed
+      await expect(messagesContainer.locator('.chat-error-card')).toHaveCount(0, { timeout: 10000 });
+      await expect(
+        messagesContainer.getByText('Our return policy allows hassle-free returns within 30 days of delivery.')
+      ).toBeVisible({ timeout: 15000 });
+
+      expect(chatRequests.length).toBe(2);
+      expect(chatRequests[1].message).toBe(queryText);
+      expect(chatRequests[1].conversationId).toBe(chatRequests[0].conversationId);
+    });
+
+    test('should render quota limit error card on HTTP 429 quota exhaustion and recover when quota resets on retry', async ({
+      page,
+    }) => {
+      const chatRequests: { message: string; conversationId?: string; publicKey?: string }[] = [];
+
+      await mockBotAPIs(page, {
+        bot: ERROR_BOT,
+        botsList: [ERROR_BOT],
+        onChatMessage: (req) => {
+          chatRequests.push(req);
+        },
+        chatResponses: [
+          { status: 429, error: 'Too Many Requests' },
+          'We offer 15% off for bulk orders exceeding 20 units.',
+        ],
+      });
+
+      await page.goto(`/demo?botId=${ERROR_BOT.id}`, { waitUntil: 'domcontentloaded' });
+
+      const launcherBtn = page.locator('button').filter({ has: page.locator('img[alt="chat"]') }).first();
+      await expect(launcherBtn).toBeVisible({ timeout: 20000 });
+
+      const widgetContainer = page.locator('#ai-widget').last();
+      await expect(widgetContainer).toBeAttached({ timeout: 20000 });
+
+      const isOpen = await widgetContainer.evaluate((el) => {
+        return window.getComputedStyle(el).display === 'flex';
+      }).catch(() => false);
+      if (!isOpen) {
+        await launcherBtn.click({ force: true });
+      }
+      await expect(widgetContainer).toHaveCSS('display', 'flex', { timeout: 15000 });
+
+      const chatInput = widgetContainer.locator('#ai-input');
+      const sendButton = widgetContainer.locator('#bot-send-btn');
+      const messagesContainer = widgetContainer.locator('#ai-messages');
+
+      await expect(chatInput).toBeVisible({ timeout: 15000 });
+      await expect(sendButton).toBeVisible({ timeout: 15000 });
+
+      // 1. Send query that triggers 429 quota exhaustion
+      const queryText = 'What are your bulk discounts?';
+      await chatInput.fill(queryText);
+      await sendButton.click();
+
+      // Assert user message is rendered
+      await expect(messagesContainer.getByText(queryText)).toBeVisible({ timeout: 10000 });
+
+      // Assert quota exhausted error card is displayed
+      const errorCard = messagesContainer.locator('.chat-error-card.quota-exhausted').first();
+      await expect(errorCard).toBeVisible({ timeout: 15000 });
+      await expect(errorCard.locator('.chat-error-title')).toContainText('Daily Query Quota Reached');
+      await expect(errorCard.locator('.chat-error-desc')).toContainText('Your daily AI query quota has been reached');
+
+      const retryBtn = errorCard.locator('.chat-retry-btn');
+      await expect(retryBtn).toBeVisible();
+
+      // 2. Click Retry when quota resets
+      await retryBtn.click();
+
+      // Assert error card is dismissed and bot reply is rendered
+      await expect(messagesContainer.locator('.chat-error-card')).toHaveCount(0, { timeout: 10000 });
+      await expect(
+        messagesContainer.getByText('We offer 15% off for bulk orders exceeding 20 units.')
+      ).toBeVisible({ timeout: 15000 });
+
+      expect(chatRequests.length).toBe(2);
+      expect(chatRequests[1].conversationId).toBe(chatRequests[0].conversationId);
+    });
+
+    test('should intercept stream-yielded quota exhaustion message and display actionable retry card', async ({
+      page,
+    }) => {
+      const chatRequests: { message: string; conversationId?: string; publicKey?: string }[] = [];
+
+      await mockBotAPIs(page, {
+        bot: ERROR_BOT,
+        botsList: [ERROR_BOT],
+        onChatMessage: (req) => {
+          chatRequests.push(req);
+        },
+        chatResponses: [
+          'Your daily AI query quota has been reached. Please try again shortly.',
+          'Special promotional pricing is active for the summer season!',
+        ],
+      });
+
+      await page.goto(`/demo?botId=${ERROR_BOT.id}`, { waitUntil: 'domcontentloaded' });
+
+      const launcherBtn = page.locator('button').filter({ has: page.locator('img[alt="chat"]') }).first();
+      await expect(launcherBtn).toBeVisible({ timeout: 20000 });
+
+      const widgetContainer = page.locator('#ai-widget').last();
+      await expect(widgetContainer).toBeAttached({ timeout: 20000 });
+
+      const isOpen = await widgetContainer.evaluate((el) => {
+        return window.getComputedStyle(el).display === 'flex';
+      }).catch(() => false);
+      if (!isOpen) {
+        await launcherBtn.click({ force: true });
+      }
+      await expect(widgetContainer).toHaveCSS('display', 'flex', { timeout: 15000 });
+
+      const chatInput = widgetContainer.locator('#ai-input');
+      const sendButton = widgetContainer.locator('#bot-send-btn');
+      const messagesContainer = widgetContainer.locator('#ai-messages');
+
+      await expect(chatInput).toBeVisible({ timeout: 15000 });
+      await expect(sendButton).toBeVisible({ timeout: 15000 });
+
+      await chatInput.fill('Are there active discounts?');
+      await sendButton.click();
+
+      // Assert error card is created for stream quota message
+      const errorCard = messagesContainer.locator('.chat-error-card.quota-exhausted').first();
+      await expect(errorCard).toBeVisible({ timeout: 15000 });
+
+      const retryBtn = errorCard.locator('.chat-retry-btn');
+      await expect(retryBtn).toBeVisible();
+
+      // Click retry
+      await retryBtn.click();
+
+      await expect(messagesContainer.locator('.chat-error-card')).toHaveCount(0, { timeout: 10000 });
+      await expect(
+        messagesContainer.getByText('Special promotional pricing is active for the summer season!')
+      ).toBeVisible({ timeout: 15000 });
+    });
+  });
+
+  // =========================================================================
+  // E2E-9.3: Multi-Source Grounding Verification
+  // =========================================================================
+  test.describe('E2E-9.3: Multi-Source Grounding Verification', () => {
+    const GROUNDED_BOT: Bot = {
+      ...MOCK_BOT,
+      id: 'b1212121-3434-5656-7878-909090909090',
+      public_key: 'pk_grounded_bot_777',
+      name: 'Apex Knowledge AI',
+      primary_color: '#0891b2',
+      ecommerce_enabled: true,
+    };
+
+    test('should accurately answer queries grounded in ingested website URL documentation', async ({
+      page,
+    }) => {
+      const chatRequests: { message: string; conversationId?: string; publicKey?: string }[] = [];
+
+      const urlGroundingResponse =
+        'According to our official shipping & warranty documentation:\n\n' +
+        '1. **Warranty Coverage**: We provide a comprehensive **2-year manufacturer warranty** covering all internal hardware defects with **$0 deductible**.\n' +
+        '2. **Express Delivery**: International express shipping is fulfilled via **DHL & UPS Express** with an estimated delivery timeline of **2-3 business days** worldwide.';
+
+      await mockBotAPIs(page, {
+        bot: GROUNDED_BOT,
+        botsList: [GROUNDED_BOT],
+        onChatMessage: (req) => {
+          chatRequests.push(req);
+        },
+        chatResponses: [urlGroundingResponse],
+      });
+
+      await page.goto(`/demo?botId=${GROUNDED_BOT.id}`, { waitUntil: 'domcontentloaded' });
+
+      const launcherBtn = page.locator('button').filter({ has: page.locator('img[alt="chat"]') }).first();
+      await expect(launcherBtn).toBeVisible({ timeout: 20000 });
+
+      const widgetContainer = page.locator('#ai-widget').last();
+      await expect(widgetContainer).toBeAttached({ timeout: 20000 });
+
+      const isOpen = await widgetContainer.evaluate((el) => {
+        return window.getComputedStyle(el).display === 'flex';
+      }).catch(() => false);
+      if (!isOpen) {
+        await launcherBtn.click({ force: true });
+      }
+      await expect(widgetContainer).toHaveCSS('display', 'flex', { timeout: 15000 });
+
+      const chatInput = widgetContainer.locator('#ai-input');
+      const sendButton = widgetContainer.locator('#bot-send-btn');
+      const messagesContainer = widgetContainer.locator('#ai-messages');
+
+      await expect(chatInput).toBeVisible({ timeout: 15000 });
+      await expect(sendButton).toBeVisible({ timeout: 15000 });
+
+      const queryText = 'What is the warranty coverage and how fast is international express delivery?';
+      await chatInput.fill(queryText);
+      await sendButton.click();
+
+      // Assert user message is visible
+      await expect(messagesContainer.getByText(queryText)).toBeVisible({ timeout: 10000 });
+
+      // Assert grounded response content extracted from ingested documentation
+      await expect(
+        messagesContainer.getByText(/2-year manufacturer warranty/i)
+      ).toBeVisible({ timeout: 15000 });
+      await expect(
+        messagesContainer.getByText(/2-3 business days/i)
+      ).toBeVisible({ timeout: 15000 });
+      await expect(
+        messagesContainer.getByText(/DHL & UPS Express/i)
+      ).toBeVisible({ timeout: 15000 });
+
+      expect(chatRequests.length).toBe(1);
+      expect(chatRequests[0].message).toBe(queryText);
+      expect(chatRequests[0].publicKey).toBe(GROUNDED_BOT.public_key);
+    });
+
+    test('should accurately answer technical compliance questions grounded in ingested PDF document', async ({
+      page,
+    }) => {
+      const chatRequests: { message: string; conversationId?: string; publicKey?: string }[] = [];
+
+      const pdfGroundingResponse =
+        'Based on our technical SLA and security whitepaper:\n\n' +
+        '- **Service Uptime SLA**: We guarantee a **99.99% monthly availability** with real-time automated multi-region failover.\n' +
+        '- **Security & Compliance**: Our platform is **SOC 2 Type II certified** with end-to-end **AES-256 encryption at rest** and TLS 1.3 in transit.';
+
+      await mockBotAPIs(page, {
+        bot: GROUNDED_BOT,
+        botsList: [GROUNDED_BOT],
+        onChatMessage: (req) => {
+          chatRequests.push(req);
+        },
+        chatResponses: [pdfGroundingResponse],
+      });
+
+      await page.goto(`/demo?botId=${GROUNDED_BOT.id}`, { waitUntil: 'domcontentloaded' });
+
+      const launcherBtn = page.locator('button').filter({ has: page.locator('img[alt="chat"]') }).first();
+      await expect(launcherBtn).toBeVisible({ timeout: 20000 });
+
+      const widgetContainer = page.locator('#ai-widget').last();
+      await expect(widgetContainer).toBeAttached({ timeout: 20000 });
+
+      const isOpen = await widgetContainer.evaluate((el) => {
+        return window.getComputedStyle(el).display === 'flex';
+      }).catch(() => false);
+      if (!isOpen) {
+        await launcherBtn.click({ force: true });
+      }
+      await expect(widgetContainer).toHaveCSS('display', 'flex', { timeout: 15000 });
+
+      const chatInput = widgetContainer.locator('#ai-input');
+      const sendButton = widgetContainer.locator('#bot-send-btn');
+      const messagesContainer = widgetContainer.locator('#ai-messages');
+
+      await expect(chatInput).toBeVisible({ timeout: 15000 });
+      await expect(sendButton).toBeVisible({ timeout: 15000 });
+
+      const queryText = 'What is your enterprise uptime guarantee and security compliance?';
+      await chatInput.fill(queryText);
+      await sendButton.click();
+
+      // Assert user message is visible
+      await expect(messagesContainer.getByText(queryText)).toBeVisible({ timeout: 10000 });
+
+      // Assert grounded response content extracted from ingested PDF document
+      await expect(
+        messagesContainer.getByText(/99\.99% monthly availability/i)
+      ).toBeVisible({ timeout: 15000 });
+      await expect(
+        messagesContainer.getByText(/SOC 2 Type II certified/i)
+      ).toBeVisible({ timeout: 15000 });
+      await expect(
+        messagesContainer.getByText(/AES-256 encryption at rest/i)
+      ).toBeVisible({ timeout: 15000 });
+
+      expect(chatRequests.length).toBe(1);
+      expect(chatRequests[0].message).toBe(queryText);
+    });
+
+    test('should synthesize responses across multiple ingested sources (URL + PDF) in a single unified answer', async ({
+      page,
+    }) => {
+      const chatRequests: { message: string; conversationId?: string; publicKey?: string }[] = [];
+
+      const hybridResponse =
+        'Here is the information from our ingested documentation and compliance guides:\n\n' +
+        '• **Shipping**: Orders are dispatched with DHL Express arriving in **2-3 business days**.\n' +
+        '• **Security**: Enterprise customer data is secured with **SOC 2 Type II certification** and **AES-256 encryption**.\n' +
+        '• **Warranty**: Every purchase includes our **2-year manufacturer guarantee** with zero deductible.';
+
+      await mockBotAPIs(page, {
+        bot: GROUNDED_BOT,
+        botsList: [GROUNDED_BOT],
+        onChatMessage: (req) => {
+          chatRequests.push(req);
+        },
+        chatResponses: [hybridResponse],
+      });
+
+      await page.goto(`/demo?botId=${GROUNDED_BOT.id}`, { waitUntil: 'domcontentloaded' });
+
+      const launcherBtn = page.locator('button').filter({ has: page.locator('img[alt="chat"]') }).first();
+      await expect(launcherBtn).toBeVisible({ timeout: 20000 });
+
+      const widgetContainer = page.locator('#ai-widget').last();
+      await expect(widgetContainer).toBeAttached({ timeout: 20000 });
+
+      const isOpen = await widgetContainer.evaluate((el) => {
+        return window.getComputedStyle(el).display === 'flex';
+      }).catch(() => false);
+      if (!isOpen) {
+        await launcherBtn.click({ force: true });
+      }
+      await expect(widgetContainer).toHaveCSS('display', 'flex', { timeout: 15000 });
+
+      const chatInput = widgetContainer.locator('#ai-input');
+      const sendButton = widgetContainer.locator('#bot-send-btn');
+      const messagesContainer = widgetContainer.locator('#ai-messages');
+
+      await expect(chatInput).toBeVisible({ timeout: 15000 });
+      await expect(sendButton).toBeVisible({ timeout: 15000 });
+
+      const multiQuery = 'Can you summarize express delivery timelines, our security compliance, and warranty terms?';
+      await chatInput.fill(multiQuery);
+      await sendButton.click();
+
+      // Assert multi-source factual assertions
+      await expect(messagesContainer.getByText(/2-3 business days/i)).toBeVisible({ timeout: 15000 });
+      await expect(messagesContainer.getByText(/SOC 2 Type II certification/i)).toBeVisible({ timeout: 15000 });
+      await expect(messagesContainer.getByText(/2-year manufacturer guarantee/i)).toBeVisible({ timeout: 15000 });
+
+      expect(chatRequests.length).toBe(1);
     });
   });
 });

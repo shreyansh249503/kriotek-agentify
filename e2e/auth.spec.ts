@@ -194,6 +194,7 @@ test.describe('Authentication & Authorization Flow', () => {
       await page.evaluate(() => {
         try {
           window.sessionStorage.setItem('__test_logged_out__', 'true');
+          document.cookie = '__test_logged_out__=true; path=/';
         } catch {}
       });
       await logoutItem.click();

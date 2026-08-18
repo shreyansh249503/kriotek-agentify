@@ -50,7 +50,10 @@ export async function setAuthenticatedSession(page: Page | BrowserContext, custo
   await page.addInitScript(
     ({ key, sessionData }: { key: string; sessionData: typeof MOCK_SESSION }) => {
       try {
-        if (!window.sessionStorage.getItem('__test_logged_out__')) {
+        const isLoggedOut =
+          (typeof window !== 'undefined' && window.sessionStorage?.getItem('__test_logged_out__')) ||
+          (typeof document !== 'undefined' && document.cookie?.includes('__test_logged_out__=true'));
+        if (!isLoggedOut) {
           window.localStorage.setItem(key, JSON.stringify(sessionData));
         }
       } catch {

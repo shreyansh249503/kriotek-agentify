@@ -17,8 +17,12 @@ jest.mock("./lib/useSessionToken", () => ({
 }));
 
 jest.mock("recharts", () => ({
-  ResponsiveContainer: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  AreaChart: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  ResponsiveContainer: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
+  AreaChart: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
   Area: () => null,
   XAxis: () => null,
   YAxis: () => null,
@@ -40,7 +44,9 @@ jest.mock("@shopify/polaris", () => ({
     <div data-testid="polaris-page">
       <h1>{title}</h1>
       {primaryAction && (
-        <button onClick={primaryAction.onAction}>{primaryAction.content}</button>
+        <button onClick={primaryAction.onAction}>
+          {primaryAction.content}
+        </button>
       )}
       {children}
     </div>
@@ -48,11 +54,15 @@ jest.mock("@shopify/polaris", () => ({
   Layout: Object.assign(
     ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
     {
-      Section: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
-    }
+      Section: ({ children }: { children?: React.ReactNode }) => (
+        <div>{children}</div>
+      ),
+    },
   ),
   Card: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
-  Text: ({ children }: { children?: React.ReactNode }) => <span>{children}</span>,
+  Text: ({ children }: { children?: React.ReactNode }) => (
+    <span>{children}</span>
+  ),
   Button: ({
     children,
     onClick,
@@ -60,17 +70,31 @@ jest.mock("@shopify/polaris", () => ({
     children?: React.ReactNode;
     onClick?: () => void;
   }) => <button onClick={onClick}>{children}</button>,
-  Badge: ({ children }: { children?: React.ReactNode }) => <span>{children}</span>,
-  BlockStack: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
-  InlineStack: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
-  Banner: ({ children, title }: { children?: React.ReactNode; title?: string }) => (
+  Badge: ({ children }: { children?: React.ReactNode }) => (
+    <span>{children}</span>
+  ),
+  BlockStack: ({ children }: { children?: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
+  InlineStack: ({ children }: { children?: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
+  Banner: ({
+    children,
+    title,
+  }: {
+    children?: React.ReactNode;
+    title?: string;
+  }) => (
     <div>
       {title && <h3>{title}</h3>}
       {children}
     </div>
   ),
   Spinner: () => <div data-testid="spinner">Spinner</div>,
-  AppProvider: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  AppProvider: ({ children }: { children?: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
 }));
 
 describe("ShopifyDashboard Page", () => {
@@ -93,7 +117,9 @@ describe("ShopifyDashboard Page", () => {
     render(<ShopifyDashboard />);
 
     await waitFor(() => {
-      expect(screen.getByText("Shopify App Bridge Required")).toBeInTheDocument();
+      expect(
+        screen.getByText("Shopify App Bridge Required"),
+      ).toBeInTheDocument();
     });
   });
 
@@ -144,14 +170,21 @@ describe("ShopifyDashboard Page", () => {
     fireEvent.click(viewLeadsBtn);
     expect(mockPush).toHaveBeenCalledWith("/admin/shopify/leads");
 
-    const trainingDataBtn = screen.getByRole("button", { name: "Training data" });
+    const trainingDataBtn = screen.getByRole("button", {
+      name: "Training data",
+    });
     fireEvent.click(trainingDataBtn);
     expect(mockPush).toHaveBeenCalledWith("/admin/shopify/training");
   });
 
   it("should handle Sync products action button click", async () => {
     const mockDashboardData = {
-      bot: { id: "bot-123", name: "Shopify Assistant", ecommerce_enabled: true, ecommerce_products: [] },
+      bot: {
+        id: "bot-123",
+        name: "Shopify Assistant",
+        ecommerce_enabled: true,
+        ecommerce_products: [],
+      },
       stats: { total_conversations: 10, total_leads: 2, products_synced: 50 },
       shop: "mystore.myshopify.com",
     };
@@ -180,10 +213,15 @@ describe("ShopifyDashboard Page", () => {
     fireEvent.click(syncBtn);
 
     await waitFor(() => {
-      expect(mockFetchWithToken).toHaveBeenCalledWith("/api/shopify/sync", expect.objectContaining({
-        method: "POST",
-      }));
-      expect(screen.getByText("Synced 50 products successfully.")).toBeInTheDocument();
+      expect(mockFetchWithToken).toHaveBeenCalledWith(
+        "/api/shopify/sync",
+        expect.objectContaining({
+          method: "POST",
+        }),
+      );
+      expect(
+        screen.getByText("Synced 50 products successfully."),
+      ).toBeInTheDocument();
     });
   });
 

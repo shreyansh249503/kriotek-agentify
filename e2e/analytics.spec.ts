@@ -227,8 +227,14 @@ test.describe('Analytics Dashboard Flow', () => {
       const sendButton = widgetContainer.locator('#bot-send-btn');
       const messagesContainer = widgetContainer.locator('#ai-messages');
 
+      await expect(chatInput).toBeVisible({ timeout: 10000 });
+
       await chatInput.fill('Hi, my name is Sarah Connor and email is sarah.connor@example.com');
       await sendButton.click();
+
+      await expect(
+        messagesContainer.getByText('Hi, my name is Sarah Connor and email is sarah.connor@example.com')
+      ).toBeVisible({ timeout: 10000 });
 
       await expect(
         messagesContainer.getByText(/We have captured your contact info/i)

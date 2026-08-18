@@ -119,7 +119,11 @@ export async function mockBotAPIs(
     onAdminReply?: (data: { id: string; message: string }) => void;
     onAdminClose?: (id: string) => void;
     onLeadCreated?: (lead: MockLead) => void;
-    chatResponses?: (string | ((req: { message: string; conversationId?: string; publicKey?: string }) => string))[];
+    chatResponses?: (
+      | string
+      | { status: number; body?: string; error?: string }
+      | ((req: { message: string; conversationId?: string; publicKey?: string }) => string | { status: number; body?: string; error?: string })
+    )[];
     onChatMessage?: (req: { message: string; conversationId?: string; publicKey?: string }) => void;
     analytics?:
       | Record<string, unknown>
@@ -583,12 +587,36 @@ export async function mockBotAPIs(
     const convo = postData.conversationId ? conversationsStore.find((c) => c.id === postData.conversationId) : null;
     const isManual = convo && (convo.state === 'manual' || convo.state === 'manual_takeover');
 
-    let responseText = isManual ? "Message sent to customer support." : "Hello! How can I help you today?";
+    let respItem:
+      | string
+      | { status: number; body?: string; error?: string }
+      | undefined = undefined;
+
     if (!isManual && options?.chatResponses && options.chatResponses.length > 0) {
-      const respItem = options.chatResponses[Math.min(chatCallIndex, options.chatResponses.length - 1)];
-      responseText = typeof respItem === 'function' ? respItem(postData as { message: string; conversationId?: string; publicKey?: string }) : respItem;
+      const rawResp = options.chatResponses[Math.min(chatCallIndex, options.chatResponses.length - 1)];
+      respItem = typeof rawResp === 'function' ? rawResp(postData as { message: string; conversationId?: string; publicKey?: string }) : rawResp;
       chatCallIndex++;
     }
+
+    if (typeof respItem === 'object' && respItem !== null && 'status' in respItem) {
+      const status = respItem.status;
+      const body = respItem.body || respItem.error || (status === 429 ? 'Too Many Requests' : 'Internal Server Error');
+      await route.fulfill({
+        status,
+        contentType: 'text/plain',
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+        },
+        body,
+      });
+      return;
+    }
+
+    const responseText = isManual
+      ? "Message sent to customer support."
+      : typeof respItem === 'string'
+      ? respItem
+      : "Hello! How can I help you today?";
 
     if (convo && !isManual && responseText) {
       convo.messages.push({ role: 'assistant', content: responseText });

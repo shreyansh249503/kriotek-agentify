@@ -1881,13 +1881,100 @@
     }
   }
 
+  function createErrorCard(messages, errorType, onRetry) {
+    const wrapper = document.createElement("div");
+    wrapper.className = "chat-error-wrapper";
+    wrapper.style.cssText = `
+      display: flex;
+      flex-direction: column;
+      margin: 8px 0;
+      width: 100%;
+      box-sizing: border-box;
+      animation: ai-fade-in-up 0.3s ease-out;
+    `;
+
+    const isQuota =
+      errorType === "QUOTA_EXHAUSTED" ||
+      errorType === "429" ||
+      (typeof errorType === "string" &&
+        (errorType.toLowerCase().includes("quota") || errorType.includes("429")));
+
+    const title = isQuota ? "Daily Query Quota Reached" : "Message Delivery Failed";
+    const desc = isQuota
+      ? "Your daily AI query quota has been reached. Please try again shortly."
+      : "An error occurred while communicating with the AI service. Please try again.";
+
+    const card = document.createElement("div");
+    card.className = `chat-error-card ${isQuota ? "quota-exhausted" : "server-error"}`;
+    card.style.cssText = `
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 12px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      box-sizing: border-box;
+    `;
+
+    card.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13px; color: #b91c1c;">
+        <svg style="width: 18px; height: 18px; flex-shrink: 0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <span class="chat-error-title">${title}</span>
+      </div>
+      <div class="chat-error-desc" style="color: #7f1d1d; font-size: 12px; line-height: 1.4;">${desc}</div>
+      <button class="chat-retry-btn" type="button" style="
+        align-self: flex-start;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: #dc2626;
+        color: #ffffff;
+        border: none;
+        border-radius: 6px;
+        padding: 6px 12px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+      ">
+        <svg style="width: 13px; height: 13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M23 4v6h-6"></path>
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+        </svg>
+        Retry
+      </button>
+    `;
+
+    const retryBtn = card.querySelector(".chat-retry-btn");
+    retryBtn.onmouseover = () => (retryBtn.style.background = "#b91c1c");
+    retryBtn.onmouseout = () => (retryBtn.style.background = "#dc2626");
+    retryBtn.onclick = () => {
+      wrapper.remove();
+      if (onRetry) onRetry();
+    };
+
+    wrapper.appendChild(card);
+    messages.appendChild(wrapper);
+    messages.scrollTop = messages.scrollHeight;
+    return wrapper;
+  }
+
   input.oninput = updateEndChatStatus;
 
-  async function sendMessageText(text) {
-    messages.appendChild(createUserMessage(text, THEME.color));
-    messages.scrollTop = messages.scrollHeight;
-    renderedCount += 1;
-    updateEndChatStatus();
+  async function sendMessageText(text, isRetry = false) {
+    if (!isRetry) {
+      messages.appendChild(createUserMessage(text, THEME.color));
+      messages.scrollTop = messages.scrollHeight;
+      renderedCount += 1;
+      updateEndChatStatus();
+    }
 
     if (currentConvoState === "manual" || currentConvoState === "manual_takeover") {
       try {
@@ -1927,6 +2014,16 @@
         }),
       });
 
+      if (!res.ok) {
+        const errorType =
+          res.status === 429
+            ? "QUOTA_EXHAUSTED"
+            : res.status >= 500
+            ? "SERVER_ERROR"
+            : `HTTP_${res.status}`;
+        throw new Error(errorType);
+      }
+
       typing.remove();
       const bubble = createBotMessage(messages, THEME.logoUrl);
 
@@ -1942,6 +2039,22 @@
         messages.scrollTop = messages.scrollHeight;
       }
 
+      if (answer.includes("Your daily AI query quota has been reached")) {
+        const parent = bubble.parentElement;
+        if (parent) parent.remove();
+        else bubble.remove();
+        createErrorCard(messages, "QUOTA_EXHAUSTED", () => sendMessageText(text, true));
+        return;
+      }
+
+      if (answer.includes("Sorry, an error occurred while generating the response")) {
+        const parent = bubble.parentElement;
+        if (parent) parent.remove();
+        else bubble.remove();
+        createErrorCard(messages, "SERVER_ERROR", () => sendMessageText(text, true));
+        return;
+      }
+
       renderedCount += 1;
 
       if (showSupportButtonGlobal) {
@@ -1952,9 +2065,8 @@
     } catch (error) {
       console.error("Chat error:", error);
       typing.remove();
-      const bubble = createBotMessage(messages, THEME.logoUrl);
-      bubble.textContent = "Sorry, I encountered an error. Please try again.";
-      messages.scrollTop = messages.scrollHeight;
+      const errType = error && error.message ? error.message : "SERVER_ERROR";
+      createErrorCard(messages, errType, () => sendMessageText(text, true));
       updateEndChatStatus();
     }
   }
