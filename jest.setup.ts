@@ -1,6 +1,6 @@
 import "@testing-library/jest-dom";
 import { TextEncoder, TextDecoder } from "util";
-import { ReadableStream } from "stream/web";
+import { ReadableStream, WritableStream, TransformStream } from "stream/web";
 
 if (typeof global.TextEncoder === "undefined") {
   global.TextEncoder = TextEncoder;
@@ -10,6 +10,12 @@ if (typeof global.TextDecoder === "undefined") {
 }
 if (typeof global.ReadableStream === "undefined") {
   (global as unknown as Record<string, unknown>).ReadableStream = ReadableStream as unknown as typeof global.ReadableStream;
+}
+if (typeof global.WritableStream === "undefined") {
+  (global as unknown as Record<string, unknown>).WritableStream = WritableStream as unknown as typeof global.WritableStream;
+}
+if (typeof global.TransformStream === "undefined") {
+  (global as unknown as Record<string, unknown>).TransformStream = TransformStream as unknown as typeof global.TransformStream;
 }
 
 if (typeof global.Request === "undefined") {

@@ -197,8 +197,8 @@ export default function DemoPage() {
       return activeBot.ecommerce_products.map((p, idx) => ({
         id: p.id || `custom-prod-${idx}`,
         name: p.name,
-        price: p.price,
-        priceNum: parseFloat(p.price) || 0,
+        price: String(p.price),
+        priceNum: typeof p.price === "number" ? p.price : parseFloat(String(p.price)) || 0,
         description:
           p.description || "Custom product designed for your business needs.",
         image:

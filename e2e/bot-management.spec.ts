@@ -65,11 +65,11 @@ test.describe('Bot Management Flow', () => {
       await expect(addProductBtn).toBeVisible({ timeout: 5000 });
       await addProductBtn.click();
 
-      const prodNameInput = page.getByPlaceholder('e.g. Myaxyl Balm');
+      const prodNameInput = page.getByPlaceholder(/e.g. (Myaxyl Balm|Bewakoof Graphic T-Shirt)/i).or(page.getByLabel('Product Name')).first();
       await expect(prodNameInput).toBeVisible({ timeout: 5000 });
       await prodNameInput.fill('Smart Earbuds Pro');
 
-      const prodPriceInput = page.getByPlaceholder('e.g. 60.00 INR');
+      const prodPriceInput = page.getByPlaceholder(/e.g. (60.00 INR|₹599 or \$24.99)/i).or(page.getByLabel('Price')).first();
       await prodPriceInput.fill('$149.00');
 
       const prodLinkInput = page.getByPlaceholder('https://example.com/product');

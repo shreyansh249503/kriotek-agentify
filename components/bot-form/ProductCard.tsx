@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Product } from "@/types/bot";
+import { Product, ProductMetadata } from "@/types/bot";
 import {
   CatalogProductCard,
   ProductImageContainer,
@@ -22,6 +22,10 @@ import {
   LinkUrl,
   LinkIconWrapper,
   CardActionButtons,
+  MetadataBadgesWrapper,
+  MetadataBadge,
+  MetadataSectionToggle,
+  MetadataFieldsGrid,
 } from "./styled";
 
 interface ProductCardProps {
@@ -46,6 +50,7 @@ export const ProductCard = ({
   ecommerceEnabled,
 }: ProductCardProps) => {
   const [uploading, setUploading] = useState(false);
+  const [showMetadata, setShowMetadata] = useState(false);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -93,6 +98,20 @@ export const ProductCard = ({
     }
   };
 
+  const updateMetaField = (field: keyof ProductMetadata, value: string) => {
+    const prevMeta = product.metadata || {};
+    const updatedMeta: ProductMetadata = {
+      ...prevMeta,
+      [field]: value.trim() || undefined,
+    };
+    onUpdateProduct({
+      ...product,
+      ...(field === "brand" ? { brand: value.trim() || undefined } : {}),
+      ...(field === "category" ? { category: value.trim() || undefined } : {}),
+      metadata: updatedMeta,
+    });
+  };
+
   const nameError = touched.name && !String(product.name ?? "").trim();
   const priceError = touched.price && !String(product.price ?? "").trim();
   const urlError =
@@ -113,6 +132,14 @@ export const ProductCard = ({
     !String(product.url ?? "").trim() ||
     !isValidUrl(product.url) ||
     uploading;
+
+  const meta = product.metadata || {};
+  const metaBrand = meta.brand || product.brand;
+  const metaCategory = meta.category || product.category || meta.type;
+  const metaColor = meta.color;
+  const metaSize = meta.size;
+  const metaStyle = meta.style;
+  const metaMaterial = meta.material;
 
   if (isEditing) {
     return (
@@ -168,7 +195,7 @@ export const ProductCard = ({
               onChange={(e) =>
                 onUpdateProduct({ ...product, name: e.target.value })
               }
-              placeholder="e.g. Myaxyl Balm"
+              placeholder="e.g. Bewakoof Graphic T-Shirt"
             />
             <ProductTextField
               label="Price"
@@ -182,7 +209,7 @@ export const ProductCard = ({
               onChange={(e) =>
                 onUpdateProduct({ ...product, price: e.target.value })
               }
-              placeholder="e.g. 60.00 INR"
+              placeholder="e.g. ₹599 or $24.99"
             />
             <ProductTextField
               label="Product Link"
@@ -198,8 +225,70 @@ export const ProductCard = ({
               }
               placeholder="https://example.com/product"
             />
+
+            <div>
+              <MetadataSectionToggle
+                type="button"
+                onClick={() => setShowMetadata((prev) => !prev)}
+              >
+                {showMetadata ? "▲ Hide Product Attributes" : "▼ Add / Edit Attributes (Color, Size, Brand, Style...)"}
+              </MetadataSectionToggle>
+
+              {showMetadata && (
+                <MetadataFieldsGrid>
+                  <ProductTextField
+                    label="Brand"
+                    variant="outlined"
+                    size="small"
+                    value={metaBrand || ""}
+                    onChange={(e) => updateMetaField("brand", e.target.value)}
+                    placeholder="e.g. Nike, Bewakoof"
+                  />
+                  <ProductTextField
+                    label="Category / Type"
+                    variant="outlined"
+                    size="small"
+                    value={metaCategory || ""}
+                    onChange={(e) => updateMetaField("category", e.target.value)}
+                    placeholder="e.g. T-Shirt, Hoodie"
+                  />
+                  <ProductTextField
+                    label="Color"
+                    variant="outlined"
+                    size="small"
+                    value={metaColor || ""}
+                    onChange={(e) => updateMetaField("color", e.target.value)}
+                    placeholder="e.g. Red, Black"
+                  />
+                  <ProductTextField
+                    label="Size"
+                    variant="outlined"
+                    size="small"
+                    value={metaSize || ""}
+                    onChange={(e) => updateMetaField("size", e.target.value)}
+                    placeholder="e.g. L, XL, UK 9"
+                  />
+                  <ProductTextField
+                    label="Style / Fit"
+                    variant="outlined"
+                    size="small"
+                    value={metaStyle || ""}
+                    onChange={(e) => updateMetaField("style", e.target.value)}
+                    placeholder="e.g. Oversized, Slim Fit"
+                  />
+                  <ProductTextField
+                    label="Material"
+                    variant="outlined"
+                    size="small"
+                    value={metaMaterial || ""}
+                    onChange={(e) => updateMetaField("material", e.target.value)}
+                    placeholder="e.g. 100% Cotton"
+                  />
+                </MetadataFieldsGrid>
+              )}
+            </div>
           </ProductFieldsRow>
-          <div style={{ display: "flex", gap: "12px", width: "100%" }}>
+          <div style={{ display: "flex", gap: "12px", width: "100%", marginTop: "8px" }}>
             <SaveProductButton
               type="button"
               onClick={onSave}
@@ -257,7 +346,7 @@ export const ProductCard = ({
             <PriceValue>{product.price || "—"}</PriceValue>
           </PriceRow>
 
-          <LinkRow style={{ marginTop: "12px" }}>
+          <LinkRow style={{ marginTop: "10px" }}>
             <LinkLabel>Product Link</LinkLabel>
             <LinkContent>
               <LinkUrl>{product.url || "—"}</LinkUrl>
@@ -281,6 +370,17 @@ export const ProductCard = ({
               )}
             </LinkContent>
           </LinkRow>
+
+          {(metaBrand || metaColor || metaSize || metaStyle || metaCategory || metaMaterial) && (
+            <MetadataBadgesWrapper>
+              {metaBrand && <MetadataBadge>{metaBrand}</MetadataBadge>}
+              {metaCategory && <MetadataBadge>{metaCategory}</MetadataBadge>}
+              {metaColor && <MetadataBadge>{metaColor}</MetadataBadge>}
+              {metaSize && <MetadataBadge>Size: {metaSize}</MetadataBadge>}
+              {metaStyle && <MetadataBadge>{metaStyle}</MetadataBadge>}
+              {metaMaterial && <MetadataBadge>{metaMaterial}</MetadataBadge>}
+            </MetadataBadgesWrapper>
+          )}
         </div>
         <CardActionButtons>
           <SaveProductButton type="button" onClick={onEdit} title="Edit Product">

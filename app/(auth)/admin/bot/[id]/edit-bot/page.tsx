@@ -20,7 +20,7 @@ export default function EditBotPage() {
       { id, data },
       {
         onSuccess: () => {
-          router.push("/admin");
+          router.push("/admin/bots");
         },
       },
     );

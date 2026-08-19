@@ -10,8 +10,65 @@ import { sendOwnerNotification, sendUserEmail } from "../lib/sendEmail";
 import { getDb } from "../lib/db";
 import { Conversation, Lead, ShopifyStore } from "../lib/entities";
 import { generateUserConfirmationTemplate } from "../lib/emailTemplates";
-import { runLeadAgent } from "../lib/agents/leadAgent";
-import { runReceptionistAgent } from "../lib/agents/receptionistAgent";
+import { runLeadAgent, runReceptionistAgent, runSalesAgent } from "../lib/agents";
+import { Bot as BotEntity } from "../lib/entities";
+
+function isSalesIntent(messages: Message[], bot: BotEntity): boolean {
+  if (!bot.ecommerce_enabled || !bot.ecommerce_products?.length) {
+    return false;
+  }
+
+  const latestUserMsg =
+    [...messages]
+      .reverse()
+      .find((m) => m.role === "user")
+      ?.content.toLowerCase() || "";
+
+  // 1. Check direct product catalog keywords and categories
+  const products = bot.ecommerce_products || [];
+  for (const p of products) {
+    if (p.name && latestUserMsg.includes(p.name.toLowerCase())) return true;
+    if (p.category && latestUserMsg.includes(p.category.toLowerCase())) return true;
+    if (p.subCategory && latestUserMsg.includes(p.subCategory.toLowerCase())) return true;
+    if (p.brand && latestUserMsg.includes(p.brand.toLowerCase())) return true;
+    if (p.metadata?.tags?.some((t) => latestUserMsg.includes(t.toLowerCase()))) return true;
+  }
+
+  // 2. Common shopping / sales intent keywords
+  const salesKeywords = [
+    "buy", "purchase", "product", "products", "item", "items", "catalog", "shop", "shopping",
+    "recommend", "recommendation", "recommendations", "suggest", "suggestion", "suggestions",
+    "price", "pricing", "cost", "cheap", "expensive", "budget", "discount", "offer", "deal",
+    "size", "sizes", "color", "colours", "style", "material", "fit", "features", "specs",
+    "hoodie", "hoodies", "shirt", "tshirt", "t-shirt", "jacket", "pants", "shoes", "sneakers",
+    "headphone", "headphones", "earbuds", "watch", "smartwatch", "laptop", "phone", "electronics",
+    "available", "in stock", "looking for", "want to buy", "show me", "best", "compare", "options",
+  ];
+
+  if (salesKeywords.some((kw) => latestUserMsg.includes(kw))) {
+    return true;
+  }
+
+  // 3. Conversation context check: did the assistant previously show or discuss products?
+  const recentAssistantMsg =
+    [...messages]
+      .reverse()
+      .find((m) => m.role === "assistant")
+      ?.content || "";
+
+  if (
+    recentAssistantMsg.includes("<product-carousel>") ||
+    recentAssistantMsg.toLowerCase().includes("product") ||
+    recentAssistantMsg.toLowerCase().includes("recommend")
+  ) {
+    const nonSalesResponses = ["bye", "goodbye", "no thanks", "that is all", "stop"];
+    if (!nonSalesResponses.some((w) => latestUserMsg.includes(w))) {
+      return true;
+    }
+  }
+
+  return false;
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -118,7 +175,7 @@ export async function POST(req: Request) {
     !leadDecision.isComplete
   ) {
     const partial = leadDecision.collectedInfo;
-    const updates: Partial<Conversation> = {};
+    const updates: { name?: string; email?: string; phone?: string } = {};
 
     if (partial.name) updates.name = partial.name;
     if (partial.email) updates.email = partial.email;
@@ -192,13 +249,26 @@ export async function POST(req: Request) {
 
   let result;
   try {
-    result = runReceptionistAgent({
-      messages: fullConversation,
-      botConfig: bot,
-      leadDecision,
-      websiteContext,
-      isShopifyConnected,
-    });
+    const isSales = isSalesIntent(fullConversation, bot);
+    console.log("[route] Dispatching agent - isSalesIntent:", isSales);
+
+    if (isSales) {
+      result = await runSalesAgent({
+        messages: fullConversation,
+        botConfig: bot,
+        leadDecision,
+        websiteContext,
+        isShopifyConnected,
+      });
+    } else {
+      result = runReceptionistAgent({
+        messages: fullConversation,
+        botConfig: bot,
+        leadDecision,
+        websiteContext,
+        isShopifyConnected,
+      });
+    }
   } catch (err) {
     const error = err as StreamError;
     console.error("[route] Sync error starting agent:", error);

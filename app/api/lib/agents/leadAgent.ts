@@ -289,8 +289,9 @@ export async function runLeadAgent(
         .map((m) => `${m.role === "user" ? "USER" : "ASSISTANT"}: ${m.content}`)
         .join("\n\n");
 
+      const modelName = process.env.GEMINI_MODEL || "gemini-2.5-flash-lite";
       const { object } = await generateObject({
-        model: google("gemini-2.5-flash-lite"),
+        model: google(modelName),
         schema: LeadExtractionSchema,
         prompt: `Extract contact details the USER explicitly typed in this conversation.
 

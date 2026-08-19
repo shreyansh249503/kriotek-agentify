@@ -16,17 +16,17 @@ export const FormContainer = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 24px;
+  gap: 32px;
 
-  @media (max-width: 1200px) {
+  @media (max-width: 1380px) {
     flex-direction: column;
   }
 `;
 
 export const LeftContainer = styled.div`
-  flex: 1;
+  flex: 1 1 0;
+  min-width: 0;
   width: 100%;
-  max-width: 100%;
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -38,11 +38,23 @@ export const Field = styled.div`
   gap: 8px;
 `;
 
+export const CountWrapper = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 20px;
+`;
+
 export const Label = styled.label`
   display: block;
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 600;
   color: ${COLOR.DARK};
+
+  &.total-products {
+    color: darkgreen;
+    font-size: 16px;
+    font-weight: 600;
+  }
 `;
 
 export const Input = styled.input`
@@ -296,15 +308,17 @@ export const SideContainer = styled.div`
   position: sticky;
   top: 105px;
   height: fit-content;
-  width: 100%;
-  max-width: 420px;
+  width: 380px;
+  max-width: 380px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   gap: 24px;
+  z-index: 10;
 
-  @media (max-width: ${BREAKPOINTS.DESKTOP}) {
+  @media (max-width: 1380px) {
     position: static;
+    width: 100%;
     max-width: 100%;
   }
 `;
@@ -379,19 +393,22 @@ export const CatalogProductCardContainer = styled.div`
   position: relative;
   width: 100%;
   height: fit-content;
-  display: flex;
-  align-items: flex-start;
-  justify-content: flex-start;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
   gap: 16px;
   margin-top: 12px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
 `;
 
 export const CatalogProductCard = styled.div`
-  width: 49%;
-  height: 280px;
+  width: 100%;
+  min-height: 240px;
+  height: auto;
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   background: #f9fafb;
   border: 1px solid ${COLOR.BORDER};
   border-radius: 16px;
@@ -399,13 +416,14 @@ export const CatalogProductCard = styled.div`
   overflow: hidden;
   position: relative;
   padding: 12px;
+  box-sizing: border-box;
 
   &:hover {
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
     border-color: ${COLOR.PRIMARY};
   }
 
-  @media (max-width: 768px) {
+  @media (max-width: 540px) {
     flex-direction: column;
   }
 `;
@@ -413,19 +431,21 @@ export const CatalogProductCard = styled.div`
 export const ProductImageContainer = styled.div`
   position: relative;
   width: 200px;
+  min-width: 130px;
   height: 100%;
+  min-height: 130px;
   background: ${COLOR.LIGHT};
   border: 1px solid ${COLOR.BORDER};
-  border-radius: 16px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   overflow: hidden;
 
-  @media (max-width: 768px) {
+  @media (max-width: 540px) {
     width: 100%;
-    height: 220px;
+    height: 180px;
     border-right: none;
     border-bottom: 1px solid ${COLOR.BORDER};
   }
@@ -662,10 +682,17 @@ export const AutoExtractInputRow = styled.div`
   display: flex;
   gap: 12px;
   margin-top: 4px;
+  align-items: center;
+
+  @media (max-width: 600px) {
+    flex-direction: column;
+    align-items: stretch;
+  }
 `;
 
 export const CrawlInput = styled(Input)`
-  flex: 1;
+  flex: 1 1 0;
+  min-width: 0;
   padding: 12px 16px;
   border-radius: 10px;
 `;
@@ -862,5 +889,59 @@ export const SaveProductButton = styled.button`
     cursor: not-allowed;
     transform: none;
     box-shadow: none;
+  }
+`;
+
+export const MetadataBadgesWrapper = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+`;
+
+export const MetadataBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(168, 225, 12, 0.18);
+  color: #2b3d1d;
+  border: 1px solid rgba(168, 225, 12, 0.4);
+  white-space: nowrap;
+`;
+
+export const MetadataSectionToggle = styled.button`
+  background: none;
+  border: none;
+  color: #3b5328;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 4px 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  text-decoration: underline;
+
+  &:hover {
+    color: ${COLOR.PRIMARY};
+  }
+`;
+
+export const MetadataFieldsGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.02);
+  border: 1px dashed ${COLOR.BORDER};
+  border-radius: 10px;
+  margin-top: 6px;
+
+  @media (max-width: 500px) {
+    grid-template-columns: 1fr;
   }
 `;

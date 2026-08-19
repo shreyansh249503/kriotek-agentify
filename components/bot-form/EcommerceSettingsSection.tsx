@@ -24,6 +24,7 @@ import {
   Label,
   CatalogProductCardContainer,
   TextArea,
+  CountWrapper,
 } from "./styled";
 import { PrimaryButton } from "../buttons";
 
@@ -83,16 +84,20 @@ export const EcommerceSettingsSection = ({
       const currentProducts = form.ecommerceProducts || [];
       const merged = [...currentProducts];
       let addedCount = 0;
+      let updatedCount = 0;
 
       for (const prod of extracted) {
-        const isDup = merged.some(
+        const existingIdx = merged.findIndex(
           (p) =>
             (p.url && p.url === prod.url) ||
             (p.name &&
               prod.name &&
               String(p.name).toLowerCase() === String(prod.name).toLowerCase()),
         );
-        if (!isDup) {
+        if (existingIdx >= 0) {
+          merged[existingIdx] = { ...merged[existingIdx], ...prod };
+          updatedCount++;
+        } else {
           merged.push(prod);
           addedCount++;
         }
@@ -100,7 +105,9 @@ export const EcommerceSettingsSection = ({
 
       update("ecommerceProducts", merged);
       setCrawlStatus(
-        `Success! Extracted and added ${addedCount} new products to catalog.`,
+        addedCount > 0
+          ? `Success! Extracted and added ${addedCount} new products to catalog.`
+          : `Success! Extracted and updated ${updatedCount} products in catalog.`,
       );
       setCrawlUrl("");
     } catch (err: unknown) {
@@ -242,15 +249,23 @@ export const EcommerceSettingsSection = ({
               </AutoExtractContainer>
 
               <CatalogHeaderWrapper>
-                <Label>Products Catalog</Label>
-                <PrimaryButton
-                  type="button"
-                  onClick={handleAddProduct}
-                  disabled={isAddDisabled}
-                >
-                  + Add Product
-                </PrimaryButton>
+                <Label>
+                  Products Catalog ({form.ecommerceProducts?.length})
+                </Label>
+                <CountWrapper>
+                  <Label className="total-products">
+                    Total products: {form.ecommerceProducts?.length}
+                  </Label>
+                  <PrimaryButton
+                    type="button"
+                    onClick={handleAddProduct}
+                    disabled={isAddDisabled}
+                  >
+                    + Add Product
+                  </PrimaryButton>
+                </CountWrapper>
               </CatalogHeaderWrapper>
+
               <CatalogProductCardContainer>
                 {(form.ecommerceProducts || []).map((product, idx) => (
                   <ProductCard

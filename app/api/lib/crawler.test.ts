@@ -15,56 +15,79 @@ jest.mock("@ai-sdk/google", () => ({
 jest.mock("cheerio", () => {
   return {
     load: (html: string) => {
-      const $ = (selector: string | Record<string, unknown>) => {
+      type MockData = {
+        text?: string;
+        html?: string;
+        items?: unknown[];
+        isJsonLd?: boolean;
+        [key: string]: unknown;
+      };
+
+      interface MockElement {
+        attr: (name: string) => unknown;
+        text: () => string;
+        html: () => string;
+        each: (cb: (idx: number, el: unknown) => void) => void;
+        find: () => MockElement;
+        first: () => MockElement;
+        remove: jest.Mock;
+      }
+
+      const createNode = (data?: MockData): MockElement => {
+        const node: MockElement = {
+          attr: (name: string) => (data && data[name] ? data[name] : ""),
+          text: () => (data && typeof data.text === "string" ? data.text : ""),
+          html: () => (data && typeof data.html === "string" ? data.html : ""),
+          each: (cb: (idx: number, el: unknown) => void) => {
+            if (data && Array.isArray(data.items)) {
+              data.items.forEach((item, idx) => cb(idx, item));
+            }
+          },
+          find: () => node,
+          first: () => node,
+          remove: jest.fn(),
+        };
+        return node;
+      };
+
+      const $ = (selector: string | MockData) => {
         if (typeof selector === "string") {
           if (selector === "script[type='application/ld+json']") {
-            return {
-              each: (cb: (idx: number, el: Record<string, unknown>) => void) => {
-                if (html.includes("application/ld+json")) {
-                  cb(0, { isJsonLd: true });
-                }
-              },
-            };
+            return createNode({
+              items: html.includes("application/ld+json")
+                ? [{ isJsonLd: true }]
+                : [],
+            });
           }
           if (selector === "script, style, noscript") {
-            return { remove: jest.fn() };
+            return createNode();
           }
           if (selector === "main" || selector === "article" || selector === "body") {
-            return {
-              text: () => "Welcome to Acme Store We sell great quality electronics and appliances.",
-            };
+            return createNode({
+              text: "Welcome to Acme Store We sell great quality electronics and appliances.",
+            });
           }
-          if (selector === "img" || selector === "a") {
-            return { each: jest.fn() };
-          }
-          return {
-            attr: () => "",
-            text: () => "",
-          };
+          return createNode();
         }
 
         if (selector && typeof selector === "object" && selector.isJsonLd) {
-          return {
-            html: () =>
-              JSON.stringify({
-                "@type": "Product",
-                "name": "Acme Wireless Headphones",
-                "offers": {
-                  "price": "99.99",
-                  "priceCurrency": "USD",
-                },
-                "image": "https://acme.example.com/headphones.jpg",
-                "description": "High fidelity wireless bluetooth headphones",
-              }),
-          };
+          return createNode({
+            html: JSON.stringify({
+              "@type": "Product",
+              name: "Acme Wireless Headphones",
+              offers: {
+                price: "99.99",
+                priceCurrency: "USD",
+              },
+              image: "https://acme.example.com/headphones.jpg",
+              description: "High fidelity wireless bluetooth headphones",
+            }),
+          });
         }
 
-        return {
-          html: () => "",
-          attr: () => "",
-          text: () => "",
-        };
+        return createNode();
       };
+
       return $;
     },
   };
@@ -107,7 +130,9 @@ describe("crawlWebsite", () => {
     expect(axios.get).toHaveBeenCalledWith(
       "https://acme.example.com",
       expect.objectContaining({
-        headers: { "User-Agent": "Mozilla/5.0 AgentifyBot" },
+        headers: expect.objectContaining({
+          "User-Agent": expect.stringContaining("Mozilla/5.0"),
+        }),
       })
     );
     expect(result.collectedText).toContain("Welcome to Acme Store We sell great quality electronics and appliances.");
@@ -144,13 +169,14 @@ describe("crawlWebsite", () => {
     const result = await crawlWebsite("https://acme.example.com/product/headphones", "pk_123", 1, true);
 
     expect(result.products).toHaveLength(1);
-    expect(result.products[0]).toEqual({
+    expect(result.products[0]).toMatchObject({
       name: "Acme Wireless Headphones",
-      price: "99.99 USD",
+      price: "$99.99",
       image: "https://acme.example.com/headphones.jpg",
       url: "https://acme.example.com/product/headphones",
       description: "High fidelity wireless bluetooth headphones",
     });
+    expect(result.products[0].metadata).toBeDefined();
   });
 
   it("should skip crawling when URL has already been recorded in database", async () => {

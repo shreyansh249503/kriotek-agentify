@@ -147,22 +147,20 @@ describe("API: /api/shopify/sync", () => {
     const data = await res.json();
 
     expect(res.status).toBe(200);
-    expect(data).toEqual({
-      success: true,
-      synced: 1,
-      products: [
-        {
-          shopify_id: "gid://shopify/Product/1",
-          name: "Leather Jacket",
-          description: "Classic leather jacket",
-          price: 199.99,
-          currency: "USD",
-          image_url: "https://cdn.shopify.com/jacket.jpg",
-          url: "https://test.myshopify.com/products/leather-jacket",
-          available: true,
-        },
-      ],
+    expect(data.success).toBe(true);
+    expect(data.synced).toBe(1);
+    expect(data.products[0]).toMatchObject({
+      shopify_id: "gid://shopify/Product/1",
+      name: "Leather Jacket",
+      description: "Classic leather jacket",
+      price: 199.99,
+      currency: "USD",
+      image_url: "https://cdn.shopify.com/jacket.jpg",
+      url: "https://test.myshopify.com/products/leather-jacket",
+      available: true,
     });
+    expect(data.products[0].variants).toBeDefined();
+    expect(data.products[0].metadata).toBeDefined();
   });
 
   it("should return 500 when Supabase bot update returns error", async () => {
