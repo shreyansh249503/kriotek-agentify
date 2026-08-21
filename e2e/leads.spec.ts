@@ -61,7 +61,7 @@ test.describe("Leads Management Flow", () => {
         },
       });
 
-      await page.goto(`/demo?botId=${LEADS_BOT.id}`, {
+      await page.goto(`/agent-mart?botId=${LEADS_BOT.id}`, {
         waitUntil: "domcontentloaded",
       });
 

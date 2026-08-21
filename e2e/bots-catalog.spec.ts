@@ -283,7 +283,7 @@ test.describe('Bots Catalog & Fleet Management Flow', () => {
       await expect(page.getByText('Copied Key!')).toBeVisible();
     });
 
-    test('should navigate to bot demo playground (/demo) and verify interactive widget', async ({
+    test('should navigate to bot demo playground (/agent-mart) and verify interactive widget', async ({
       page,
     }) => {
       await mockBotAPIs(page, {
@@ -291,7 +291,7 @@ test.describe('Bots Catalog & Fleet Management Flow', () => {
         botsList: [ACTION_BOT],
       });
 
-      await page.goto(`/demo?botId=${ACTION_BOT.id}`, { waitUntil: 'domcontentloaded' });
+      await page.goto(`/agent-mart?botId=${ACTION_BOT.id}`, { waitUntil: 'domcontentloaded' });
 
       await expect(page.locator('div').filter({ hasText: /^Agentify\s*Store$/ }).first()).toBeVisible({ timeout: 20000 });
 

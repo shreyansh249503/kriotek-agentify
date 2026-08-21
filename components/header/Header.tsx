@@ -147,7 +147,7 @@ export const Header = () => {
             Contact
           </LinkTag>
           <LinkTag
-            href="/demo"
+            href="/agent-mart"
             onClick={closeMenuWithDelay}
             data-testid="drawer-live-demo"
           >

@@ -44,7 +44,7 @@ test.describe('Live Support & Human Agent Handoff Flow', () => {
         },
       });
 
-      await page.goto(`/demo?botId=${HANDOFF_BOT.id}`, { waitUntil: 'domcontentloaded' });
+      await page.goto(`/agent-mart?botId=${HANDOFF_BOT.id}`, { waitUntil: 'domcontentloaded' });
 
       const launcherBtn = page.locator('button').filter({ has: page.locator('img[alt="chat"]') }).first();
       await expect(launcherBtn).toBeVisible({ timeout: 20000 });
@@ -244,7 +244,7 @@ test.describe('Live Support & Human Agent Handoff Flow', () => {
       const customerPage = await context.newPage();
       const adminPage = await context.newPage();
 
-      await customerPage.goto(`/demo?botId=${SUPPORT_BOT.id}`, { waitUntil: 'domcontentloaded' });
+      await customerPage.goto(`/agent-mart?botId=${SUPPORT_BOT.id}`, { waitUntil: 'domcontentloaded' });
 
       const launcherBtn = customerPage.locator('button').filter({ has: customerPage.locator('img[alt="chat"]') }).first();
       await expect(launcherBtn).toBeVisible({ timeout: 20000 });

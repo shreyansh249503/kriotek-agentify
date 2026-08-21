@@ -84,7 +84,7 @@ test.describe('Landing Page & Conversion Flow', () => {
       await expect(page.getByRole('heading', { name: 'Welcome Back' })).toBeVisible({ timeout: 15000 });
     });
 
-    test('should redirect hero "Watch Demo" CTA to /demo', async ({
+    test('should redirect hero "Watch Demo" CTA to /agent-mart', async ({
       page,
     }) => {
       await page.goto('/', { waitUntil: 'domcontentloaded' });
@@ -93,10 +93,10 @@ test.describe('Landing Page & Conversion Flow', () => {
       await expect(watchDemoBtn).toBeVisible({ timeout: 15000 });
       await watchDemoBtn.click();
 
-      await expect(page).toHaveURL(/\/demo/, { timeout: 15000 });
+      await expect(page).toHaveURL(/\/agent-mart/, { timeout: 15000 });
     });
 
-    test('should redirect Live Demo section "Launch Live Demo Store" CTA to /demo', async ({
+    test('should redirect Live Demo section "Launch Live Demo Store" CTA to /agent-mart', async ({
       page,
     }) => {
       await page.goto('/', { waitUntil: 'domcontentloaded' });
@@ -105,7 +105,7 @@ test.describe('Landing Page & Conversion Flow', () => {
       await expect(liveDemoSectionBtn).toBeVisible({ timeout: 15000 });
       await liveDemoSectionBtn.click();
 
-      await expect(page).toHaveURL(/\/demo/, { timeout: 15000 });
+      await expect(page).toHaveURL(/\/agent-mart/, { timeout: 15000 });
     });
 
     test('should handle mobile responsive drawer navigation and CTA redirects', async ({
@@ -124,7 +124,7 @@ test.describe('Landing Page & Conversion Flow', () => {
       await page.waitForTimeout(400);
       await drawerLiveDemo.click({ force: true });
 
-      await expect(page).toHaveURL(/\/demo/, { timeout: 15000 });
+      await expect(page).toHaveURL(/\/agent-mart/, { timeout: 15000 });
     });
 
     test('should update header CTA to "Dashboard" linking to /admin when authenticated', async ({

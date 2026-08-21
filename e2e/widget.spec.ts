@@ -9,7 +9,7 @@ test.describe('Widget & Demo Playground Flow', () => {
     await mockSupabaseAuth(page);
   });
 
-  test.describe('E2E-3.1: Widget Initialization (/demo or Embedded Frame)', () => {
+  test.describe('E2E-3.1: Widget Initialization (/agent-mart or Embedded Frame)', () => {
     const CUSTOM_BRANDED_BOT: Bot = {
       ...MOCK_BOT,
       id: 'b3333333-4444-5555-6666-777777777777',
@@ -30,7 +30,7 @@ test.describe('Widget & Demo Playground Flow', () => {
       ecommerce_enabled: true,
     };
 
-    test('should load public bot by publicKey on /demo, initialize widget script, and verify brand custom styling (primary color, logo, company name in header)', async ({
+    test('should load public bot by publicKey on /agent-mart, initialize widget script, and verify brand custom styling (primary color, logo, company name in header)', async ({
       page,
     }) => {
       await mockBotAPIs(page, {
@@ -38,7 +38,7 @@ test.describe('Widget & Demo Playground Flow', () => {
         botsList: [CUSTOM_BRANDED_BOT],
       });
 
-      await page.goto(`/demo?botId=${CUSTOM_BRANDED_BOT.id}`, { waitUntil: 'domcontentloaded' });
+      await page.goto(`/agent-mart?botId=${CUSTOM_BRANDED_BOT.id}`, { waitUntil: 'domcontentloaded' });
 
       const storeBrand = page.locator('div').filter({ hasText: /^Agentify\s*Store$/ }).first();
       await expect(storeBrand).toBeVisible({ timeout: 20000 });
@@ -150,7 +150,7 @@ test.describe('Widget & Demo Playground Flow', () => {
         ],
       });
 
-      await page.goto(`/demo?botId=${LEAD_COLLECTION_BOT.id}`, { waitUntil: 'domcontentloaded' });
+      await page.goto(`/agent-mart?botId=${LEAD_COLLECTION_BOT.id}`, { waitUntil: 'domcontentloaded' });
 
       const launcherBtn = page.locator('button').filter({ has: page.locator('img[alt="chat"]') }).first();
       await expect(launcherBtn).toBeVisible({ timeout: 20000 });
@@ -216,7 +216,7 @@ test.describe('Widget & Demo Playground Flow', () => {
         ],
       });
 
-      await page.goto(`/demo?botId=${LEAD_COLLECTION_BOT.id}`, { waitUntil: 'domcontentloaded' });
+      await page.goto(`/agent-mart?botId=${LEAD_COLLECTION_BOT.id}`, { waitUntil: 'domcontentloaded' });
 
       const launcherBtn = page.locator('button').filter({ has: page.locator('img[alt="chat"]') }).first();
       await expect(launcherBtn).toBeVisible({ timeout: 20000 });
@@ -285,7 +285,7 @@ test.describe('Widget & Demo Playground Flow', () => {
         chatResponses: [carouselPayload],
       });
 
-      await page.goto(`/demo?botId=${ECOMMERCE_BOT.id}`, { waitUntil: 'domcontentloaded' });
+      await page.goto(`/agent-mart?botId=${ECOMMERCE_BOT.id}`, { waitUntil: 'domcontentloaded' });
 
       const launcherBtn = page.locator('button').filter({ has: page.locator('img[alt="chat"]') }).first();
       await expect(launcherBtn).toBeVisible({ timeout: 20000 });
@@ -354,7 +354,7 @@ test.describe('Widget & Demo Playground Flow', () => {
         chatResponses: [singleProductPayload],
       });
 
-      await page.goto(`/demo?botId=${ECOMMERCE_BOT.id}`, { waitUntil: 'domcontentloaded' });
+      await page.goto(`/agent-mart?botId=${ECOMMERCE_BOT.id}`, { waitUntil: 'domcontentloaded' });
 
       const launcherBtn = page.locator('button').filter({ has: page.locator('img[alt="chat"]') }).first();
       await expect(launcherBtn).toBeVisible({ timeout: 20000 });
@@ -422,7 +422,7 @@ test.describe('Widget & Demo Playground Flow', () => {
         ],
       });
 
-      await page.goto(`/demo?botId=${SHOPIFY_BOT.id}`, { waitUntil: 'domcontentloaded' });
+      await page.goto(`/agent-mart?botId=${SHOPIFY_BOT.id}`, { waitUntil: 'domcontentloaded' });
 
       const launcherBtn = page.locator('button').filter({ has: page.locator('img[alt="chat"]') }).first();
       await expect(launcherBtn).toBeVisible({ timeout: 20000 });
@@ -505,7 +505,7 @@ test.describe('Widget & Demo Playground Flow', () => {
         ],
       });
 
-      await page.goto(`/demo?botId=${SHOPIFY_BOT.id}`, { waitUntil: 'domcontentloaded' });
+      await page.goto(`/agent-mart?botId=${SHOPIFY_BOT.id}`, { waitUntil: 'domcontentloaded' });
 
       const launcherBtn = page.locator('button').filter({ has: page.locator('img[alt="chat"]') }).first();
       await expect(launcherBtn).toBeVisible({ timeout: 20000 });
@@ -564,7 +564,7 @@ test.describe('Widget & Demo Playground Flow', () => {
       });
 
       // 1. Visit demo page
-      await page.goto(`/demo?botId=${CONTINUITY_BOT.id}`, { waitUntil: 'domcontentloaded' });
+      await page.goto(`/agent-mart?botId=${CONTINUITY_BOT.id}`, { waitUntil: 'domcontentloaded' });
 
       // 2. Open widget
       const launcherBtn = page.locator('button').filter({ has: page.locator('img[alt="chat"]') }).first();
@@ -797,7 +797,7 @@ test.describe('Widget & Demo Playground Flow', () => {
         ],
       });
 
-      await page.goto(`/demo?botId=${ERROR_BOT.id}`, { waitUntil: 'domcontentloaded' });
+      await page.goto(`/agent-mart?botId=${ERROR_BOT.id}`, { waitUntil: 'domcontentloaded' });
 
       const launcherBtn = page.locator('button').filter({ has: page.locator('img[alt="chat"]') }).first();
       await expect(launcherBtn).toBeVisible({ timeout: 20000 });
@@ -872,7 +872,7 @@ test.describe('Widget & Demo Playground Flow', () => {
         ],
       });
 
-      await page.goto(`/demo?botId=${ERROR_BOT.id}`, { waitUntil: 'domcontentloaded' });
+      await page.goto(`/agent-mart?botId=${ERROR_BOT.id}`, { waitUntil: 'domcontentloaded' });
 
       const launcherBtn = page.locator('button').filter({ has: page.locator('img[alt="chat"]') }).first();
       await expect(launcherBtn).toBeVisible({ timeout: 20000 });
@@ -942,7 +942,7 @@ test.describe('Widget & Demo Playground Flow', () => {
         ],
       });
 
-      await page.goto(`/demo?botId=${ERROR_BOT.id}`, { waitUntil: 'domcontentloaded' });
+      await page.goto(`/agent-mart?botId=${ERROR_BOT.id}`, { waitUntil: 'domcontentloaded' });
 
       const launcherBtn = page.locator('button').filter({ has: page.locator('img[alt="chat"]') }).first();
       await expect(launcherBtn).toBeVisible({ timeout: 20000 });
@@ -1017,7 +1017,7 @@ test.describe('Widget & Demo Playground Flow', () => {
         chatResponses: [urlGroundingResponse],
       });
 
-      await page.goto(`/demo?botId=${GROUNDED_BOT.id}`, { waitUntil: 'domcontentloaded' });
+      await page.goto(`/agent-mart?botId=${GROUNDED_BOT.id}`, { waitUntil: 'domcontentloaded' });
 
       const launcherBtn = page.locator('button').filter({ has: page.locator('img[alt="chat"]') }).first();
       await expect(launcherBtn).toBeVisible({ timeout: 20000 });
@@ -1082,7 +1082,7 @@ test.describe('Widget & Demo Playground Flow', () => {
         chatResponses: [pdfGroundingResponse],
       });
 
-      await page.goto(`/demo?botId=${GROUNDED_BOT.id}`, { waitUntil: 'domcontentloaded' });
+      await page.goto(`/agent-mart?botId=${GROUNDED_BOT.id}`, { waitUntil: 'domcontentloaded' });
 
       const launcherBtn = page.locator('button').filter({ has: page.locator('img[alt="chat"]') }).first();
       await expect(launcherBtn).toBeVisible({ timeout: 20000 });
@@ -1147,7 +1147,7 @@ test.describe('Widget & Demo Playground Flow', () => {
         chatResponses: [hybridResponse],
       });
 
-      await page.goto(`/demo?botId=${GROUNDED_BOT.id}`, { waitUntil: 'domcontentloaded' });
+      await page.goto(`/agent-mart?botId=${GROUNDED_BOT.id}`, { waitUntil: 'domcontentloaded' });
 
       const launcherBtn = page.locator('button').filter({ has: page.locator('img[alt="chat"]') }).first();
       await expect(launcherBtn).toBeVisible({ timeout: 20000 });

@@ -211,7 +211,7 @@ test.describe('Analytics Dashboard Flow', () => {
       const initialConversionCard = page.getByTestId('stats-card-conversion-rate');
       await expect(initialConversionCard.getByTestId('stat-value')).toHaveText('33.3%');
 
-      await page.goto(`/demo?botId=${ANALYTICS_BOT.id}`, { waitUntil: 'domcontentloaded' });
+      await page.goto(`/agent-mart?botId=${ANALYTICS_BOT.id}`, { waitUntil: 'domcontentloaded' });
 
       const launcherBtn = page
         .locator('button')

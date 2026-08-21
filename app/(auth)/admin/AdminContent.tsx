@@ -193,7 +193,7 @@ export default function AdminContent() {
                   <QuickActionLabel>Create Bot</QuickActionLabel>
                 </QuickActionBtn>
 
-                <QuickActionBtn href="/demo" data-testid="quick-action-custom-widget">
+                <QuickActionBtn href="/agent-mart" data-testid="quick-action-custom-widget">
                   <QuickActionGreenIcon>
                     <Sparkles size={15} strokeWidth={2.2} />
                   </QuickActionGreenIcon>
