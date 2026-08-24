@@ -2,24 +2,30 @@ import styled from "styled-components";
 import Image from "next/image";
 
 export const BannerSectionContainer = styled.section`
-  width: 85%;
+  width: 80%;
   margin: 60px auto;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 28px;
-  align-items: center;
+  align-items: stretch;
 
   @media (max-width: 1024px) {
     width: 90%;
     grid-template-columns: 1fr;
     gap: 32px;
   }
+
+  @media (max-width: 576px) {
+    width: 100%;
+    padding: 0 16px;
+    margin: 40px auto;
+  }
 `;
 
 export const FlashSaleBannerCard = styled.div`
   position: relative;
   width: 100%;
-  min-height: 280px;
+  min-height: 310px;
   border-radius: 24px;
   background: linear-gradient(135deg, #ff5314 0%, #ff7328 50%, #ff934b 100%);
   display: flex;
@@ -27,26 +33,34 @@ export const FlashSaleBannerCard = styled.div`
   align-items: center;
   overflow: hidden;
   box-shadow: 0 12px 36px rgba(255, 83, 20, 0.25);
+  padding: 36px 40px;
 
   @media (max-width: 640px) {
     flex-direction: column;
-    align-items: flex-start;
-    padding: 28px 24px;
-    gap: 20px;
+    align-items: center;
+    text-align: center;
+    padding: 32px 20px 24px 20px;
+    gap: 24px;
+    min-height: auto;
   }
 `;
 
 export const BannerInnerImage = styled(Image)`
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
   object-position: center;
+  pointer-events: none;
+  z-index: 1;
 `;
 
 export const DarkBannerCard = styled.div`
   position: relative;
   width: 100%;
-  min-height: 280px;
+  min-height: 310px;
   border-radius: 24px;
   background: linear-gradient(135deg, #0a0a0c 0%, #16171b 50%, #202228 100%);
   display: flex;
@@ -54,44 +68,30 @@ export const DarkBannerCard = styled.div`
   align-items: center;
   overflow: hidden;
   box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
-
-  &::before {
-    content: "";
-    position: absolute;
-    top: -50%;
-    right: -20%;
-    width: 200px;
-    height: 200%;
-    background: linear-gradient(
-      135deg,
-      transparent 40%,
-      rgba(255, 83, 20, 0.15) 50%,
-      transparent 60%
-    );
-    transform: rotate(-30deg);
-    pointer-events: none;
-  }
+  padding: 36px 40px;
 
   @media (max-width: 640px) {
     flex-direction: column;
-    align-items: flex-start;
-    padding: 28px 24px;
-    gap: 20px;
+    align-items: center;
+    text-align: center;
+    padding: 32px 20px 0px 20px;
+    gap: 24px;
+    min-height: auto;
   }
 `;
 
 export const BannerContent = styled.div`
-  position: absolute;
-  top: 20%;
-  left: 5%;
+  position: relative;
+  z-index: 3;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  z-index: 2;
   max-width: 55%;
 
   @media (max-width: 640px) {
     max-width: 100%;
+    align-items: center;
+    text-align: center;
   }
 `;
 
@@ -105,7 +105,7 @@ export const BannerSubtitle = styled.span`
 
 export const BannerTitle = styled.h2`
   font-size: 34px;
-  font-weight: 600;
+  font-weight: 700;
   color: #ffffff;
   margin: 6px 0 16px 0;
   line-height: 1.15;
@@ -130,6 +130,10 @@ export const TimerContainer = styled.div`
   flex-direction: column;
   gap: 4px;
   margin-bottom: 24px;
+
+  @media (max-width: 640px) {
+    align-items: center;
+  }
 `;
 
 export const TimerDigitsRow = styled.div`
@@ -140,6 +144,11 @@ export const TimerDigitsRow = styled.div`
   font-weight: 600;
   color: #ffffff;
   letter-spacing: 0.05em;
+
+  @media (max-width: 480px) {
+    font-size: 20px;
+    gap: 6px;
+  }
 `;
 
 export const TimerLabelsRow = styled.div`
@@ -151,6 +160,11 @@ export const TimerLabelsRow = styled.div`
   color: #ffffff;
   opacity: 0.85;
   padding-left: 2px;
+
+  @media (max-width: 480px) {
+    gap: 16px;
+    font-size: 10px;
+  }
 `;
 
 export const BannerButton = styled.button<{ $textColor?: string }>`
@@ -175,51 +189,66 @@ export const BannerButton = styled.button<{ $textColor?: string }>`
 
 export const BannerVisualWrapper = styled.div`
   position: absolute;
-  right: -20px;
+  right: 10px;
   top: 0;
   bottom: 0;
-  width: 50%;
+  width: 42%;
   display: flex;
   align-items: center;
   justify-content: center;
   pointer-events: none;
+  z-index: 2;
 
   @media (max-width: 640px) {
     position: relative;
     right: 0;
     width: 100%;
-    height: 200px;
+    height: auto;
+    max-height: 200px;
   }
 `;
 
 export const BannerShoeImage = styled(Image)`
   width: 100%;
-  height: 80%;
+  height: auto;
+  max-height: 240px;
   object-fit: contain;
   object-position: center;
+
+  @media (max-width: 640px) {
+    max-height: 180px;
+  }
 `;
 
 export const BannerVisualWrapper2 = styled.div`
   position: absolute;
-  right: -20px;
+  right: 0;
   bottom: 0;
-  width: 50%;
+  width: 45%;
+  height: 100%;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: flex-end;
+  justify-content: flex-end;
   pointer-events: none;
+  z-index: 2;
 
   @media (max-width: 640px) {
     position: relative;
     right: 0;
     width: 100%;
-    height: 200px;
+    height: auto;
+    max-height: 260px;
   }
 `;
 
 export const BannerImage = styled(Image)`
   width: 100%;
-  height: 300px;
+  height: 100%;
+  max-height: 310px;
   object-fit: contain;
-  object-position: center;
+  object-position: bottom right;
+
+  @media (max-width: 640px) {
+    max-height: 240px;
+  }
 `;

@@ -46,7 +46,7 @@ export const StoreContainer = styled.div`
 `;
 
 export const HeroSection = styled.section`
-width: 100%;
+  width: 100%;
   padding: 0px 40px;
   background: #f4f4f4;
   min-height: 800px;
@@ -57,7 +57,8 @@ width: 100%;
   overflow: hidden;
 
   @media (max-width: 1024px) {
-    padding: 40px 20px;
+    padding: 40px 20px 0px 20px;
+    min-height: 600px;
   }
 `;
 
@@ -70,6 +71,7 @@ export const HeroContainer = styled.div`
   align-items: center;
 
   @media (max-width: 968px) {
+    width: 95%;
     grid-template-columns: 1fr;
     gap: 60px;
   }
@@ -102,8 +104,16 @@ export const HeroTitle = styled.h1`
     color: #111111;
   }
 
+  @media (max-width: 1024px) {
+    font-size: 44px;
+  }
+
   @media (max-width: 768px) {
-    font-size: 40px;
+    font-size: 36px;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 28px;
   }
 `;
 
@@ -206,7 +216,7 @@ export const HeroVisualContainer = styled.div`
   justify-content: center;
 
   @media (max-width: 500px) {
-    height: 420px;
+    height: 250px;
   }
 `;
 
@@ -221,6 +231,15 @@ export const HeroBgShape = styled(Image)`
   top: 80%;
   left: 20%;
   transform: translate(-50%, -50%);
+
+  @media (max-width: 968px) {
+    width: 500px !important;
+  }
+
+  @media (max-width: 480px) {
+    top: 65%;
+    width: 400px !important;
+  }
 `;
 
 export const HeroBgShape2 = styled(Image)`
@@ -234,6 +253,15 @@ export const HeroBgShape2 = styled(Image)`
   top: 80%;
   left: 65%;
   transform: translate(-50%, -50%);
+
+  @media (max-width: 968px) {
+    width: 500px !important;
+  }
+
+  @media (max-width: 480px) {
+    top: 65%;
+    width: 400px !important;
+  }
 `;
 
 export const HeroMainImageWrapper = styled.div`
@@ -243,13 +271,30 @@ export const HeroMainImageWrapper = styled.div`
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  margin-top: 100px;
+  margin-top: 150px;
 
   img {
     height: 73vh;
+    max-height: 550px;
     width: auto;
     object-fit: contain;
     filter: drop-shadow(0 15px 30px rgba(0, 0, 0, 0.15));
+  }
+
+  @media (max-width: 968px) {
+    margin-top: 20px;
+    img {
+      height: 45vh;
+      max-height: 380px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    margin-top: 10px;
+    img {
+      height: 35vh;
+      max-height: 280px;
+    }
   }
 `;
 
@@ -300,6 +345,23 @@ export const FloatingProductCard = styled.div<{
     right: -120px;
   `}
 
+  @media (max-width: 1200px) {
+    ${(props) =>
+      props.$position === "bottom-left" &&
+      `
+      left: -20px;
+    `}
+    ${(props) =>
+      props.$position === "bottom-right" &&
+      `
+      right: -20px;
+    `}
+  }
+
+  @media (max-width: 768px) {
+    display: none;
+  }
+
   @media (max-width: 600px) {
     width: 120px;
     padding: 8px;
@@ -335,20 +397,40 @@ export const FloatingCardPrice = styled.span`
 `;
 
 export const InfoSection = styled.div`
-  width: 100%;
-  display: flex;
+  width: 85%;
+  /* max-width: 1280px; */
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
   align-items: center;
-  justify-content: space-evenly;
-  gap: 40px;
+  justify-items: center;
+  gap: 30px;
   padding: 40px 20px;
   border-bottom: 1px solid #e0e0e0;
+
+  @media (max-width: 1024px) {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+    padding: 30px 20px;
+  }
+
+  @media (max-width: 576px) {
+    grid-template-columns: 1fr;
+    gap: 20px;
+    padding: 24px 16px;
+  }
 `;
 
 export const InfoCardContainer = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+  width: 100%;
+
+  @media (max-width: 576px) {
+    justify-content: flex-start;
+    padding: 0 12px;
+  }
 `;
 
 export const InfoCardIconContainer = styled.div`
@@ -394,10 +476,20 @@ export const CategorieSection = styled.div`
 `;
 
 export const CategorieSectionHeader = styled.div`
-  width: 85%;
+  width: 80%;
+  /* max-width: 1280px; */
   display: flex;
   justify-content: space-between;
   align-items: center;
+
+  @media (max-width: 968px) {
+    width: 92%;
+  }
+
+  @media (max-width: 576px) {
+    width: 100%;
+    padding: 0 10px;
+  }
 `;
 
 export const CategorieSectionTitle = styled.h3`
@@ -417,11 +509,23 @@ export const CategorieSectionSeeAll = styled.p`
 `;
 
 export const CategorieSectionCardContainer = styled.div`
-  width: 85%;
-  display: flex;
-  justify-content: space-evenly;
+  width: 80%;
+  /* max-width: 1280px; */
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  justify-items: center;
   align-items: center;
-  gap: 30px;
+  gap: 24px;
+
+  @media (max-width: 1200px) {
+    grid-template-columns: repeat(2, 1fr);
+    width: 90%;
+  }
+
+  @media (max-width: 576px) {
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
 `;
 
 export const CategorieSectionCard = styled.div<{
@@ -429,7 +533,8 @@ export const CategorieSectionCard = styled.div<{
   $borderColor?: string;
 }>`
   position: relative;
-  width: 330px;
+  width: 100%;
+  max-width: 330px;
   height: 350px;
   display: flex;
   align-items: center;
@@ -515,14 +620,21 @@ export const CategorieSectionCardShopNow = styled.p`
 `;
 
 export const ProductsSection = styled.section`
-  width: 85%;
+  width: 80%;
+  /* max-width: 1280px; */
   padding: 80px 40px;
   display: flex;
   flex-direction: column;
   gap: 40px;
 
-  @media (max-width: 768px) {
+  @media (max-width: 1024px) {
+    width: 92%;
     padding: 60px 20px;
+  }
+
+  @media (max-width: 576px) {
+    width: 100%;
+    padding: 40px 16px;
   }
 `;
 
@@ -1328,26 +1440,29 @@ export const CategoryGroupViewAll = styled.button`
 
 export const CategoryProductsGrid = styled.div`
   width: 100%;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 24px;
 
   @media (max-width: 1200px) {
     grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
   }
 
-  @media (max-width: 768px) {
+  @media (max-width: 868px) {
     grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
   }
 
-  @media (max-width: 480px) {
+  @media (max-width: 540px) {
     grid-template-columns: 1fr;
+    gap: 16px;
   }
 `;
 
 export const CategoryProductCard = styled.div`
   position: relative;
-  width: 290px;
+  width: 100%;
   background: #f4f4f6;
   border-radius: 16px;
   display: flex;
@@ -1398,7 +1513,7 @@ export const CategoryProductImageWrapper = styled.div`
 export const CategoryProductImage = styled(Image)`
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
 `;
 
 export const CategoryProductInfo = styled.div`
@@ -1474,6 +1589,16 @@ export const SubCategoryContainer = styled.div`
   flex-wrap: wrap;
   margin-top: 12px;
   margin-bottom: 24px;
+
+  @media (max-width: 640px) {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    -webkit-overflow-scrolling: touch;
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
 `;
 
 export const SubCategoryPill = styled.button<{ $active?: boolean }>`
@@ -1486,6 +1611,8 @@ export const SubCategoryPill = styled.button<{ $active?: boolean }>`
   font-weight: ${(props) => (props.$active ? "600" : "500")};
   cursor: pointer;
   transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
 
   &:hover {
     background: ${(props) => (props.$active ? "#222222" : "#e4e4e7")};

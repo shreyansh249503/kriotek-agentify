@@ -780,7 +780,7 @@
       style="
         width: 100%;
         height: 100%;
-        object-fit: cover;
+        object-fit: contain;
         pointer-events: none;
         border-radius: 50%;
       "
@@ -845,7 +845,7 @@
           style="
             width: 30px;
             height: 30px;
-            object-fit: cover;
+            object-fit: contain;
             pointer-events: none;
             border-radius: 50%;
             background-color: white;
@@ -1042,7 +1042,7 @@
     }
     .product-carousel::-webkit-scrollbar { display: none; }
     .product-carousel.single-product {
-      justify-content: center;
+      justify-content: flex-start;
       padding: 8px 0;
     }
     .product-carousel.single-product .product-card {

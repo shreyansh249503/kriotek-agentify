@@ -22,6 +22,27 @@ import {
   ReviewsText,
   CartCircleButton,
 } from "../../styled";
+import { StaticImageData } from "next/image";
+import PinkHoodie from "@/assets/images/pink-hoodie.png";
+import MaxSafari from "@/assets/images/max-safari.png";
+import OversizedTshirt from "@/assets/images/oversized-tshirt.png";
+import Pent from "@/assets/images/pent.png";
+import Shirt from "@/assets/images/line-shirt.png";
+import TV from "@/assets/images/TV.png";
+import Fridge from "@/assets/images/fridge.png";
+import Mixer from "@/assets/images/mixer.png";
+import Fan from "@/assets/images/fan.png";
+import Water from "@/assets/images/water.png";
+import Lipstick from "@/assets/images/lipstick.png";
+import Serum from "@/assets/images/serum.png";
+import Pine from "@/assets/images/pine.png";
+import ProV from "@/assets/images/pro-v.png";
+import EyeLiner from "@/assets/images/eye-liner.png";
+import Bike from "@/assets/images/bike.png";
+import Dumbbell from "@/assets/images/dumbell.png";
+import Mat from "@/assets/images/mat.png";
+import Rope from "@/assets/images/rope.png";
+import Press from "@/assets/images/beanch-press.png";
 
 export interface StaticProductItem {
   id: string;
@@ -29,7 +50,7 @@ export interface StaticProductItem {
   price: string;
   rating: number;
   reviews: number;
-  image: string;
+  image: StaticImageData;
   isLiked?: boolean;
 }
 
@@ -50,8 +71,7 @@ export const STATIC_CATEGORIES: StaticCategoryGroup[] = [
         price: "$59.60",
         rating: 4.5,
         reviews: 128,
-        image:
-          "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=500&auto=format&fit=crop",
+        image: PinkHoodie,
       },
       {
         id: "fashion-2",
@@ -60,8 +80,7 @@ export const STATIC_CATEGORIES: StaticCategoryGroup[] = [
         rating: 5.0,
         reviews: 325,
         isLiked: true,
-        image:
-          "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500&auto=format&fit=crop",
+        image: MaxSafari,
       },
       {
         id: "fashion-3",
@@ -69,8 +88,7 @@ export const STATIC_CATEGORIES: StaticCategoryGroup[] = [
         price: "$19.60",
         rating: 4.0,
         reviews: 128,
-        image:
-          "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=500&auto=format&fit=crop",
+        image: OversizedTshirt,
       },
       {
         id: "fashion-4",
@@ -78,8 +96,7 @@ export const STATIC_CATEGORIES: StaticCategoryGroup[] = [
         price: "$20.60",
         rating: 4.5,
         reviews: 128,
-        image:
-          "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=500&auto=format&fit=crop",
+        image: Pent,
       },
       {
         id: "fashion-5",
@@ -87,8 +104,7 @@ export const STATIC_CATEGORIES: StaticCategoryGroup[] = [
         price: "$13.60",
         rating: 4.0,
         reviews: 128,
-        image:
-          "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=500&auto=format&fit=crop",
+        image: Shirt,
       },
     ],
   },
@@ -102,8 +118,7 @@ export const STATIC_CATEGORIES: StaticCategoryGroup[] = [
         price: "$189.60",
         rating: 4.0,
         reviews: 128,
-        image:
-          "https://images.unsplash.com/photo-1593784991095-877102484462?w=500&auto=format&fit=crop",
+        image: TV,
       },
       {
         id: "elec-2",
@@ -111,8 +126,7 @@ export const STATIC_CATEGORIES: StaticCategoryGroup[] = [
         price: "$200.60",
         rating: 4.0,
         reviews: 128,
-        image:
-          "https://images.unsplash.com/photo-1584992236310-6edddc08acff?w=500&auto=format&fit=crop",
+        image: Fridge,
       },
       {
         id: "elec-3",
@@ -120,8 +134,7 @@ export const STATIC_CATEGORIES: StaticCategoryGroup[] = [
         price: "$27.60",
         rating: 4.0,
         reviews: 128,
-        image:
-          "https://images.unsplash.com/photo-1570222094114-d054a817e56b?w=500&auto=format&fit=crop",
+        image: Mixer,
       },
       {
         id: "elec-4",
@@ -129,8 +142,7 @@ export const STATIC_CATEGORIES: StaticCategoryGroup[] = [
         price: "$18.20",
         rating: 4.0,
         reviews: 128,
-        image:
-          "https://images.unsplash.com/photo-1618941709602-92849f611320?w=500&auto=format&fit=crop",
+        image: Fan,
       },
       {
         id: "elec-5",
@@ -138,8 +150,7 @@ export const STATIC_CATEGORIES: StaticCategoryGroup[] = [
         price: "$29.60",
         rating: 4.0,
         reviews: 128,
-        image:
-          "https://images.unsplash.com/photo-1548839140-29a749e1cf4e?w=500&auto=format&fit=crop",
+        image: Water,
       },
     ],
   },
@@ -153,8 +164,7 @@ export const STATIC_CATEGORIES: StaticCategoryGroup[] = [
         price: "$59.60",
         rating: 4.0,
         reviews: 128,
-        image:
-          "https://images.unsplash.com/photo-1586495777744-4413f21062fa?w=500&auto=format&fit=crop",
+        image: Lipstick,
       },
       {
         id: "beauty-2",
@@ -162,8 +172,7 @@ export const STATIC_CATEGORIES: StaticCategoryGroup[] = [
         price: "$59.60",
         rating: 4.0,
         reviews: 128,
-        image:
-          "https://images.unsplash.com/photo-1608248597261-833258657640?w=500&auto=format&fit=crop",
+        image: Serum,
       },
       {
         id: "beauty-3",
@@ -171,8 +180,7 @@ export const STATIC_CATEGORIES: StaticCategoryGroup[] = [
         price: "$59.60",
         rating: 4.0,
         reviews: 128,
-        image:
-          "https://images.unsplash.com/photo-1541643600914-78b084683601?w=500&auto=format&fit=crop",
+        image: Pine,
       },
       {
         id: "beauty-4",
@@ -180,8 +188,7 @@ export const STATIC_CATEGORIES: StaticCategoryGroup[] = [
         price: "$59.60",
         rating: 4.0,
         reviews: 128,
-        image:
-          "https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?w=500&auto=format&fit=crop",
+        image: ProV,
       },
       {
         id: "beauty-5",
@@ -189,8 +196,7 @@ export const STATIC_CATEGORIES: StaticCategoryGroup[] = [
         price: "$59.60",
         rating: 4.0,
         reviews: 128,
-        image:
-          "https://images.unsplash.com/photo-1631730486784-5456119f69ae?w=500&auto=format&fit=crop",
+        image: EyeLiner,
       },
     ],
   },
@@ -204,8 +210,7 @@ export const STATIC_CATEGORIES: StaticCategoryGroup[] = [
         price: "$59.60",
         rating: 4.0,
         reviews: 128,
-        image:
-          "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=500&auto=format&fit=crop",
+        image: Bike,
       },
       {
         id: "fitness-2",
@@ -213,8 +218,7 @@ export const STATIC_CATEGORIES: StaticCategoryGroup[] = [
         price: "$59.60",
         rating: 4.0,
         reviews: 128,
-        image:
-          "https://images.unsplash.com/photo-1584735935682-2f2b69dff9d2?w=500&auto=format&fit=crop",
+        image: Dumbbell,
       },
       {
         id: "fitness-3",
@@ -222,8 +226,7 @@ export const STATIC_CATEGORIES: StaticCategoryGroup[] = [
         price: "$59.60",
         rating: 4.0,
         reviews: 128,
-        image:
-          "https://images.unsplash.com/photo-1601925260368-ae2f83cf8b7f?w=500&auto=format&fit=crop",
+        image: Mat,
       },
       {
         id: "fitness-4",
@@ -231,8 +234,7 @@ export const STATIC_CATEGORIES: StaticCategoryGroup[] = [
         price: "$59.60",
         rating: 4.0,
         reviews: 128,
-        image:
-          "https://images.unsplash.com/photo-1598289431512-b97b0917affc?w=500&auto=format&fit=crop",
+        image: Rope,
       },
       {
         id: "fitness-5",
@@ -240,8 +242,7 @@ export const STATIC_CATEGORIES: StaticCategoryGroup[] = [
         price: "$59.60",
         rating: 4.0,
         reviews: 128,
-        image:
-          "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=500&auto=format&fit=crop",
+        image: Press,
       },
     ],
   },
@@ -296,8 +297,8 @@ export const ProductsSection: React.FC<ProductsSectionProps> = ({
                     <CategoryProductImage
                       src={prod.image}
                       alt={prod.name}
-                      width={300}
-                      height={300}
+                      width={500}
+                      height={500}
                     />
                   </CategoryProductImageWrapper>
 
@@ -317,7 +318,9 @@ export const ProductsSection: React.FC<ProductsSectionProps> = ({
                               i < Math.floor(prod.rating) ? "fill" : "regular"
                             }
                             color={
-                              i < Math.floor(prod.rating) ? "#f59e0b" : "#d1d5db"
+                              i < Math.floor(prod.rating)
+                                ? "#f59e0b"
+                                : "#d1d5db"
                             }
                           />
                         ))}

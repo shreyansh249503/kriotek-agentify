@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { StoreContainer } from "./styled";
-import { Product } from "./type";
 import { useBot, useBots } from "@/hooks/useBot";
 import {
   ToastNotification,
@@ -30,18 +29,14 @@ export default function DemoAgentMartPage() {
     }
   }, []);
 
-  const { data: queryBot, isLoading: isQueryLoading } = useBot(
-    botIdParam || DEFAULT_BOT_ID,
-  );
-  const { data: userBots, isLoading: isListLoading } = useBots();
+  const { data: queryBot } = useBot(botIdParam || DEFAULT_BOT_ID);
+  const { data: userBots } = useBots();
 
   const activeBot = useMemo(() => {
     if (queryBot) return queryBot;
     if (userBots && userBots.length > 0) return userBots[0];
     return null;
   }, [userBots, queryBot]);
-
-  const isLoading = isQueryLoading || (!queryBot && isListLoading);
 
   const [, setCartCount] = useState<number>(0);
   const [toastMessage, setToastMessage] = useState<string>("");
@@ -104,47 +99,6 @@ export default function DemoAgentMartPage() {
     };
   }, [activeBot]);
 
-  const productsToRender = useMemo<Product[]>(() => {
-    if (
-      activeBot?.ecommerce_enabled &&
-      activeBot.ecommerce_products &&
-      activeBot.ecommerce_products.length > 0
-    ) {
-      return activeBot.ecommerce_products.map((p, idx) => ({
-        id: p.id || `custom-prod-${idx}`,
-        name:
-          p.name ||
-          (p as unknown as { title?: string }).title ||
-          `Product ${idx + 1}`,
-        price: String(p.price).startsWith("$") ? String(p.price) : `${p.price}`,
-        priceNum:
-          typeof p.price === "number"
-            ? p.price
-            : parseFloat(String(p.price)) || 0,
-        description:
-          p.description || "Custom product designed for your business needs.",
-        image:
-          p.image ||
-          (p as unknown as { image_url?: string }).image_url ||
-          "https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?w=500&auto=format&fit=crop",
-        rating: (p as unknown as { rating?: number }).rating || 5.0,
-        reviews: 24 + idx * 8,
-        badge: "Featured Product",
-        category:
-          p.category ||
-          (p as unknown as { metadata?: { category?: string } }).metadata
-            ?.category ||
-          "Store Products",
-        subCategory:
-          p.subCategory ||
-          (p as unknown as { metadata?: { subCategory?: string } }).metadata
-            ?.subCategory ||
-          "",
-      }));
-    }
-    return [];
-  }, [activeBot]);
-
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setIsToastVisible(true);
@@ -156,11 +110,6 @@ export default function DemoAgentMartPage() {
   const handleAddToCart = (productName: string) => {
     setCartCount((c) => c + 1);
     showToast(`${productName} added to cart!`);
-  };
-
-  const handleBuyNow = (productName: string) => {
-    setCartCount((c) => c + 1);
-    showToast(`Proceeding to checkout with ${productName}!`);
   };
 
   const handleScrollToProducts = () => {
