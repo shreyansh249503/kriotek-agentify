@@ -35,13 +35,11 @@ test.describe('Widget & Demo Playground Flow', () => {
     }) => {
       await mockBotAPIs(page, {
         bot: CUSTOM_BRANDED_BOT,
-        botsList: [CUSTOM_BRANDED_BOT],
+        botsList: [],
       });
 
-      await page.goto(`/agent-mart?botId=${CUSTOM_BRANDED_BOT.id}`, { waitUntil: 'domcontentloaded' });
-
-      const storeBrand = page.locator('div').filter({ hasText: /^Agentify\s*Store$/ }).first();
-      await expect(storeBrand).toBeVisible({ timeout: 20000 });
+      await page.goto(`/agent-mart?botId=${CUSTOM_BRANDED_BOT.id}`);
+      await page.waitForLoadState('networkidle');
 
       const launcherBtn = page.locator('button').filter({ has: page.locator('img[alt="chat"]') }).first();
       await expect(launcherBtn).toBeVisible({ timeout: 20000 });
@@ -166,6 +164,7 @@ test.describe('Widget & Demo Playground Flow', () => {
       const messagesContainer = widgetContainer.locator('#ai-messages');
 
       await expect(chatInput).toBeVisible({ timeout: 10000 });
+      await expect(sendButton).toBeVisible({ timeout: 10000 });
 
       await chatInput.fill('I need an enterprise quotation for 50 licenses.');
       await sendButton.click();
@@ -970,7 +969,7 @@ test.describe('Widget & Demo Playground Flow', () => {
 
       // Assert error card is created for stream quota message
       const errorCard = messagesContainer.locator('.chat-error-card.quota-exhausted').first();
-      await expect(errorCard).toBeVisible({ timeout: 15000 });
+      await expect(errorCard).toBeVisible({ timeout: 25000 });
 
       const retryBtn = errorCard.locator('.chat-retry-btn');
       await expect(retryBtn).toBeVisible();

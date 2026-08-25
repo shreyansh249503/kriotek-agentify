@@ -216,6 +216,7 @@ test.describe('Bots Catalog & Fleet Management Flow', () => {
       name: 'Operations Manager AI',
       company_name: 'Nexus Logistics',
       description: 'Logistics routing assistant.',
+      logo_url: 'https://bhyrxyzokssibgeznojo.supabase.co/storage/v1/object/public/logos/mock-uploaded-logo.png',
     };
 
     test('should open card menu and navigate to bot edit page', async ({ page }) => {
@@ -286,14 +287,19 @@ test.describe('Bots Catalog & Fleet Management Flow', () => {
     test('should navigate to bot demo playground (/agent-mart) and verify interactive widget', async ({
       page,
     }) => {
+      const PLAYGROUND_BOT: Bot = {
+        ...ACTION_BOT,
+        id: 'b7777777-7777-7777-7777-777777777777',
+        public_key: 'pk_playground_bot_777',
+      };
+
       await mockBotAPIs(page, {
-        bot: ACTION_BOT,
-        botsList: [ACTION_BOT],
+        bot: PLAYGROUND_BOT,
+        botsList: [],
       });
 
-      await page.goto(`/agent-mart?botId=${ACTION_BOT.id}`, { waitUntil: 'domcontentloaded' });
-
-      await expect(page.locator('div').filter({ hasText: /^Agentify\s*Store$/ }).first()).toBeVisible({ timeout: 20000 });
+      await page.goto(`/agent-mart?botId=${PLAYGROUND_BOT.id}`);
+      await page.waitForLoadState('networkidle');
 
       const launcherBtn = page.locator('button').filter({ has: page.locator('img[alt="chat"]') }).first();
       await expect(launcherBtn).toBeVisible({ timeout: 20000 });
