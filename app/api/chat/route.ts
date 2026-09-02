@@ -10,65 +10,13 @@ import { sendOwnerNotification, sendUserEmail } from "../lib/sendEmail";
 import { getDb } from "../lib/db";
 import { Conversation, Lead, ShopifyStore } from "../lib/entities";
 import { generateUserConfirmationTemplate } from "../lib/emailTemplates";
-import { runLeadAgent, runReceptionistAgent, runSalesAgent } from "../lib/agents";
-import { Bot as BotEntity } from "../lib/entities";
+import {
+  runLeadAgent,
+  runReceptionistAgent,
+  runSalesAgent,
+  classifyUserIntent,
+} from "../lib/agents";
 
-function isSalesIntent(messages: Message[], bot: BotEntity): boolean {
-  if (!bot.ecommerce_enabled || !bot.ecommerce_products?.length) {
-    return false;
-  }
-
-  const latestUserMsg =
-    [...messages]
-      .reverse()
-      .find((m) => m.role === "user")
-      ?.content.toLowerCase() || "";
-
-  // 1. Check direct product catalog keywords and categories
-  const products = bot.ecommerce_products || [];
-  for (const p of products) {
-    if (p.name && latestUserMsg.includes(p.name.toLowerCase())) return true;
-    if (p.category && latestUserMsg.includes(p.category.toLowerCase())) return true;
-    if (p.subCategory && latestUserMsg.includes(p.subCategory.toLowerCase())) return true;
-    if (p.brand && latestUserMsg.includes(p.brand.toLowerCase())) return true;
-    if (p.metadata?.tags?.some((t) => latestUserMsg.includes(t.toLowerCase()))) return true;
-  }
-
-  // 2. Common shopping / sales intent keywords
-  const salesKeywords = [
-    "buy", "purchase", "product", "products", "item", "items", "catalog", "shop", "shopping",
-    "recommend", "recommendation", "recommendations", "suggest", "suggestion", "suggestions",
-    "price", "pricing", "cost", "cheap", "expensive", "budget", "discount", "offer", "deal",
-    "size", "sizes", "color", "colours", "style", "material", "fit", "features", "specs",
-    "hoodie", "hoodies", "shirt", "tshirt", "t-shirt", "jacket", "pants", "shoes", "sneakers",
-    "headphone", "headphones", "earbuds", "watch", "smartwatch", "laptop", "phone", "electronics",
-    "available", "in stock", "looking for", "want to buy", "show me", "best", "compare", "options",
-  ];
-
-  if (salesKeywords.some((kw) => latestUserMsg.includes(kw))) {
-    return true;
-  }
-
-  // 3. Conversation context check: did the assistant previously show or discuss products?
-  const recentAssistantMsg =
-    [...messages]
-      .reverse()
-      .find((m) => m.role === "assistant")
-      ?.content || "";
-
-  if (
-    recentAssistantMsg.includes("<product-carousel>") ||
-    recentAssistantMsg.toLowerCase().includes("product") ||
-    recentAssistantMsg.toLowerCase().includes("recommend")
-  ) {
-    const nonSalesResponses = ["bye", "goodbye", "no thanks", "that is all", "stop"];
-    if (!nonSalesResponses.some((w) => latestUserMsg.includes(w))) {
-      return true;
-    }
-  }
-
-  return false;
-}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -148,23 +96,29 @@ export async function POST(req: Request) {
     phone: convo.phone ?? undefined,
   };
 
-  const [leadDecision, websiteContext, shopifyStore] = await Promise.all([
-    !contactEnabled || alreadyComplete
-      ? Promise.resolve(
-          alreadyComplete
-            ? {
-                collectedInfo: knownInfo,
-                missingFields: [] as ("name" | "email")[],
-                isComplete: true,
-              }
-            : null,
-        )
-      : runLeadAgent(fullConversation, bot.contact_prompt, knownInfo),
-    retrieveWebsiteContext(publicKey, message),
-    dbInstance
-      .getRepository<ShopifyStore>("ShopifyStore")
-      .findOne({ where: { bot_id: bot.id } }),
-  ]);
+  const [leadDecision, websiteContext, shopifyStore, intentDecision] =
+    await Promise.all([
+      !contactEnabled || alreadyComplete
+        ? Promise.resolve(
+            alreadyComplete
+              ? {
+                  collectedInfo: knownInfo,
+                  missingFields: [] as ("name" | "email")[],
+                  isComplete: true,
+                }
+              : null,
+          )
+        : runLeadAgent(fullConversation, bot.contact_prompt, knownInfo),
+      retrieveWebsiteContext(publicKey, message),
+      dbInstance
+        .getRepository<ShopifyStore>("ShopifyStore")
+        .findOne({ where: { bot_id: bot.id } }),
+      classifyUserIntent(fullConversation, {
+        ecommerceEnabled: Boolean(bot.ecommerce_enabled),
+        shopifyConnected: true,
+        hasCatalog: Boolean(bot.ecommerce_products?.length),
+      }),
+    ]);
 
   const isShopifyConnected = Boolean(shopifyStore);
 
@@ -249,8 +203,14 @@ export async function POST(req: Request) {
 
   let result;
   try {
-    const isSales = isSalesIntent(fullConversation, bot);
-    console.log("[route] Dispatching agent - isSalesIntent:", isSales);
+    const isSales =
+      intentDecision.primaryIntent === "SALES" &&
+      Boolean(bot.ecommerce_enabled) &&
+      Boolean(bot.ecommerce_products?.length);
+
+    console.log(
+      `[route] Dispatching agent - Intent: ${intentDecision.primaryIntent} (confidence: ${intentDecision.confidence}, isSales: ${isSales})`,
+    );
 
     if (isSales) {
       result = await runSalesAgent({
@@ -269,6 +229,7 @@ export async function POST(req: Request) {
         isShopifyConnected,
       });
     }
+
   } catch (err) {
     const error = err as StreamError;
     console.error("[route] Sync error starting agent:", error);

@@ -2064,10 +2064,11 @@
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        answer += decoder.decode(value);
+        answer += decoder.decode(value, { stream: true });
         updateBubbleHTML(bubble, answer);
         messages.scrollTop = messages.scrollHeight;
       }
+
 
       if (answer.includes("Your daily AI query quota has been reached")) {
         const parent = bubble.parentElement;

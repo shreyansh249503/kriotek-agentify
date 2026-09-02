@@ -8,3 +8,11 @@ export {
   type ScoredProduct,
   type SalesAgentOptions,
 } from "./salesAgent";
+export {
+  classifyUserIntent,
+  UserIntentEnum,
+  type UserIntent,
+  type IntentClassificationResult,
+  type RouterContext,
+} from "./routerAgent";
+

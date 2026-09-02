@@ -87,9 +87,6 @@ const CustomerRequirementsSchema = z.object({
     .describe("Other descriptive keywords or search terms from user"),
 });
 
-/**
- * Extracts structured customer requirements from the conversation history using Gemini.
- */
 export async function extractCustomerRequirements(
   messages: Message[],
 ): Promise<CustomerRequirements> {
@@ -119,9 +116,6 @@ Extract the customer's requirements accurately. If an attribute was not mentione
   }
 }
 
-/**
- * Helper to parse a price string or number into a numeric value.
- */
 function parsePrice(price: string | number | undefined): number | null {
   if (typeof price === "number") return price;
   if (!price) return null;
@@ -129,9 +123,6 @@ function parsePrice(price: string | number | undefined): number | null {
   return match ? parseFloat(match[0]) : null;
 }
 
-/**
- * Helper to test string array or string value matches.
- */
 function matchesValue(
   fieldValue: string | string[] | undefined,
   target: string | undefined,
@@ -148,10 +139,6 @@ function matchesValue(
   return fieldLower.includes(targetLower) || targetLower.includes(fieldLower);
 }
 
-/**
- * Scores and ranks candidate products against extracted customer requirements.
- * Performs deep matching on category, color, size, style, material, brand, budget, and specs.
- */
 export function matchAndRankProducts(
   products: Product[],
   reqs: CustomerRequirements,
@@ -172,9 +159,8 @@ export function matchAndRankProducts(
     const pCategory = (product.category || "").toLowerCase();
     const pSubCategory = (product.subCategory || "").toLowerCase();
     const pBrand = (product.brand || meta.brand || "").toLowerCase();
-
-    // 1. Category / Subcategory Matching (High Importance)
     const targetCategory = (reqs.subCategory || reqs.category || "").toLowerCase();
+
     if (targetCategory) {
       const isCatMatch =
         pCategory.includes(targetCategory) ||
@@ -197,7 +183,6 @@ export function matchAndRankProducts(
       }
     }
 
-    // 2. Color Matching
     if (reqs.color) {
       const targetColor = reqs.color.toLowerCase();
       const variantColors = variants.map((v) => v.color).filter(Boolean) as string[];
@@ -223,7 +208,6 @@ export function matchAndRankProducts(
       }
     }
 
-    // 3. Size Matching
     if (reqs.size) {
       const targetSize = reqs.size.toLowerCase();
       const variantSizes = variants.map((v) => v.size).filter(Boolean) as string[];
@@ -251,7 +235,6 @@ export function matchAndRankProducts(
       }
     }
 
-    // 4. Style / Fit Matching (e.g. Oversized, Slim fit, Wireless)
     if (reqs.style) {
       const targetStyle = reqs.style.toLowerCase();
       const variantStyles = variants.map((v) => v.style).filter(Boolean) as string[];
@@ -277,7 +260,6 @@ export function matchAndRankProducts(
       }
     }
 
-    // 5. Material Matching
     if (reqs.material) {
       const targetMaterial = reqs.material.toLowerCase();
       const specMat = meta.specifications
@@ -306,7 +288,6 @@ export function matchAndRankProducts(
       }
     }
 
-    // 6. Brand Matching
     if (reqs.brand) {
       const targetBrand = reqs.brand.toLowerCase();
       const isBrandMatch =
@@ -326,7 +307,6 @@ export function matchAndRankProducts(
       }
     }
 
-    // 7. Budget / Price Filtering
     const numericPrice = parsePrice(product.price);
     if (numericPrice !== null) {
       if (reqs.maxPrice !== undefined) {
@@ -343,7 +323,6 @@ export function matchAndRankProducts(
       }
     }
 
-    // 8. Specific Features or Use Case Keywords
     if (reqs.features && reqs.features.length > 0) {
       for (const feat of reqs.features) {
         const featLower = feat.toLowerCase();
@@ -358,7 +337,6 @@ export function matchAndRankProducts(
       }
     }
 
-    // 9. Availability / In Stock Boost
     const isAvailable = product.available !== false && meta.inStock !== false;
     if (isAvailable) {
       score += 5;
@@ -375,7 +353,6 @@ export function matchAndRankProducts(
       reqs.maxPrice,
     );
 
-    // If user made specific requests, exact match requires all specified attributes to match
     const isExactMatch = hasRequests && differingAttrs.length === 0 && matchedAttrs.length > 0;
     const isPartialMatch = hasRequests && matchedAttrs.length > 0 && differingAttrs.length > 0;
 
@@ -402,13 +379,9 @@ export function matchAndRankProducts(
     });
   }
 
-  // Sort highest score first
   return scored.sort((a, b) => b.score - a.score);
 }
 
-/**
- * Builds the comprehensive sales system prompt for Gemini.
- */
 export function buildSalesSystemPrompt(
   config: {
     companyName: string;
@@ -435,7 +408,6 @@ export function buildSalesSystemPrompt(
 
   const isContactPending = contactState && !contactState.isComplete;
 
-  // Format top recommended products (show all matching products up to 15)
   const matchingRanked = (rankedProducts || []).filter(
     (sp) => sp.matchedAttributes.length > 0 || sp.score > 0,
   );
@@ -500,9 +472,10 @@ ${languageSection}
 FORMATTING — CRITICAL, FOLLOW EXACTLY:
 - Plain text ONLY. No markdown symbols whatsoever (no asterisks, no hash headers).
 - NEVER use bullet points of any kind: no hyphens (-), no dots (•), no asterisks (*), no dashes
-- Write in natural flowing prose and short paragraphs
-- Use line breaks between paragraphs for readability
-- Keep responses engaging, consultative, and concise (2 to 4 short paragraphs)
+- Write in short, flowing prose. NEVER write long paragraphs or essays.
+- LENGTH: Keep responses SHORT, engaging, and direct — 1 to 2 brief paragraphs maximum (2 to 4 sentences total) before the product carousel.
+- Get straight to recommending the products without overly verbose descriptions.
+
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 CUSTOMER REQUIREMENTS IDENTIFIED
@@ -544,18 +517,21 @@ SALES & RECOMMENDATION RULES
 
 6. STRICT CATALOG GROUNDING: ONLY include products in the <product-carousel> that exist in the CATALOG above. NEVER make up products, prices, images, or links.
 
-7. PROSE ONLY: Output the <product-carousel> block after your natural language response. Do not put markdown inside the block, only valid JSON.
+7. DOMAIN BOUNDARIES: You represent ONLY ${config.companyName}. NEVER provide general medical, clinical, financial, or ungrounded external advice. If a query is unrelated to your catalog or products, politely decline and steer the conversation back to ${config.companyName}'s offerings.
+
+8. PROSE ONLY: Output the <product-carousel> block after your natural language response. Do not put markdown inside the block, only valid JSON.
 
 ${
   isContactPending
-    ? `8. CONTACT COLLECTION: Contact collection is still pending (Still need: ${contactState?.missingFields.join(" then ")}). Answer their product questions, provide the recommendations with <product-carousel>, and naturally invite them to share their ${contactState?.missingFields[0]} so the team can follow up with exclusive discounts or order assistance.`
+    ? `9. CONTACT COLLECTION: Contact collection is still pending (Still need: ${contactState?.missingFields.join(" then ")}). Answer their product questions, provide the recommendations with <product-carousel>, and naturally invite them to share their ${contactState?.missingFields[0]} so the team can follow up with exclusive discounts or order assistance.`
     : ""
 }
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-WEBSITE KNOWLEDGE CONTEXT
+WEBSITE KNOWLEDGE CONTEXT (SOLE SOURCE OF TRUTH)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ${context.websiteContext}
+
 `;
 }
 
@@ -611,13 +587,6 @@ const ORDER_QUERY_FIELDS = `
   }
 `;
 
-/**
- * Runs the dedicated Sales Agent pipeline:
- * 1. Extracts customer requirements
- * 2. Matches & ranks products using deep metadata
- * 3. Builds sales prompt with match rationales and partial match explanations
- * 4. Streams Gemini response with live tools
- */
 export async function runSalesAgent({
   messages,
   botConfig,
@@ -634,14 +603,9 @@ export async function runSalesAgent({
     : undefined;
 
   const products = botConfig.ecommerce_products || [];
-
-  // Step 1: Extract structured customer requirements
   const reqs = await extractCustomerRequirements(messages);
-
-  // Step 2: Score and rank products with deep metadata matching
   const ranked = matchAndRankProducts(products, reqs);
 
-  // Step 3: Build sales system prompt
   const systemPrompt = buildSalesSystemPrompt(
     {
       companyName: botConfig.name,
@@ -824,6 +788,8 @@ export async function runSalesAgent({
     messages: messages.filter(
       (m) => m.role === "user" || m.role === "assistant",
     ),
+    maxOutputTokens: 2048,
     ...(tools ? { tools, stopWhen: ({ steps }) => steps.length >= 5 } : {}),
   });
 }
+

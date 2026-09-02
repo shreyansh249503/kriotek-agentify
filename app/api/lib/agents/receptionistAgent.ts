@@ -300,6 +300,8 @@ export function runReceptionistAgent({
     messages: messages.filter(
       (m) => m.role === "user" || m.role === "assistant",
     ),
+    maxOutputTokens: 2048,
     ...(tools ? { tools, stopWhen: ({ steps }) => steps.length >= 5 } : {}),
   });
 }
+
