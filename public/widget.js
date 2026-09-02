@@ -158,7 +158,12 @@
   }
 
   function createGreetingMessage(messages, botName, logoUrl) {
+    const existing = messages.querySelector(".ai-greeting-wrapper");
+    if (existing) {
+      return existing;
+    }
     const wrapper = document.createElement("div");
+    wrapper.className = "ai-greeting-wrapper";
     wrapper.style.cssText = `
       display: flex;
       flex-direction: column;
@@ -724,6 +729,19 @@
     document.head.appendChild(script);
   }
 
+  function generateUUID() {
+    if (typeof window !== "undefined" && window.crypto && typeof window.crypto.randomUUID === "function") {
+      try {
+        return window.crypto.randomUUID();
+      } catch {}
+    }
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+      const r = (Math.random() * 16) | 0;
+      const v = c === "x" ? r : (r & 0x3) | 0x8;
+      return v.toString(16);
+    });
+  }
+
   const conversationKey = `chat_conversation_id_${publicKey}`;
   const historyKey = `chat_history_${publicKey}`;
 
@@ -731,7 +749,7 @@
   let storedConvoId = localStorage.getItem(conversationKey);
   let currentConversationId = (storedConvoId && uuidRegex.test(storedConvoId))
     ? storedConvoId
-    : crypto.randomUUID();
+    : generateUUID();
   localStorage.setItem(conversationKey, currentConversationId);
 
   let historyIds = JSON.parse(localStorage.getItem(historyKey) || "[]");
@@ -1670,15 +1688,27 @@
     updateEndChatStatus();
   }
 
+  let greetingTimer = null;
   function showGreeting() {
+    if (greetingTimer) {
+      clearTimeout(greetingTimer);
+      greetingTimer = null;
+    }
+    const existingGreetings = messages.querySelectorAll(".ai-greeting-wrapper");
+    if (existingGreetings.length > 0) {
+      return;
+    }
     greetingShownInSessions[currentConversationId] = true;
     const typing = createTypingIndicator(THEME.logoUrl);
     messages.appendChild(typing);
-    setTimeout(() => {
+    greetingTimer = setTimeout(() => {
       typing.remove();
-      createGreetingMessage(messages, THEME.botName, THEME.logoUrl);
+      if (!messages.querySelector(".ai-greeting-wrapper")) {
+        createGreetingMessage(messages, THEME.botName, THEME.logoUrl);
+      }
       updateEndChatStatus();
-    }, 1000);
+      greetingTimer = null;
+    }, 500);
   }
 
   function closeWidget() {
@@ -1711,7 +1741,7 @@
 
   widget.querySelector("#ai-new-chat").onclick = async () => {
     stopPolling();
-    currentConversationId = crypto.randomUUID();
+    currentConversationId = generateUUID();
     localStorage.setItem(conversationKey, currentConversationId);
 
     let ids = JSON.parse(localStorage.getItem(historyKey) || "[]");
@@ -1746,7 +1776,7 @@
     input.placeholder = "Type your message...";
     greetingShownInSessions[currentConversationId] = false;
     
-    currentConversationId = crypto.randomUUID();
+    currentConversationId = generateUUID();
     localStorage.setItem(conversationKey, currentConversationId);
 
     confirmView.style.display = "none";

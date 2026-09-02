@@ -31,7 +31,6 @@ export default function DemoAgentMartPage() {
 
   const { data: queryBot } = useBot(botIdParam || DEFAULT_BOT_ID);
   const { data: userBots } = useBots();
-
   const activeBot = useMemo(() => {
     if (queryBot) return queryBot;
     if (userBots && userBots.length > 0) return userBots[0];
