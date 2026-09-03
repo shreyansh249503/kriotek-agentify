@@ -4,12 +4,13 @@ import {
   getConversationById,
   replyToConversation,
   closeConversation,
+  toggleHitl,
 } from "@/services/inbox.api";
 
-export const useManualConversations = () => {
+export const useManualConversations = (filter: string = "manual") => {
   return useQuery({
-    queryKey: ["manualConversations"],
-    queryFn: getManualConversations,
+    queryKey: ["manualConversations", filter],
+    queryFn: () => getManualConversations(filter),
     refetchInterval: 3000,
   });
 };
@@ -47,3 +48,17 @@ export const useCloseConversation = () => {
     },
   });
 };
+
+export const useToggleHitl = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) =>
+      toggleHitl(id, enabled),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["conversationDetail", variables.id] });
+      queryClient.invalidateQueries({ queryKey: ["manualConversations"] });
+    },
+  });
+};
+

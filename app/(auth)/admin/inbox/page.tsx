@@ -5,6 +5,8 @@ import {
   InboxContainer,
   SidebarPanel,
   SidebarHeader,
+  FilterTabsContainer,
+  FilterTab,
   ConversationsList,
   ConvoItem,
   ConvoMeta,
@@ -19,6 +21,8 @@ import {
   ChatHeaderName,
   ChatHeaderMeta,
   ChatHeaderActions,
+  ChatHeaderButtonGroup,
+  HitlToggleButton,
   CloseButton,
   MessagesArea,
   MessageRow,
@@ -38,19 +42,27 @@ import {
   useConversationDetail,
   useReplyToConversation,
   useCloseConversation,
+  useToggleHitl,
 } from "@/hooks/useInbox";
-import { ChatIcon, UserIcon, PaperPlaneRightIcon } from "@phosphor-icons/react";
+import {
+  ChatIcon,
+  UserIcon,
+  PaperPlaneRightIcon,
+  PauseIcon,
+  PlayIcon,
+} from "@phosphor-icons/react";
 import { Loader } from "@/components";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 
 export default function InboxPage() {
+  const [filter, setFilter] = useState<"manual" | "all" | "ai" | "resolved">("manual");
   const [selectedConvoId, setSelectedConvoId] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const queryClient = useQueryClient();
 
-  const { data: convos = [], isLoading: listLoading } = useManualConversations();
+  const { data: convos = [], isLoading: listLoading } = useManualConversations(filter);
 
   const activeConvoId = (selectedConvoId && convos.some((c) => c.id === selectedConvoId))
     ? selectedConvoId
@@ -60,12 +72,13 @@ export default function InboxPage() {
 
   const replyMutation = useReplyToConversation();
   const closeMutation = useCloseConversation();
+  const toggleHitlMutation = useToggleHitl();
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [convoDetail?.messages]);
 
-  // Listen to manual conversations list changes
+  // Real-time listener to conversation list changes
   useEffect(() => {
     const channel = supabase
       .channel("inbox-conversations-list")
@@ -87,7 +100,7 @@ export default function InboxPage() {
     };
   }, [queryClient]);
 
-  // Listen to updates on the active conversation
+  // Real-time listener for the active conversation details
   useEffect(() => {
     if (!activeConvoId) return;
 
@@ -113,6 +126,7 @@ export default function InboxPage() {
   }, [activeConvoId, queryClient]);
 
   const activeConvo = convos.find((c) => c.id === activeConvoId);
+  const isHitlActive = activeConvo?.state === "manual" || activeConvo?.state === "manual_takeover";
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -129,6 +143,18 @@ export default function InboxPage() {
     }
   };
 
+  const handleToggleHitl = async () => {
+    if (!activeConvoId) return;
+    try {
+      await toggleHitlMutation.mutateAsync({
+        id: activeConvoId,
+        enabled: !isHitlActive,
+      });
+    } catch (err) {
+      console.error("Failed to toggle HITL", err);
+    }
+  };
+
   const handleResolve = async () => {
     if (!activeConvoId) return;
 
@@ -139,8 +165,6 @@ export default function InboxPage() {
       console.error("Failed to close conversation", err);
     }
   };
-
-
 
   if (listLoading) {
     return (
@@ -158,6 +182,33 @@ export default function InboxPage() {
           <ChatIcon size={20} weight="bold" />
           <span>Active Handovers ({convos.length})</span>
         </SidebarHeader>
+
+        <FilterTabsContainer>
+          <FilterTab
+            $active={filter === "manual"}
+            onClick={() => setFilter("manual")}
+          >
+            Live Queue
+          </FilterTab>
+          <FilterTab
+            $active={filter === "all"}
+            onClick={() => setFilter("all")}
+          >
+            All
+          </FilterTab>
+          <FilterTab
+            $active={filter === "ai"}
+            onClick={() => setFilter("ai")}
+          >
+            AI Active
+          </FilterTab>
+          <FilterTab
+            $active={filter === "resolved"}
+            onClick={() => setFilter("resolved")}
+          >
+            Resolved
+          </FilterTab>
+        </FilterTabsContainer>
 
         <ConversationsList>
           {convos.length === 0 ? (
@@ -183,7 +234,11 @@ export default function InboxPage() {
                 <ConvoSnippet>{convo.snippet || "Opened live chat..."}</ConvoSnippet>
                 <div style={{ display: "flex", gap: "6px", alignItems: "center", marginTop: "2px", flexWrap: "wrap" }}>
                   <ConvoBotBadge>{convo.bot_name || "AI Agent"}</ConvoBotBadge>
-                  <ConvoStatusBadge data-testid="convo-status-badge" data-status="manual_takeover">
+                  <ConvoStatusBadge
+                    data-testid="convo-status-badge"
+                    $status={convo.state}
+                    data-status={convo.state === "manual" ? "manual_takeover" : (convo.state || "manual_takeover")}
+                  >
                     {convo.state === "manual" ? "manual_takeover" : (convo.state || "manual_takeover")}
                   </ConvoStatusBadge>
                 </div>
@@ -199,7 +254,11 @@ export default function InboxPage() {
             <ChatHeaderInfo>
               <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
                 <ChatHeaderName>{activeConvo.name || "Anonymous Guest"}</ChatHeaderName>
-                <ConvoStatusBadge data-testid="active-convo-status-badge" data-status="manual_takeover">
+                <ConvoStatusBadge
+                  data-testid="active-convo-status-badge"
+                  $status={activeConvo.state}
+                  data-status={activeConvo.state === "manual" ? "manual_takeover" : (activeConvo.state || "manual_takeover")}
+                >
                   {activeConvo.state === "manual" ? "manual_takeover" : (activeConvo.state || "manual_takeover")}
                 </ConvoStatusBadge>
               </div>
@@ -209,12 +268,32 @@ export default function InboxPage() {
               </ChatHeaderMeta>
             </ChatHeaderInfo>
             <ChatHeaderActions>
-              <CloseButton
-                disabled={closeMutation.isPending}
-                onClick={handleResolve}
-              >
-                {closeMutation.isPending ? "Closing..." : "Mark Resolved / Revert to AI"}
-              </CloseButton>
+              <ChatHeaderButtonGroup>
+                <HitlToggleButton
+                  $isHitlActive={isHitlActive}
+                  disabled={toggleHitlMutation.isPending}
+                  onClick={handleToggleHitl}
+                  title={isHitlActive ? "Resume AI Agent" : "Pause AI Agent and Take Over Chat"}
+                >
+                  {isHitlActive ? (
+                    <>
+                      <PlayIcon size={16} weight="bold" />
+                      <span>{toggleHitlMutation.isPending ? "Updating..." : "Resume AI"}</span>
+                    </>
+                  ) : (
+                    <>
+                      <PauseIcon size={16} weight="bold" />
+                      <span>{toggleHitlMutation.isPending ? "Updating..." : "Pause AI & Take Over"}</span>
+                    </>
+                  )}
+                </HitlToggleButton>
+                <CloseButton
+                  disabled={closeMutation.isPending}
+                  onClick={handleResolve}
+                >
+                  {closeMutation.isPending ? "Closing..." : "Mark Resolved / Revert to AI"}
+                </CloseButton>
+              </ChatHeaderButtonGroup>
             </ChatHeaderActions>
           </ChatHeader>
 
@@ -276,3 +355,4 @@ export default function InboxPage() {
     </InboxContainer>
   );
 }
+

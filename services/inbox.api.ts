@@ -21,8 +21,9 @@ export interface ConversationDetail {
   }>;
 }
 
-export const getManualConversations = async (): Promise<ConversationInfo[]> => {
-  const { data } = await axiosInstance.get<ConversationInfo[]>("/api/admin/conversations");
+export const getManualConversations = async (filter: string = "manual"): Promise<ConversationInfo[]> => {
+  const params = filter && filter !== "manual" ? `?filter=${encodeURIComponent(filter)}` : "";
+  const { data } = await axiosInstance.get<ConversationInfo[]>(`/api/admin/conversations${params}`);
   return data;
 };
 
@@ -38,3 +39,16 @@ export const replyToConversation = async (id: string, message: string): Promise<
 export const closeConversation = async (id: string): Promise<void> => {
   await axiosInstance.post(`/api/admin/conversations/${id}/close`);
 };
+
+export const toggleHitl = async (
+  id: string,
+  enabled: boolean
+): Promise<{ success: boolean; state: string; enabled: boolean }> => {
+  const { data } = await axiosInstance.post<{
+    success: boolean;
+    state: string;
+    enabled: boolean;
+  }>(`/api/admin/conversations/${id}/toggle-hitl`, { enabled });
+  return data;
+};
+

@@ -23,15 +23,35 @@ export async function GET(req: Request) {
   }
 
   try {
+    let filter = "manual";
+    try {
+      if (req?.url) {
+        const parsedUrl = new URL(req.url, "http://localhost");
+        filter = parsedUrl.searchParams.get("filter") || "manual";
+      }
+    } catch {
+      filter = "manual";
+    }
+
+    const whereClause: Record<string, unknown> = {
+      bot: {
+        user_id: user.id,
+      },
+    };
+
+    if (filter === "manual") {
+      whereClause.state = In(["manual", "manual_takeover"]);
+    } else if (filter === "ai") {
+      whereClause.state = In(["idle", "ai", "active"]);
+    } else if (filter === "resolved") {
+      whereClause.state = "completed";
+    }
+    // If filter === "all", no state restriction is added
+
     const dataSource = await getDb();
     const convos = await dataSource.getRepository<Conversation>("Conversation").find({
       relations: ["bot"],
-      where: {
-        state: In(["manual", "manual_takeover"]),
-        bot: {
-          user_id: user.id,
-        },
-      },
+      where: whereClause,
       order: {
         created_at: "DESC",
       },

@@ -4,6 +4,7 @@ import {
   getConversationById,
   replyToConversation,
   closeConversation,
+  toggleHitl,
   ConversationInfo,
   ConversationDetail,
 } from "./inbox.api";
@@ -37,12 +38,21 @@ describe("inbox.api services", () => {
   });
 
   describe("getManualConversations", () => {
-    it("should fetch manual conversations list from /api/admin/conversations", async () => {
+    it("should fetch manual conversations list from /api/admin/conversations by default", async () => {
       mockedAxios.get.mockResolvedValueOnce({ data: [mockConversation] });
 
       const result = await getManualConversations();
 
       expect(mockedAxios.get).toHaveBeenCalledWith("/api/admin/conversations");
+      expect(result).toEqual([mockConversation]);
+    });
+
+    it("should pass filter query parameter when specified", async () => {
+      mockedAxios.get.mockResolvedValueOnce({ data: [mockConversation] });
+
+      const result = await getManualConversations("all");
+
+      expect(mockedAxios.get).toHaveBeenCalledWith("/api/admin/conversations?filter=all");
       expect(result).toEqual([mockConversation]);
     });
   });
@@ -82,4 +92,35 @@ describe("inbox.api services", () => {
       );
     });
   });
+
+  describe("toggleHitl", () => {
+    it("should post toggle-hitl action with enabled=true to /api/admin/conversations/:id/toggle-hitl", async () => {
+      mockedAxios.post.mockResolvedValueOnce({
+        data: { success: true, state: "manual_takeover", enabled: true },
+      });
+
+      const result = await toggleHitl("conv-101", true);
+
+      expect(mockedAxios.post).toHaveBeenCalledWith(
+        "/api/admin/conversations/conv-101/toggle-hitl",
+        { enabled: true }
+      );
+      expect(result).toEqual({ success: true, state: "manual_takeover", enabled: true });
+    });
+
+    it("should post toggle-hitl action with enabled=false to resume AI", async () => {
+      mockedAxios.post.mockResolvedValueOnce({
+        data: { success: true, state: "idle", enabled: false },
+      });
+
+      const result = await toggleHitl("conv-101", false);
+
+      expect(mockedAxios.post).toHaveBeenCalledWith(
+        "/api/admin/conversations/conv-101/toggle-hitl",
+        { enabled: false }
+      );
+      expect(result).toEqual({ success: true, state: "idle", enabled: false });
+    });
+  });
 });
+

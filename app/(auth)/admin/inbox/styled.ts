@@ -113,6 +113,33 @@ export const ConvoBotBadge = styled.span`
   margin-top: 2px;
 `;
 
+export const FilterTabsContainer = styled.div`
+  display: flex;
+  background-color: ${COLOR.WHITE};
+  border-bottom: 1px solid ${COLOR.BORDER};
+  padding: 6px 8px;
+  gap: 4px;
+  overflow-x: auto;
+`;
+
+export const FilterTab = styled.button<{ $active: boolean }>`
+  background: ${props => props.$active ? COLOR.PRIMARY : "transparent"};
+  color: ${props => props.$active ? COLOR.WHITE : COLOR.TEXT_SECONDARY};
+  border: 1px solid ${props => props.$active ? COLOR.PRIMARY : "transparent"};
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: ${props => props.$active ? COLOR.PRIMARY_HOVER : `${COLOR.BORDER}44`};
+    color: ${props => props.$active ? COLOR.WHITE : COLOR.TEXT};
+  }
+`;
+
 export const ConvoStatusBadge = styled.span<{ $status?: string }>`
   display: inline-flex;
   align-items: center;
@@ -123,21 +150,85 @@ export const ConvoStatusBadge = styled.span<{ $status?: string }>`
   letter-spacing: 0.5px;
   padding: 2px 8px;
   border-radius: 12px;
-  background-color: #fef3c7;
-  color: #92400e;
-  border: 1px solid #fde68a;
 
-  &::before {
-    content: "";
-    display: inline-block;
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background-color: #d97706;
-  }
+  ${props => {
+    const s = props.$status?.toLowerCase();
+    if (s === "manual" || s === "manual_takeover") {
+      return `
+        background-color: #fef3c7;
+        color: #92400e;
+        border: 1px solid #fde68a;
+        &::before {
+          content: "";
+          display: inline-block;
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background-color: #d97706;
+          box-shadow: 0 0 0 2px #fde68a;
+        }
+      `;
+    }
+    if (s === "completed" || s === "resolved") {
+      return `
+        background-color: #f3f4f6;
+        color: #4b5563;
+        border: 1px solid #e5e7eb;
+        &::before {
+          content: "";
+          display: inline-block;
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background-color: #9ca3af;
+        }
+      `;
+    }
+    return `
+      background-color: #e0e7ff;
+      color: #3730a3;
+      border: 1px solid #c7d2fe;
+      &::before {
+        content: "";
+        display: inline-block;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background-color: #4f46e5;
+      }
+    `;
+  }}
 `;
 
+export const ChatHeaderButtonGroup = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
 
+export const HitlToggleButton = styled.button<{ $isHitlActive: boolean }>`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid ${props => props.$isHitlActive ? "#fbbf24" : COLOR.PRIMARY};
+  background-color: ${props => props.$isHitlActive ? "#fffbeb" : COLOR.WHITE};
+  color: ${props => props.$isHitlActive ? "#b45309" : COLOR.PRIMARY};
+
+  &:hover {
+    background-color: ${props => props.$isHitlActive ? "#fef3c7" : `${COLOR.PRIMARY}15`};
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`;
 export const ChatPanel = styled.div`
   flex: 1;
   display: flex;

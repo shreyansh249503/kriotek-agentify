@@ -5,6 +5,7 @@ import {
   useConversationDetail,
   useReplyToConversation,
   useCloseConversation,
+  useToggleHitl,
 } from "@/hooks/useInbox";
 import { supabase } from "@/lib/supabase";
 
@@ -26,9 +27,11 @@ describe("InboxPage Component", () => {
   const mockUseConversationDetail = useConversationDetail as jest.Mock;
   const mockUseReplyToConversation = useReplyToConversation as jest.Mock;
   const mockUseCloseConversation = useCloseConversation as jest.Mock;
+  const mockUseToggleHitl = useToggleHitl as jest.Mock;
 
   const mockReplyMutateAsync = jest.fn();
   const mockCloseMutateAsync = jest.fn();
+  const mockToggleHitlMutateAsync = jest.fn();
 
   const mockConvos = [
     {
@@ -61,6 +64,7 @@ describe("InboxPage Component", () => {
 
     mockReplyMutateAsync.mockResolvedValue({});
     mockCloseMutateAsync.mockResolvedValue({});
+    mockToggleHitlMutateAsync.mockResolvedValue({});
 
     mockUseReplyToConversation.mockReturnValue({
       mutateAsync: mockReplyMutateAsync,
@@ -69,6 +73,11 @@ describe("InboxPage Component", () => {
 
     mockUseCloseConversation.mockReturnValue({
       mutateAsync: mockCloseMutateAsync,
+      isPending: false,
+    });
+
+    mockUseToggleHitl.mockReturnValue({
+      mutateAsync: mockToggleHitlMutateAsync,
       isPending: false,
     });
 
@@ -156,5 +165,31 @@ describe("InboxPage Component", () => {
     });
 
     expect(mockCloseMutateAsync).toHaveBeenCalledWith("convo-1");
+  });
+
+  it("should handle toggling HITL mode", async () => {
+    mockUseManualConversations.mockReturnValue({
+      data: mockConvos,
+      isLoading: false,
+    });
+    mockUseConversationDetail.mockReturnValue({
+      data: mockDetail,
+      isLoading: false,
+    });
+
+    render(<InboxPage />);
+
+    const toggleButton = screen.getByRole("button", {
+      name: /Pause AI & Take Over|Resume AI/i,
+    });
+
+    await act(async () => {
+      fireEvent.click(toggleButton);
+    });
+
+    expect(mockToggleHitlMutateAsync).toHaveBeenCalledWith({
+      id: "convo-1",
+      enabled: true,
+    });
   });
 });
