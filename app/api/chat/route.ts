@@ -16,12 +16,14 @@ import {
   runSalesAgent,
   classifyUserIntent,
 } from "../lib/agents";
-
+import { checkRateLimit } from "../lib/rateLimit";
+import { verifyOrigin } from "../lib/originGuard";
+import { checkBotBudget, estimateTokens, recordBotTokenUsage } from "../lib/tokenBudget";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST,OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, x-forwarded-for, cf-connecting-ip, x-real-ip",
 };
 
 export async function OPTIONS() {
@@ -38,7 +40,69 @@ export async function POST(req: Request) {
     );
   }
 
+  // 1. Dual-Tier Rate Limiting (IP & Bot Level)
+  const rateLimitResult = await checkRateLimit(req, publicKey);
+  if (!rateLimitResult.success) {
+    return new Response(
+      JSON.stringify({
+        error: "Rate limit exceeded. Please wait a moment before sending more messages.",
+        reason: rateLimitResult.reason,
+        retryAfter: rateLimitResult.retryAfter,
+      }),
+      {
+        status: 429,
+        headers: {
+          ...corsHeaders,
+          ...rateLimitResult.headers,
+          "Content-Type": "application/json",
+        },
+      },
+    );
+  }
+
   const bot = await getBotByPublicKey(publicKey);
+
+  // 2. LLM Monthly Token Budget Guardrails
+  const budgetResult = await checkBotBudget(bot.id, bot.monthly_token_budget);
+  if (!budgetResult.allowed) {
+    return new Response(
+      JSON.stringify({
+        error: "This store's AI Assistant monthly quota has been reached. Please contact store support directly.",
+        reason: "budget_exceeded",
+      }),
+      {
+        status: 429,
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json",
+        },
+      },
+    );
+  }
+
+  const dbInstance = await getDb();
+  const shopifyStore = await dbInstance
+    .getRepository<ShopifyStore>("ShopifyStore")
+    .findOne({ where: { bot_id: bot.id } });
+
+  // 3. Merchant Domain & Origin Verification
+  const originResult = verifyOrigin(req, bot, shopifyStore);
+  if (!originResult.allowed) {
+    return new Response(
+      JSON.stringify({
+        error: "Forbidden: Request origin is not authorized for this assistant.",
+        reason: originResult.reason,
+      }),
+      {
+        status: 403,
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json",
+        },
+      },
+    );
+  }
+
   const uuidRegex =
     /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   const finalConversationId =
@@ -46,7 +110,6 @@ export async function POST(req: Request) {
       ? conversationId
       : crypto.randomUUID();
 
-  const dbInstance = await getDb();
   const convoRepo = dbInstance.getRepository<Conversation>("Conversation");
 
   let convo = await convoRepo.findOne({
@@ -82,7 +145,10 @@ export async function POST(req: Request) {
       messages: JSON.stringify(fullConversation),
     });
     return new Response("Message sent to customer support.", {
-      headers: corsHeaders,
+      headers: {
+        ...corsHeaders,
+        ...rateLimitResult.headers,
+      },
     });
   }
 
@@ -96,7 +162,7 @@ export async function POST(req: Request) {
     phone: convo.phone ?? undefined,
   };
 
-  const [leadDecision, websiteContext, shopifyStore, intentDecision] =
+  const [leadDecision, websiteContext, intentDecision] =
     await Promise.all([
       !contactEnabled || alreadyComplete
         ? Promise.resolve(
@@ -110,9 +176,6 @@ export async function POST(req: Request) {
           )
         : runLeadAgent(fullConversation, bot.contact_prompt, knownInfo),
       retrieveWebsiteContext(publicKey, message),
-      dbInstance
-        .getRepository<ShopifyStore>("ShopifyStore")
-        .findOne({ where: { bot_id: bot.id } }),
       classifyUserIntent(fullConversation, {
         ecommerceEnabled: Boolean(bot.ecommerce_enabled),
         shopifyConnected: true,
@@ -326,7 +389,7 @@ export async function POST(req: Request) {
   });
 
   const [streamForClient, streamForSaving] = customStream.tee();
-  saveAssistantMessage(streamForSaving, convo.id, fullConversation).catch(
+  saveAssistantMessage(streamForSaving, convo.id, bot.id, fullConversation).catch(
     console.error,
   );
 
@@ -335,6 +398,7 @@ export async function POST(req: Request) {
       "Content-Type": "text/plain; charset=utf-8",
       "Cache-Control": "no-cache",
       ...corsHeaders,
+      ...rateLimitResult.headers,
     },
   });
 }
@@ -342,6 +406,7 @@ export async function POST(req: Request) {
 async function saveAssistantMessage(
   stream: ReadableStream,
   conversationId: string,
+  botId: string,
   existingHistory: Message[],
 ) {
   let fullText = "";
@@ -358,7 +423,19 @@ async function saveAssistantMessage(
     { role: "assistant" as const, content: fullText },
   ];
 
+  const promptText = existingHistory.map((m) => m.content).join(" ");
+  const promptTokens = estimateTokens(promptText);
+  const completionTokens = estimateTokens(fullText);
+
   const dbInstance = await getDb();
   const convoRepo = dbInstance.getRepository<Conversation>("Conversation");
   await convoRepo.update(conversationId, { messages: JSON.stringify(updated) });
+
+  // Record token usage for cost guardrails
+  await recordBotTokenUsage(botId, {
+    promptTokens,
+    completionTokens,
+    totalTokens: promptTokens + completionTokens,
+  });
 }
+

@@ -6,6 +6,9 @@ import { sendOwnerNotification, sendUserEmail } from "../lib/sendEmail";
 import { getDb } from "../lib/db";
 import { runLeadAgent } from "../lib/agents/leadAgent";
 import { runReceptionistAgent } from "../lib/agents/receptionistAgent";
+import { checkRateLimit } from "../lib/rateLimit";
+import { verifyOrigin } from "../lib/originGuard";
+import { checkBotBudget } from "../lib/tokenBudget";
 
 if (typeof global.TextEncoder === "undefined") {
   global.TextEncoder = TextEncoder;
@@ -20,8 +23,10 @@ if (typeof global.ReadableStream === "undefined") {
 if (typeof Request === "undefined") {
   (global as unknown as Record<string, unknown>).Request = class MockRequest {
     private body: unknown;
-    constructor(_url: string, init?: { body?: string }) {
+    headers: Map<string, string>;
+    constructor(_url: string, init?: { body?: string; headers?: Record<string, string> }) {
       this.body = init?.body ? JSON.parse(init.body) : {};
+      this.headers = new Map(Object.entries(init?.headers || {}));
     }
     json() {
       return Promise.resolve(this.body);
@@ -84,11 +89,28 @@ jest.mock("../lib/agents/receptionistAgent", () => ({
   runReceptionistAgent: jest.fn(),
 }));
 
+jest.mock("../lib/rateLimit", () => ({
+  checkRateLimit: jest.fn(),
+}));
+
+jest.mock("../lib/originGuard", () => ({
+  verifyOrigin: jest.fn(),
+}));
+
+jest.mock("../lib/tokenBudget", () => ({
+  checkBotBudget: jest.fn(),
+  estimateTokens: jest.fn(() => 10),
+  recordBotTokenUsage: jest.fn().mockResolvedValue(undefined),
+}));
+
 describe("Chat Route (/api/chat)", () => {
   const mockedGetBot = getBotByPublicKey as jest.Mock;
   const mockedGetDb = getDb as jest.Mock;
   const mockedRunLead = runLeadAgent as jest.Mock;
   const mockedRunReceptionist = runReceptionistAgent as jest.Mock;
+  const mockedCheckRateLimit = checkRateLimit as jest.Mock;
+  const mockedVerifyOrigin = verifyOrigin as jest.Mock;
+  const mockedCheckBotBudget = checkBotBudget as jest.Mock;
 
   const mockFindOneConvo = jest.fn();
   const mockCreateConvo = jest.fn((data) => data);
@@ -107,10 +129,37 @@ describe("Chat Route (/api/chat)", () => {
     contact_prompt: "Please state your name and email",
     contact_email: "owner@example.com",
     contact_email_message: "Thanks for contacting us",
+    allowed_origins: [],
+    monthly_token_budget: 500000,
   };
 
   beforeEach(() => {
     jest.clearAllMocks();
+
+    mockedCheckRateLimit.mockResolvedValue({
+      success: true,
+      limit: 20,
+      remaining: 19,
+      reset: Math.ceil(Date.now() / 1000) + 60,
+      retryAfter: 0,
+      headers: {
+        "X-RateLimit-Limit": "20",
+        "X-RateLimit-Remaining": "19",
+      },
+    });
+
+    mockedCheckBotBudget.mockResolvedValue({
+      allowed: true,
+      currentTokens: 1000,
+      budgetLimit: 500000,
+      percentageUsed: 0.2,
+      reason: "within_budget",
+    });
+
+    mockedVerifyOrigin.mockReturnValue({
+      allowed: true,
+      reason: "dev_allowed_domain",
+    });
 
     mockedGetBot.mockResolvedValue(mockBot);
 
@@ -140,10 +189,13 @@ describe("Chat Route (/api/chat)", () => {
     });
   });
 
-  const createRequest = (body: Record<string, unknown>) => {
+  const createRequest = (body: Record<string, unknown>, headers?: Record<string, string>) => {
     return new Request("http://localhost:3000/api/chat", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...headers,
+      },
       body: JSON.stringify(body),
     });
   };
@@ -164,6 +216,77 @@ describe("Chat Route (/api/chat)", () => {
 
       expect(res.status).toBe(400);
       expect(data.error).toBe("publicKey and message are required");
+    });
+
+    it("should return 429 when rate limit check fails", async () => {
+      mockedCheckRateLimit.mockResolvedValueOnce({
+        success: false,
+        reason: "ip_limit_exceeded",
+        limit: 20,
+        remaining: 0,
+        reset: Math.ceil(Date.now() / 1000) + 30,
+        retryAfter: 30,
+        headers: {
+          "X-RateLimit-Limit": "20",
+          "X-RateLimit-Remaining": "0",
+          "Retry-After": "30",
+        },
+      });
+
+      const req = createRequest({
+        publicKey: "pk_123",
+        message: "Spam message",
+      });
+
+      const res = await POST(req as unknown as Request);
+      const data = await res.json();
+
+      expect(res.status).toBe(429);
+      expect(data.error).toContain("Rate limit exceeded");
+      expect(data.reason).toBe("ip_limit_exceeded");
+      expect(res.headers.get("Retry-After")).toBe("30");
+    });
+
+    it("should return 429 when monthly token budget is exceeded", async () => {
+      mockedCheckBotBudget.mockResolvedValueOnce({
+        allowed: false,
+        currentTokens: 500000,
+        budgetLimit: 500000,
+        percentageUsed: 100,
+        reason: "budget_exceeded",
+      });
+
+      const req = createRequest({
+        publicKey: "pk_123",
+        message: "Hello assistant",
+      });
+
+      const res = await POST(req as unknown as Request);
+      const data = await res.json();
+
+      expect(res.status).toBe(429);
+      expect(data.error).toContain("monthly quota has been reached");
+      expect(data.reason).toBe("budget_exceeded");
+    });
+
+    it("should return 403 when origin is unauthorized", async () => {
+      mockedVerifyOrigin.mockReturnValueOnce({
+        allowed: false,
+        reason: "origin_not_whitelisted",
+        requestOrigin: "https://unauthorized-domain.com",
+      });
+
+      const req = createRequest({
+        publicKey: "pk_123",
+        message: "Hello from unauthorized site",
+      });
+
+      const res = await POST(req as unknown as Request);
+      const data = await res.json();
+
+      expect(res.status).toBe(403);
+      expect(data.error).toContain("Forbidden");
+      expect(data.reason).toBe("origin_not_whitelisted");
     });
 
     it("should handle manual support state conversation", async () => {

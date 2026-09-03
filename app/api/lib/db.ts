@@ -1,6 +1,14 @@
 import "reflect-metadata";
 import { DataSource } from "typeorm";
-import { Bot, Conversation, Lead, CrawledPage, BotDocument, ShopifyStore } from "./entities";
+import {
+  Bot,
+  Conversation,
+  Lead,
+  CrawledPage,
+  BotDocument,
+  ShopifyStore,
+  BotUsage,
+} from "./entities";
 
 const globalForTypeorm = globalThis as unknown as {
   AppDataSource: DataSource;
@@ -13,7 +21,15 @@ export const AppDataSource =
     url: process.env.SUPABASE_DATABASE_URL,
     synchronize: true,
     logging: false,
-    entities: [Bot, Conversation, Lead, CrawledPage, BotDocument, ShopifyStore],
+    entities: [
+      Bot,
+      Conversation,
+      Lead,
+      CrawledPage,
+      BotDocument,
+      ShopifyStore,
+      BotUsage,
+    ],
     ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : undefined,
   });
 
@@ -35,6 +51,8 @@ export const getDb = async () => {
         await AppDataSource.query(`
           ALTER TABLE bots ADD COLUMN IF NOT EXISTS last_trained_at TIMESTAMPTZ;
           ALTER TABLE bots ADD COLUMN IF NOT EXISTS company_name VARCHAR;
+          ALTER TABLE bots ADD COLUMN IF NOT EXISTS allowed_origins JSONB DEFAULT '[]';
+          ALTER TABLE bots ADD COLUMN IF NOT EXISTS monthly_token_budget INT;
           ALTER TABLE bots ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
           ALTER TABLE bots ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
         `).catch((err) => {

@@ -62,6 +62,12 @@ export class Bot {
   @Column({ type: "varchar", name: "company_name", nullable: true })
   company_name?: string;
 
+  @Column({ type: "jsonb", name: "allowed_origins", default: () => "'[]'" })
+  allowed_origins!: string[];
+
+  @Column({ type: "int", name: "monthly_token_budget", nullable: true })
+  monthly_token_budget?: number;
+
   @Column({ type: "timestamp", name: "last_trained_at", nullable: true })
   last_trained_at?: Date;
 
@@ -79,6 +85,9 @@ export class Bot {
 
   @OneToMany(() => ShopifyStore, (store) => store.bot)
   shopify_stores!: ShopifyStore[];
+
+  @OneToMany(() => BotUsage, (usage) => usage.bot)
+  usages!: BotUsage[];
 }
 
 @Entity("conversations")
@@ -197,3 +206,38 @@ export class ShopifyStore {
   @CreateDateColumn({ name: "installed_at" })
   installed_at!: Date;
 }
+
+@Entity("bot_usages")
+export class BotUsage {
+  @PrimaryGeneratedColumn("uuid")
+  id!: string;
+
+  @Column({ name: "bot_id", type: "uuid" })
+  bot_id!: string;
+
+  @ManyToOne(() => Bot, (bot) => bot.usages, { onDelete: "CASCADE" })
+  @JoinColumn({ name: "bot_id" })
+  bot!: Bot;
+
+  @Column({ type: "varchar", name: "billing_period" }) // Format: "YYYY-MM"
+  billing_period!: string;
+
+  @Column({ type: "int", name: "total_tokens", default: 0 })
+  total_tokens!: number;
+
+  @Column({ type: "int", name: "prompt_tokens", default: 0 })
+  prompt_tokens!: number;
+
+  @Column({ type: "int", name: "completion_tokens", default: 0 })
+  completion_tokens!: number;
+
+  @Column({ type: "int", name: "message_count", default: 0 })
+  message_count!: number;
+
+  @CreateDateColumn({ name: "created_at" })
+  created_at!: Date;
+
+  @UpdateDateColumn({ name: "updated_at" })
+  updated_at!: Date;
+}
+
