@@ -118,7 +118,7 @@ export default function TrainingPage() {
     formData.append("publicKey", publicKey);
 
     try {
-      const res = await fetch("/api/ingest-pdf", {
+      const res = await fetchWithToken("/api/ingest-pdf", {
         method: "POST",
         body: formData,
       });

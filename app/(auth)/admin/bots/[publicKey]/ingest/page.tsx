@@ -1,4 +1,5 @@
 "use client";
+import { authHeaders } from "@/lib/authHeaders";
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
@@ -166,7 +167,7 @@ export default function IngestPage() {
 
               const res = await fetch(
                 `${process.env.NEXT_PUBLIC_API_URL}/api/ingest-pdf`,
-                { method: "POST", body: form },
+                { method: "POST", body: form, headers: await authHeaders() },
               );
               const data = await res.json();
               if (!res.ok) throw new Error(data.error || "PDF ingest failed");

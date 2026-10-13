@@ -11,6 +11,7 @@ describe("API: /api/bots/[id]", () => {
     update: jest.fn(),
   };
   const mockDbQuery = jest.fn().mockResolvedValue([]);
+  const validUuid = "123e4567-e89b-12d3-a456-426614174000";
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -23,127 +24,182 @@ describe("API: /api/bots/[id]", () => {
   });
 
   describe("GET", () => {
-    it("should query by id UUID when param is a valid UUID", async () => {
-      const validUuid = "123e4567-e89b-12d3-a456-426614174000";
-      const mockBot = { id: validUuid, name: "UUID Bot" };
-      mockBotRepo.findOne.mockResolvedValueOnce(mockBot);
-
-      const params = Promise.resolve({ id: validUuid });
-      const req = new Request(`http://localhost/api/bots/${validUuid}`);
-      const res = await GET(req, { params });
-      const data = await res.json();
-
-      expect(res.status).toBe(200);
-      expect(mockBotRepo.findOne).toHaveBeenCalledWith({ where: { id: validUuid } });
-      expect(data).toEqual(mockBot);
+    it("returns 401 when the caller is not signed in", async () => {
+      (getUserFromRequest as jest.Mock).mockResolvedValueOnce(null);
+      const res = await GET(new Request(`http://localhost/api/bots/${validUuid}`), {
+        params: Promise.resolve({ id: validUuid }),
+      });
+      expect(res.status).toBe(401);
+      expect(mockBotRepo.findOne).not.toHaveBeenCalled();
     });
 
-    it("should query by public_key when param is not a UUID", async () => {
-      const publicKey = "pk_test_12345";
-      const mockBot = { id: "bot_1", public_key: publicKey, name: "Key Bot" };
+    it("scopes the lookup to the owner when param is a UUID", async () => {
+      const mockBot = { id: validUuid, name: "UUID Bot", user_id: "user_123" };
       mockBotRepo.findOne.mockResolvedValueOnce(mockBot);
 
-      const params = Promise.resolve({ id: publicKey });
-      const req = new Request(`http://localhost/api/bots/${publicKey}`);
-      const res = await GET(req, { params });
-      const data = await res.json();
+      const res = await GET(new Request(`http://localhost/api/bots/${validUuid}`), {
+        params: Promise.resolve({ id: validUuid }),
+      });
 
       expect(res.status).toBe(200);
-      expect(mockBotRepo.findOne).toHaveBeenCalledWith({ where: { public_key: publicKey } });
-      expect(data).toEqual(mockBot);
+      expect(mockBotRepo.findOne).toHaveBeenCalledWith({
+        where: { id: validUuid, user_id: "user_123" },
+      });
+      expect(await res.json()).toEqual(mockBot);
     });
 
-    it("should return 404 when bot is not found", async () => {
+    it("scopes the lookup to the owner when param is a public key", async () => {
+      mockBotRepo.findOne.mockResolvedValueOnce({ id: "bot_1", public_key: "pk_1" });
+
+      await GET(new Request("http://localhost/api/bots/pk_1"), {
+        params: Promise.resolve({ id: "pk_1" }),
+      });
+
+      expect(mockBotRepo.findOne).toHaveBeenCalledWith({
+        where: { public_key: "pk_1", user_id: "user_123" },
+      });
+    });
+
+    it("returns 404 for a bot the caller does not own", async () => {
       mockBotRepo.findOne.mockResolvedValueOnce(null);
 
-      const params = Promise.resolve({ id: "non_existent" });
-      const req = new Request("http://localhost/api/bots/non_existent");
-      const res = await GET(req, { params });
-      const data = await res.json();
+      const res = await GET(new Request("http://localhost/api/bots/other"), {
+        params: Promise.resolve({ id: "other" }),
+      });
 
       expect(res.status).toBe(404);
-      expect(data).toEqual({ error: "Bot not found" });
+      expect(await res.json()).toEqual({ error: "Bot not found" });
     });
   });
 
   describe("PUT", () => {
-    it("should update bot details in repository and return ok status", async () => {
-      mockBotRepo.update.mockResolvedValueOnce({ affected: 1 });
-
-      const botId = "bot_123";
-      const body = {
-        name: "Updated Bot Name",
-        description: "Updated description",
-        tone: "friendly",
-        primaryColor: "#FF0000",
-      };
-
-      const params = Promise.resolve({ id: botId });
-      const req = new Request(`http://localhost/api/bots/${botId}`, {
+    const body = {
+      name: "Updated Bot Name",
+      description: "Updated description",
+      tone: "friendly",
+      primaryColor: "#FF0000",
+    };
+    const putReq = () =>
+      new Request(`http://localhost/api/bots/${validUuid}`, {
         method: "PUT",
         body: JSON.stringify(body),
       });
 
-      const res = await PUT(req, { params });
-      const data = await res.json();
+    it("returns 401 and does not update when not signed in", async () => {
+      (getUserFromRequest as jest.Mock).mockResolvedValueOnce(null);
+      const res = await PUT(putReq(), { params: Promise.resolve({ id: validUuid }) });
+      expect(res.status).toBe(401);
+      expect(mockBotRepo.update).not.toHaveBeenCalled();
+    });
+
+    it("returns 404 and does not update another user's bot", async () => {
+      mockBotRepo.findOne.mockResolvedValueOnce(null);
+      const res = await PUT(putReq(), { params: Promise.resolve({ id: validUuid }) });
+      expect(res.status).toBe(404);
+      expect(mockBotRepo.update).not.toHaveBeenCalled();
+    });
+
+    it.each([["publicKey"], ["public_key"]])(
+      "rejects changing the public key via %s and writes nothing",
+      async (field) => {
+        mockBotRepo.findOne.mockResolvedValueOnce({
+          id: validUuid,
+          public_key: "pk_original",
+          user_id: "user_123",
+        });
+
+        const res = await PUT(
+          new Request(`http://localhost/api/bots/${validUuid}`, {
+            method: "PUT",
+            body: JSON.stringify({ name: "Renamed", [field]: "pk_hijacked" }),
+          }),
+          { params: Promise.resolve({ id: validUuid }) },
+        );
+
+        expect(res.status).toBe(400);
+        expect(await res.json()).toEqual({ error: "A bot's public key cannot be changed." });
+        expect(mockBotRepo.update).not.toHaveBeenCalled();
+      },
+    );
+
+    it("accepts the unchanged public key and never writes public_key", async () => {
+      mockBotRepo.findOne.mockResolvedValueOnce({
+        id: validUuid,
+        public_key: "pk_original",
+        user_id: "user_123",
+      });
+      mockBotRepo.update.mockResolvedValueOnce({ affected: 1 });
+
+      const res = await PUT(
+        new Request(`http://localhost/api/bots/${validUuid}`, {
+          method: "PUT",
+          body: JSON.stringify({ name: "Renamed", publicKey: "pk_original" }),
+        }),
+        { params: Promise.resolve({ id: validUuid }) },
+      );
 
       expect(res.status).toBe(200);
-      expect(mockBotRepo.update).toHaveBeenCalledWith(botId, {
+      const written = mockBotRepo.update.mock.calls[0][1];
+      expect(written).not.toHaveProperty("public_key");
+      expect(written).not.toHaveProperty("publicKey");
+    });
+
+    it("updates only the fields that were sent for the owner's bot", async () => {
+      mockBotRepo.findOne.mockResolvedValueOnce({ id: validUuid, user_id: "user_123" });
+      mockBotRepo.update.mockResolvedValueOnce({ affected: 1 });
+
+      const res = await PUT(putReq(), { params: Promise.resolve({ id: validUuid }) });
+
+      expect(res.status).toBe(200);
+      expect(mockBotRepo.update).toHaveBeenCalledWith(validUuid, {
         name: "Updated Bot Name",
         description: "Updated description",
         tone: "friendly",
         primary_color: "#FF0000",
-        contact_enabled: undefined,
-        contact_email: undefined,
-        contact_prompt: undefined,
-        contact_email_message: undefined,
-        logo_url: undefined,
-        ecommerce_enabled: undefined,
-        ecommerce_prompt: undefined,
-        ecommerce_products: undefined,
       });
-      expect(data).toEqual({ status: "ok" });
+      expect(await res.json()).toEqual({ status: "ok" });
     });
   });
 
   describe("DELETE", () => {
-    it("should return 401 Unauthorized if user is not authenticated", async () => {
+    it("returns 401 if user is not authenticated", async () => {
       (getUserFromRequest as jest.Mock).mockResolvedValueOnce(null);
-
-      const params = Promise.resolve({ id: "bot_123" });
-      const req = new Request("http://localhost/api/bots/bot_123", { method: "DELETE" });
-      const res = await DELETE(req, { params });
-      const data = await res.json();
-
+      const res = await DELETE(
+        new Request("http://localhost/api/bots/bot_123", { method: "DELETE" }),
+        { params: Promise.resolve({ id: "bot_123" }) },
+      );
       expect(res.status).toBe(401);
-      expect(data.error).toBe("Unauthorized");
+      expect((await res.json()).error).toBe("Unauthorized");
     });
 
-    it("should return 404 if bot is not found for user", async () => {
+    it("returns 404 if bot is not found for user", async () => {
       mockBotRepo.findOne.mockResolvedValueOnce(null);
-
-      const params = Promise.resolve({ id: "bot_123" });
-      const req = new Request("http://localhost/api/bots/bot_123", { method: "DELETE" });
-      const res = await DELETE(req, { params });
-      const data = await res.json();
-
+      const res = await DELETE(
+        new Request("http://localhost/api/bots/bot_123", { method: "DELETE" }),
+        { params: Promise.resolve({ id: "bot_123" }) },
+      );
       expect(res.status).toBe(404);
-      expect(data.error).toBe("Bot not found");
+      expect((await res.json()).error).toBe("Bot not found");
     });
 
-    it("should delete bot and related records when authenticated", async () => {
-      const validUuid = "123e4567-e89b-12d3-a456-426614174000";
-      const mockBot = { id: validUuid, public_key: "pk_123", name: "Bot To Delete" };
-      mockBotRepo.findOne.mockResolvedValueOnce(mockBot);
+    it("deletes bot and related records when authenticated", async () => {
+      mockBotRepo.findOne.mockResolvedValueOnce({
+        id: validUuid,
+        public_key: "pk_123",
+        name: "Bot To Delete",
+      });
 
-      const params = Promise.resolve({ id: validUuid });
-      const req = new Request(`http://localhost/api/bots/${validUuid}`, { method: "DELETE" });
-      const res = await DELETE(req, { params });
-      const data = await res.json();
+      const res = await DELETE(
+        new Request(`http://localhost/api/bots/${validUuid}`, { method: "DELETE" }),
+        { params: Promise.resolve({ id: validUuid }) },
+      );
 
       expect(res.status).toBe(200);
-      expect(data.message).toBe("Bot deleted successfully");
-      expect(mockDbQuery).toHaveBeenCalledWith("DELETE FROM bot_documents WHERE public_key = $1", ["pk_123"]);
+      expect((await res.json()).message).toBe("Bot deleted successfully");
+      expect(mockDbQuery).toHaveBeenCalledWith(
+        "DELETE FROM bot_documents WHERE public_key = $1",
+        ["pk_123"],
+      );
       expect(mockDbQuery).toHaveBeenCalledWith("DELETE FROM bots WHERE id = $1", [validUuid]);
     });
   });

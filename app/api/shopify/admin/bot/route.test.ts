@@ -155,6 +155,41 @@ describe("API: /api/shopify/admin/bot", () => {
       expect(data).toEqual({ error: "Forbidden" });
     });
 
+    it("should return 400 and not update when the public key would change", async () => {
+      mockSingle
+        .mockResolvedValueOnce({ data: { bot_id: "bot_123" } })
+        .mockResolvedValueOnce({ data: { public_key: "pk_original" } });
+
+      const req = new NextRequest("http://localhost/api/shopify/admin/bot", {
+        method: "PATCH",
+        headers: { authorization: "Bearer valid_token" },
+        body: JSON.stringify({ id: "bot_123", name: "Bot", public_key: "pk_hijacked" }),
+      });
+      const res = await PATCH(req);
+
+      expect(res.status).toBe(400);
+      expect(await res.json()).toEqual({ error: "A bot's public key cannot be changed." });
+      expect(mockUpdate).not.toHaveBeenCalled();
+    });
+
+    it("should never include public_key in the update, even when unchanged", async () => {
+      mockSingle
+        .mockResolvedValueOnce({ data: { bot_id: "bot_123" } })
+        .mockResolvedValueOnce({ data: { public_key: "pk_original" } })
+        .mockResolvedValueOnce({ data: { id: "bot_123" } });
+
+      const req = new NextRequest("http://localhost/api/shopify/admin/bot", {
+        method: "PATCH",
+        headers: { authorization: "Bearer valid_token" },
+        body: JSON.stringify({ id: "bot_123", name: "Bot", public_key: "pk_original" }),
+      });
+      const res = await PATCH(req);
+
+      expect(res.status).toBe(200);
+      expect(mockUpdate).toHaveBeenCalledTimes(1);
+      expect(mockUpdate.mock.calls[0][0]).not.toHaveProperty("public_key");
+    });
+
     it("should update bot properties and return updated bot", async () => {
       const updatedBot = { id: "bot_123", name: "Updated Shopify Bot", tone: "friendly" };
 

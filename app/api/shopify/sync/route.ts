@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { getShopFromSession, verifySessionToken } from "../lib/verifySessionToken";
 
 interface ShopifyProductImageEdge {
   node: {
@@ -122,16 +123,17 @@ const PRODUCTS_QUERY = `
 `;
 
 export async function POST(req: NextRequest) {
+  // Only the merchant, inside their Shopify admin, may sync. The shop comes
+  // from the verified App Bridge session token, never from the request body,
+  // and products always go to the bot already linked to that shop.
+  let shop: string;
   try {
-    const { shop, bot_id } = await req.json();
+    shop = getShopFromSession(verifySessionToken(req.headers.get("authorization")));
+  } catch {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
-    if (!shop || !bot_id) {
-      return NextResponse.json(
-        { error: "shop and bot_id are required" },
-        { status: 400 }
-      );
-    }
-
+  try {
     const supabase = createClient(
       NEXT_PUBLIC_SUPABASE_URL!,
       SUPABASE_SERVICE_ROLE_KEY!
@@ -139,7 +141,7 @@ export async function POST(req: NextRequest) {
 
     const { data: storeData, error: storeError } = await supabase
       .from("shopify_stores")
-      .select("access_token")
+      .select("access_token, bot_id")
       .eq("shop", shop)
       .single();
 
@@ -150,6 +152,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (!storeData.bot_id) {
+      return NextResponse.json(
+        { error: "No assistant is linked to this store yet. Open the dashboard to create one." },
+        { status: 409 }
+      );
+    }
+
+    const bot_id: string = storeData.bot_id;
     const { access_token } = storeData;
 
     let allProducts: ShopifyProductNode[] = [];
@@ -271,11 +281,6 @@ export async function POST(req: NextRequest) {
         { status: 500 }
       );
     }
-
-    await supabase
-      .from("shopify_stores")
-      .update({ bot_id })
-      .eq("shop", shop);
 
     return NextResponse.json({
       success: true,

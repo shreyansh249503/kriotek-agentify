@@ -1,5 +1,6 @@
 const secret = "test_shopify_secret_123";
 process.env.SHOPIFY_API_SECRET = secret;
+process.env.SHOPIFY_API_KEY = "app-client-id";
 
 import { verifySessionToken, getShopFromSession, ShopifySession } from "./verifySessionToken";
 import jwt from "jsonwebtoken";
@@ -12,7 +13,7 @@ describe("Shopify verifySessionToken Utility", () => {
   });
 
   it("should throw error if session token is invalid or missing dest claim", () => {
-    const token = jwt.sign({ sub: "user-1" }, secret);
+    const token = jwt.sign({ sub: "user-1", aud: "app-client-id" }, secret);
     expect(() => verifySessionToken(`Bearer ${token}`)).toThrow("Invalid session token");
   });
 
@@ -31,6 +32,22 @@ describe("Shopify verifySessionToken Utility", () => {
 
     expect(result.shop).toBe("test-shop.myshopify.com");
     expect(result.dest).toBe("https://test-shop.myshopify.com");
+  });
+
+  it("should reject a token issued for a different app (audience)", () => {
+    const token = jwt.sign(
+      { dest: "https://test-shop.myshopify.com", aud: "some-other-app", sub: "u" },
+      secret,
+    );
+    expect(() => verifySessionToken(`Bearer ${token}`)).toThrow();
+  });
+
+  it("should reject a token whose dest is not a myshopify.com domain", () => {
+    const token = jwt.sign(
+      { dest: "https://evil.example.com", aud: "app-client-id", sub: "u" },
+      secret,
+    );
+    expect(() => verifySessionToken(`Bearer ${token}`)).toThrow("Invalid session token");
   });
 
   it("should extract shop hostname from session payload", () => {

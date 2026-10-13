@@ -16,9 +16,16 @@ export function verifySessionToken(authHeader: string | null): ShopifySession {
 
   const token = authHeader.replace("Bearer ", "");
   const secret = process.env.SHOPIFY_API_SECRET;
-  const decoded = jwt.verify(token, secret!, { clockTolerance: 300 }) as ShopifySession;
+  if (!secret) throw new Error("SHOPIFY_API_SECRET is not configured");
 
-  if (!decoded.dest) {
+  // Shopify session tokens are HS256 JWTs whose audience is our API key.
+  const decoded = jwt.verify(token, secret, {
+    algorithms: ["HS256"],
+    clockTolerance: 300,
+    ...(process.env.SHOPIFY_API_KEY ? { audience: process.env.SHOPIFY_API_KEY } : {}),
+  }) as ShopifySession;
+
+  if (!decoded.dest || !/^https:\/\/[a-zA-Z0-9][a-zA-Z0-9-]*\.myshopify\.com$/.test(decoded.dest)) {
     throw new Error("Invalid session token");
   }
 

@@ -1,8 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { nanoid } from "nanoid";
 import { supabaseAdmin } from "../lib/supabase-admin";
+import { getRequestPrincipal } from "../lib/requestAuth";
+
+// SVG is excluded: an uploaded SVG can carry script that runs when the file
+// is opened directly from the public storage URL.
+const EXTENSION_BY_TYPE: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+};
 
 export async function POST(req: NextRequest) {
+  const principal = await getRequestPrincipal(req);
+  if (!principal) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
@@ -11,9 +25,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    const allowedTypes = ["image/jpeg", "image/png", "image/svg+xml", "image/webp"];
-    if (!allowedTypes.includes(file.type)) {
-      return NextResponse.json({ error: "Invalid file type. Only JPEG, PNG, SVG, and WEBP are allowed." }, { status: 400 });
+    const extension = EXTENSION_BY_TYPE[file.type];
+    if (!extension) {
+      return NextResponse.json({ error: "Invalid file type. Only JPEG, PNG, and WEBP are allowed." }, { status: 400 });
     }
 
     const maxSize = 1024 * 1024;
@@ -24,7 +38,6 @@ export async function POST(req: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    const extension = file.name.split(".").pop();
     const fileName = `${nanoid()}.${extension}`;
     const filePath = `avatars/${fileName}`;
 
@@ -32,7 +45,7 @@ export async function POST(req: NextRequest) {
       .from("bot-avatars")
       .upload(filePath, buffer, {
         contentType: file.type,
-        upsert: true,
+        upsert: false,
       });
 
     if (uploadError) {

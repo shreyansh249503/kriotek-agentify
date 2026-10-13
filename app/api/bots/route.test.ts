@@ -109,5 +109,24 @@ describe("API: /api/bots", () => {
         })
       );
     });
+
+    it("always generates the public key server-side, ignoring any sent by the client", async () => {
+      (getUserFromRequest as jest.Mock).mockResolvedValueOnce(mockUser);
+
+      const req = new Request("http://localhost/api/bots", {
+        method: "POST",
+        body: JSON.stringify({
+          name: "Sneaky Bot",
+          publicKey: "pk_chosen_by_client",
+          public_key: "pk_chosen_by_client",
+        }),
+      });
+
+      await POST(req);
+
+      expect(mockBotRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ public_key: "mocked_nanoid_16" }),
+      );
+    });
   });
 });

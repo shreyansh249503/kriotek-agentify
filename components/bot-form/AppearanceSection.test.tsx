@@ -3,6 +3,10 @@ import { AppearanceSection } from "./AppearanceSection";
 import { CreateBotInput } from "@/types/bot";
 import React from "react";
 
+jest.mock("@/lib/authHeaders", () => ({
+  authHeaders: jest.fn().mockResolvedValue({ Authorization: "Bearer test" }),
+}));
+
 jest.mock("next/image", () => ({
   __esModule: true,
   default: (props: React.ImgHTMLAttributes<HTMLImageElement>) => (

@@ -1,3 +1,4 @@
+import { authHeaders } from "@/lib/authHeaders";
 import React, { useState } from "react";
 import { CreateBotInput } from "@/types/bot";
 import { ColorPicker } from "../color-picker";
@@ -42,6 +43,7 @@ export const AppearanceSection = ({ form, update }: AppearanceSectionProps) => {
       const res = await fetch("/api/upload", {
         method: "POST",
         body: formData,
+        headers: await authHeaders(),
       });
       const data = await res.json();
       if (data.url) {

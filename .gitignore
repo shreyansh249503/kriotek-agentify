@@ -38,3 +38,8 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
+
+# local scratch
+/tmp/
+/scratch/
+/test_*.ts

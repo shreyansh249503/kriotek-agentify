@@ -193,4 +193,66 @@ describe("POST /api/shopify/webhooks", () => {
     expect(data.ok).toBe(true);
     expect(mockStoreDelete).toHaveBeenCalled();
   });
+
+  it("should acknowledge customers/data_request", async () => {
+    mockFrom.mockImplementation(() => ({
+      select: () => ({ eq: () => ({ single: jest.fn().mockResolvedValue({ data: { bot_id: "bot-123" } }) }) }),
+    }));
+    jest.spyOn(console, "info").mockImplementation(() => {});
+
+    const req = createWebhookRequest(
+      { customer: { id: 1, email: "a@b.com" }, data_request: { id: 9 } },
+      { "x-shopify-topic": "customers/data_request" },
+    );
+    const res = await POST(req);
+
+    expect(res.status).toBe(200);
+  });
+
+  it("should delete the shopper's leads and conversations on customers/redact", async () => {
+    const ilike = jest.fn().mockResolvedValue({ error: null });
+    const deleteEq = jest.fn().mockReturnValue({ ilike, eq: jest.fn() });
+    const del = jest.fn().mockReturnValue({ eq: deleteEq });
+    mockFrom.mockImplementation((table: string) => {
+      if (table === "shopify_stores") {
+        return {
+          select: () => ({ eq: () => ({ single: jest.fn().mockResolvedValue({ data: { bot_id: "bot-123" } }) }) }),
+        };
+      }
+      return { delete: del };
+    });
+
+    const req = createWebhookRequest(
+      { customer: { id: 1, email: "Shopper@Example.com" } },
+      { "x-shopify-topic": "customers/redact" },
+    );
+    const res = await POST(req);
+
+    expect(res.status).toBe(200);
+    expect(mockFrom).toHaveBeenCalledWith("leads");
+    expect(mockFrom).toHaveBeenCalledWith("conversations");
+    expect(deleteEq).toHaveBeenCalledWith("bot_id", "bot-123");
+    expect(ilike).toHaveBeenCalledWith("email", "shopper@example.com");
+  });
+
+  it("should delete the store record on shop/redact", async () => {
+    const storeDeleteEq = jest.fn().mockResolvedValue({ error: null });
+    mockFrom.mockImplementation((table: string) => {
+      if (table === "shopify_stores") {
+        return {
+          select: () => ({ eq: () => ({ single: jest.fn().mockResolvedValue({ data: null }) }) }),
+          delete: () => ({ eq: storeDeleteEq }),
+        };
+      }
+      return {};
+    });
+
+    const req = createWebhookRequest({ shop_domain: "test-store.myshopify.com" }, {
+      "x-shopify-topic": "shop/redact",
+    });
+    const res = await POST(req);
+
+    expect(res.status).toBe(200);
+    expect(storeDeleteEq).toHaveBeenCalledWith("shop", "test-store.myshopify.com");
+  });
 });

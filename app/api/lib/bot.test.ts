@@ -2,6 +2,7 @@ import { getBotByPublicKey } from "./bot";
 import { getDb } from "./db";
 
 jest.mock("./db");
+jest.mock("./auth");
 
 describe("getBotByPublicKey", () => {
   const mockRepo = {

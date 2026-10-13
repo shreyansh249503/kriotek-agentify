@@ -18,20 +18,22 @@ export async function GET(req: NextRequest) {
   const state = searchParams.get("state");
   const hmac = searchParams.get("hmac");
 
-  if (!shop || !code) {
-    return NextResponse.json({ error: "Missing shop or code parameters" }, { status: 400 });
+  if (!shop || !code || !hmac) {
+    return NextResponse.json({ error: "Missing shop, code or hmac parameters" }, { status: 400 });
   }
 
+  if (!/^[a-zA-Z0-9][a-zA-Z0-9-]*\.myshopify\.com$/.test(shop)) {
+    return NextResponse.json({ error: "Invalid shop domain" }, { status: 400 });
+  }
+
+  // The state cookie set by /api/shopify/install must match; this blocks
+  // login-CSRF where an attacker completes OAuth into a victim's session.
   const cookieState = req.cookies.get("shopify_state")?.value;
-  if (!state || state !== cookieState) {
-    if (process.env.NODE_ENV !== "development") {
-      return NextResponse.json({ error: "State mismatch" }, { status: 403 });
-    } else {
-      console.warn("State mismatch detected but bypassed in development mode.");
-    }
+  if (!state || !cookieState || state !== cookieState) {
+    return NextResponse.json({ error: "State mismatch" }, { status: 403 });
   }
 
-  if (!isValidHmac(searchParams, hmac!)) {
+  if (!isValidHmac(searchParams, hmac)) {
     return NextResponse.json({ error: "Invalid HMAC" }, { status: 403 });
   }
 
@@ -136,8 +138,7 @@ function isValidHmac(params: URLSearchParams, hmac: string): boolean {
     .update(message)
     .digest("hex");
 
-  return crypto.timingSafeEqual(
-    Buffer.from(digest, "hex"),
-    Buffer.from(hmac, "hex"),
-  );
+  const a = Buffer.from(digest, "hex");
+  const b = Buffer.from(hmac, "hex");
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
