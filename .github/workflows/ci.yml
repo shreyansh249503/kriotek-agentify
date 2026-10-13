@@ -48,6 +48,24 @@ jobs:
       - name: Run Jest
         run: npm test -- --ci
 
+  build:
+    name: Build (type check)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Same command Vercel runs; fails on TypeScript errors.
+      - name: Next.js build
+        run: npm run build
+
   e2e:
     name: E2E tests (Playwright, Chromium)
     runs-on: ubuntu-latest

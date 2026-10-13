@@ -85,7 +85,6 @@ export async function POST(req: NextRequest) {
 
     if (COMPLIANCE_TOPICS.has(topic)) {
       await handleComplianceWebhook(
-        supabase,
         topic,
         shop,
         JSON.parse(rawBody) as ComplianceWebhookPayload,
@@ -250,14 +249,16 @@ interface ComplianceWebhookPayload {
   data_request?: { id?: number };
 }
 
-type SupabaseAdmin = ReturnType<typeof createClient>;
-
 async function handleComplianceWebhook(
-  supabase: SupabaseAdmin,
   topic: string,
   shop: string,
   payload: ComplianceWebhookPayload,
 ) {
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
   const { data: store } = await supabase
     .from("shopify_stores")
     .select("bot_id")
