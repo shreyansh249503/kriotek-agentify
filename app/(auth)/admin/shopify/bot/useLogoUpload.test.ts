@@ -1,6 +1,11 @@
 import { renderHook, act } from "@testing-library/react";
 import { useLogoUpload } from "./useLogoUpload";
 
+const mockFetchWithToken = jest.fn((...args: Parameters<typeof fetch>) => global.fetch(...args));
+jest.mock("../lib/useSessionToken", () => ({
+  useSessionToken: () => ({ fetchWithToken: mockFetchWithToken }),
+}));
+
 describe("useLogoUpload Hook", () => {
   const mockUpdate = jest.fn();
   const mockSetBanner = jest.fn();
@@ -52,7 +57,7 @@ describe("useLogoUpload Hook", () => {
       await result.current.handleLogoUpload([], [validFile], []);
     });
 
-    expect(global.fetch).toHaveBeenCalledWith("/api/upload", {
+    expect(mockFetchWithToken).toHaveBeenCalledWith("/api/upload", {
       method: "POST",
       body: expect.any(FormData),
     });

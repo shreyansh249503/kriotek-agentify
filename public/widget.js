@@ -1,4 +1,91 @@
 (async function () {
+  // ---------------------------------------------------------------------------
+  // HTML safety. Everything the model, the store or a bot owner can influence
+  // goes through setRichHTML() (sanitised with DOMPurify) or escapeHtml().
+  // ---------------------------------------------------------------------------
+  const DOMPURIFY_SRC = "https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js";
+
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  function safeUrl(value, fallback) {
+    const url = String(value ?? "").trim();
+    return /^(https?:)?\/\//i.test(url) || url.startsWith("/") ? url : fallback || "#";
+  }
+
+  function safeColor(value, fallback) {
+    const color = String(value ?? "").trim();
+    return /^#[0-9a-f]{3,8}$/i.test(color) ? color : fallback;
+  }
+
+  let purifyConfigured = false;
+  function configurePurify() {
+    if (purifyConfigured || !window.DOMPurify) return;
+    purifyConfigured = true;
+    // Links that open a new tab must not get a handle on the store's window.
+    window.DOMPurify.addHook("afterSanitizeAttributes", (node) => {
+      if (node.tagName === "A" && node.getAttribute("target") === "_blank") {
+        node.setAttribute("rel", "noopener noreferrer");
+      }
+    });
+  }
+
+  const purifyReady = new Promise((resolve) => {
+    if (window.DOMPurify) return resolve(true);
+    const script = document.createElement("script");
+    script.src = DOMPURIFY_SRC;
+    script.async = true;
+    script.onload = () => resolve(true);
+    script.onerror = () => {
+      console.error("Agentify: failed to load DOMPurify; rich messages will render as plain text.");
+      resolve(false);
+    };
+    document.head.appendChild(script);
+    setTimeout(() => resolve(!!window.DOMPurify), 5000);
+  });
+
+  // Renders untrusted HTML. Without DOMPurify we fall back to plain text,
+  // parsed in an inert document so nothing in it can execute.
+  function setRichHTML(el, html) {
+    if (window.DOMPurify) {
+      configurePurify();
+      el.innerHTML = window.DOMPurify.sanitize(html, {
+        ADD_ATTR: ["target"],
+        FORBID_TAGS: ["style", "form", "input", "button", "iframe"],
+      });
+      return;
+    }
+    const doc = new DOMParser().parseFromString(String(html), "text/html");
+    el.textContent = doc.body.textContent || "";
+  }
+
+  // Carousel arrows and broken product images used inline onclick/onerror,
+  // which sanitising removes; handle them with delegated listeners instead.
+  document.addEventListener("click", (event) => {
+    const btn = event.target.closest && event.target.closest("[data-scroll-target]");
+    if (!btn) return;
+    const target = document.getElementById(btn.getAttribute("data-scroll-target"));
+    if (target) {
+      target.scrollBy({ left: Number(btn.getAttribute("data-scroll-by")) || 0, behavior: "smooth" });
+    }
+  });
+  document.addEventListener(
+    "error",
+    (event) => {
+      const img = event.target;
+      if (img && img.tagName === "IMG" && img.dataset && img.dataset.fallback && img.src !== img.dataset.fallback) {
+        img.src = img.dataset.fallback;
+      }
+    },
+    true,
+  );
+
   const scriptTag =
     document.currentScript ||
     document.querySelector("script[bot-id]") ||
@@ -225,7 +312,7 @@
       color: #111827;
       margin-bottom: 6px;
     `;
-    title.innerHTML = `Hello! 👋 I'm <span style="color: ${THEME.color}">${botName}</span>`;
+    title.innerHTML = `Hello! 👋 I'm <span style="color: ${THEME.color}">${escapeHtml(botName)}</span>`;
     wrapper.appendChild(title);
 
     const subtitle = document.createElement("div");
@@ -459,28 +546,28 @@
 
           let html = `<div class="carousel-wrapper ${isSingle ? "single-wrapper" : ""}">`;
           if (showArrows) {
-            html += `<button class="carousel-nav-btn prev" onclick="document.getElementById('${carouselId}').scrollBy({left: -220, behavior: 'smooth'})" aria-label="Previous"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg></button>`;
+            html += `<span role="button" tabindex="0" class="carousel-nav-btn prev" data-scroll-target="${carouselId}" data-scroll-by="-220" aria-label="Previous"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg></span>`;
           }
           html += `<div id="${carouselId}" class="product-carousel ${isSingle ? "single-product" : ""}">`;
           products.forEach((p) => {
-            const imgUrl = p.image || p.image_url || fallbackSvg;
-            const safeName = (p.name || "Product").replace(/"/g, "&quot;");
+            const imgUrl = escapeHtml(safeUrl(p.image || p.image_url, fallbackSvg));
+            const safeName = escapeHtml(p.name || "Product");
             html += `
             <div class="product-card">
               <div class="product-image-container">
-                <img src="${imgUrl}" class="product-image" alt="${safeName}" onerror="this.src='${fallbackSvg}'"/>
+                <img src="${imgUrl}" class="product-image" alt="${safeName}" data-fallback="${fallbackSvg}"/>
               </div>
               <div class="product-info">
-                <div class="product-name" title="${safeName}">${p.name || "Unnamed Product"}</div>
-                <div class="product-price">${p.price || ""}</div>
-                <a class="product-action" href="${p.url || "#"}" target="_blank" rel="noopener noreferrer">View Details</a>
+                <div class="product-name" title="${safeName}">${escapeHtml(p.name || "Unnamed Product")}</div>
+                <div class="product-price">${escapeHtml(p.price || "")}</div>
+                <a class="product-action" href="${escapeHtml(safeUrl(p.url))}" target="_blank" rel="noopener noreferrer">View Details</a>
               </div>
             </div>
           `;
           });
           html += `</div>`;
           if (showArrows) {
-            html += `<button class="carousel-nav-btn next" onclick="document.getElementById('${carouselId}').scrollBy({left: 220, behavior: 'smooth'})" aria-label="Next"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg></button>`;
+            html += `<span role="button" tabindex="0" class="carousel-nav-btn next" data-scroll-target="${carouselId}" data-scroll-by="220" aria-label="Next"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg></span>`;
           }
           html += `</div>`;
           return html.replace(/\n\s*/g, "");
@@ -564,16 +651,12 @@
         htmlOut += `<div style="background:#f3f4f6; color:#111; padding:10px 14px; border-radius:14px 14px 14px 2px; margin-bottom:8px; display:inline-block; max-width:85%; width:fit-content; font-size:14px; line-height:1.5;">${textParsed}</div>`;
       }
       htmlOut += cardHtml;
-      bubble.innerHTML = htmlOut;
+      setRichHTML(bubble, htmlOut);
     } else {
       bubble.style.background = "#f3f4f6";
       bubble.style.padding = "10px 12px";
       bubble.style.maxWidth = "80%";
-      if (window.marked) {
-        bubble.innerHTML = window.marked.parse(processed);
-      } else {
-        bubble.innerHTML = processed;
-      }
+      setRichHTML(bubble, window.marked ? window.marked.parse(processed) : processed);
     }
   }
 
@@ -761,17 +844,22 @@
   const bot = resolvedBotConfig || (await fetchBotConfig(publicKey));
   console.log("Agentify Widget: Loaded bot configuration:", bot);
   const THEME = {
-    color: bot.primary_color || "#4f46e5",
+    color: safeColor(bot.primary_color, "#4f46e5"),
     botName: bot.name || "AI Assistant",
-    logoUrl: bot.logo_url
-      ? bot.logo_url.trim().startsWith("http")
-        ? bot.logo_url.trim()
-        : `${API_BASE_URL}${bot.logo_url.trim()}`
-      : DEFAULT_BOT_ICON,
+    logoUrl: escapeHtml(
+      bot.logo_url
+        ? bot.logo_url.trim().startsWith("http")
+          ? safeUrl(bot.logo_url, DEFAULT_BOT_ICON)
+          : `${API_BASE_URL}${bot.logo_url.trim()}`
+        : DEFAULT_BOT_ICON,
+    ),
     ecommerceEnabled: !!bot.ecommerce_enabled,
     supabaseUrl: bot.supabaseUrl || "",
     supabaseAnonKey: bot.supabaseAnonKey || "",
   };
+
+  // Make sure the sanitiser is available before any saved messages render.
+  await purifyReady;
 
   function applyTheme() {
     const nameEl = widget.querySelector("#bot-name");
@@ -1477,11 +1565,10 @@
                   const bubble = createBotMessage(messages, THEME.logoUrl);
                   showSupportButtonGlobal = false;
                   const processedAnswer = processAnswerText(msg.content);
-                  if (window.marked) {
-                    bubble.innerHTML = window.marked.parse(processedAnswer);
-                  } else {
-                    bubble.innerHTML = processedAnswer;
-                  }
+                  setRichHTML(
+                    bubble,
+                    window.marked ? window.marked.parse(processedAnswer) : processedAnswer,
+                  );
                 } else if (msg.role === "system") {
                   createSystemMessage(msg.content);
                 }
@@ -1814,7 +1901,7 @@
           });
           item.innerHTML = `
             <div style="font-size: 13px; font-weight: 600; color: ${THEME.color}; margin-bottom: 4px;">${date}</div>
-            <div style="font-size: 13px; color: #4b5563; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${chat.snippet || "(Empty chat)"}</div>
+            <div style="font-size: 13px; color: #4b5563; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(chat.snippet || "(Empty chat)")}</div>
           `;
           item.onclick = () => loadConversation(chat.id);
           historyList.appendChild(item);
@@ -1955,9 +2042,9 @@
           <line x1="12" y1="8" x2="12" y2="12"></line>
           <line x1="12" y1="16" x2="12.01" y2="16"></line>
         </svg>
-        <span class="chat-error-title">${title}</span>
+        <span class="chat-error-title">${escapeHtml(title)}</span>
       </div>
-      <div class="chat-error-desc" style="color: #7f1d1d; font-size: 12px; line-height: 1.4;">${desc}</div>
+      <div class="chat-error-desc" style="color: #7f1d1d; font-size: 12px; line-height: 1.4;">${escapeHtml(desc)}</div>
       <button class="chat-retry-btn" type="button" style="
         align-self: flex-start;
         display: inline-flex;

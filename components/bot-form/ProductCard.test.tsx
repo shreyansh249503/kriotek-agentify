@@ -3,6 +3,10 @@ import { ProductCard } from "./ProductCard";
 import { Product } from "@/types/bot";
 import React from "react";
 
+jest.mock("@/lib/authHeaders", () => ({
+  authHeaders: jest.fn().mockResolvedValue({ Authorization: "Bearer test" }),
+}));
+
 describe("ProductCard Component", () => {
   const sampleProduct: Product = {
     id: "prod-1",

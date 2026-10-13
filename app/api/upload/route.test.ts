@@ -1,6 +1,7 @@
 import { POST } from "./route";
 import { NextRequest } from "next/server";
 import { supabaseAdmin } from "../lib/supabase-admin";
+import { getRequestPrincipal } from "../lib/requestAuth";
 
 jest.mock("../lib/supabase-admin", () => ({
   supabaseAdmin: {
@@ -8,6 +9,10 @@ jest.mock("../lib/supabase-admin", () => ({
       from: jest.fn(),
     },
   },
+}));
+
+jest.mock("../lib/requestAuth", () => ({
+  getRequestPrincipal: jest.fn(),
 }));
 
 jest.mock("nanoid", () => ({
@@ -34,10 +39,32 @@ describe("API: /api/upload", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    (getRequestPrincipal as jest.Mock).mockResolvedValue({ kind: "user", userId: "user_1" });
     (supabaseAdmin.storage.from as jest.Mock).mockReturnValue({
       upload: mockUpload,
       getPublicUrl: mockGetPublicUrl,
     });
+  });
+
+  it("should return 401 when the caller is not signed in", async () => {
+    (getRequestPrincipal as jest.Mock).mockResolvedValueOnce(null);
+    const formData = new FormData();
+    formData.append("file", createFile("img", "a.png", "image/png"));
+
+    const res = await POST(createMockRequest(formData));
+
+    expect(res.status).toBe(401);
+    expect(mockUpload).not.toHaveBeenCalled();
+  });
+
+  it("should reject SVG uploads", async () => {
+    const formData = new FormData();
+    formData.append("file", createFile("<svg onload=alert(1)>", "logo.svg", "image/svg+xml"));
+
+    const res = await POST(createMockRequest(formData));
+
+    expect(res.status).toBe(400);
+    expect(mockUpload).not.toHaveBeenCalled();
   });
 
   it("should return 400 if no file is provided in formData", async () => {
@@ -100,7 +127,7 @@ describe("API: /api/upload", () => {
     expect(mockUpload).toHaveBeenCalledWith(
       "avatars/mocked_avatar_id.png",
       expect.any(Buffer),
-      { contentType: "image/png", upsert: true }
+      { contentType: "image/png", upsert: false }
     );
     expect(data).toEqual({
       url: "https://example.supabase.co/storage/v1/object/public/bot-avatars/avatars/mocked_avatar_id.png",

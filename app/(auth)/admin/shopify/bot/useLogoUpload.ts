@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { BotConfig } from "./type";
+import { useSessionToken } from "../lib/useSessionToken";
 
 interface UseLogoUploadProps {
   update: <K extends keyof BotConfig>(field: K, value: BotConfig[K]) => void;
@@ -12,6 +13,7 @@ interface UseLogoUploadProps {
 
 export function useLogoUpload({ update, setBanner }: UseLogoUploadProps) {
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const { fetchWithToken } = useSessionToken();
 
   const handleLogoUpload = useCallback(
     async (
@@ -37,7 +39,7 @@ export function useLogoUpload({ update, setBanner }: UseLogoUploadProps) {
       formData.append("file", file);
 
       try {
-        const res = await fetch("/api/upload", {
+        const res = await fetchWithToken("/api/upload", {
           method: "POST",
           body: formData,
         });
@@ -62,7 +64,7 @@ export function useLogoUpload({ update, setBanner }: UseLogoUploadProps) {
         setUploadingLogo(false);
       }
     },
-    [update, setBanner],
+    [update, setBanner, fetchWithToken],
   );
 
   return {

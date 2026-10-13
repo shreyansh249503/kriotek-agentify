@@ -72,12 +72,28 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing headers" }, { status: 400 });
     }
 
-    const payload = JSON.parse(rawBody) as ShopifyWebhookProductPayload;
-
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
+
+    // Topics that don't depend on a linked bot are handled first.
+    if (topic === "app/uninstalled") {
+      await supabase.from("shopify_stores").delete().eq("shop", shop);
+      return NextResponse.json({ ok: true });
+    }
+
+    if (COMPLIANCE_TOPICS.has(topic)) {
+      await handleComplianceWebhook(
+        supabase,
+        topic,
+        shop,
+        JSON.parse(rawBody) as ComplianceWebhookPayload,
+      );
+      return NextResponse.json({ ok: true });
+    }
+
+    const payload = JSON.parse(rawBody) as ShopifyWebhookProductPayload;
 
     const { data: storeData } = await supabase
       .from("shopify_stores")
@@ -121,10 +137,8 @@ export async function POST(req: NextRequest) {
         break;
       }
 
-      case "app/uninstalled": {
-        await supabase.from("shopify_stores").delete().eq("shop", shop);
+      default:
         return NextResponse.json({ ok: true });
-      }
     }
 
     await supabase
@@ -135,8 +149,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   } catch (e) {
     console.error("Error handling Shopify webhook:", e);
-    const errorMessage = e instanceof Error ? e.message : String(e);
-    return NextResponse.json({ error: "Webhook handling failed", details: errorMessage }, { status: 500 });
+    return NextResponse.json({ error: "Webhook handling failed" }, { status: 500 });
   }
 }
 
@@ -211,5 +224,85 @@ function isValidWebhookHmac(body: string, hmac: string | null): boolean {
     .createHmac("sha256", secret)
     .update(body, "utf8")
     .digest("base64");
-  return digest === hmac;
+  const a = Buffer.from(digest);
+  const b = Buffer.from(hmac);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+
+// ---------------------------------------------------------------------------
+// Mandatory GDPR compliance webhooks
+// https://shopify.dev/docs/apps/build/privacy-law-compliance
+// Subscribed in shopify.app.toml ([[webhooks.subscriptions]] compliance_topics).
+// ---------------------------------------------------------------------------
+
+const COMPLIANCE_TOPICS = new Set([
+  "customers/data_request",
+  "customers/redact",
+  "shop/redact",
+]);
+
+interface ComplianceWebhookPayload {
+  shop_id?: number;
+  shop_domain?: string;
+  customer?: { id?: number; email?: string | null; phone?: string | null };
+  orders_requested?: number[];
+  orders_to_redact?: number[];
+  data_request?: { id?: number };
+}
+
+type SupabaseAdmin = ReturnType<typeof createClient>;
+
+async function handleComplianceWebhook(
+  supabase: SupabaseAdmin,
+  topic: string,
+  shop: string,
+  payload: ComplianceWebhookPayload,
+) {
+  const { data: store } = await supabase
+    .from("shopify_stores")
+    .select("bot_id")
+    .eq("shop", shop)
+    .single();
+  const botId = (store as { bot_id?: string | null } | null)?.bot_id ?? null;
+
+  switch (topic) {
+    case "customers/data_request": {
+      // Shopify only needs a 200 here; the merchant must then hand the shopper
+      // their data within 30 days. We log the request so it can be fulfilled
+      // from the leads/conversations tables for this bot.
+      console.info("[compliance] customers/data_request", {
+        shop,
+        botId,
+        customerId: payload.customer?.id,
+        dataRequestId: payload.data_request?.id,
+      });
+      return;
+    }
+
+    case "customers/redact": {
+      if (!botId) return;
+      const email = payload.customer?.email?.trim().toLowerCase();
+      const phone = payload.customer?.phone?.trim();
+      for (const table of ["leads", "conversations"]) {
+        if (email) {
+          await supabase.from(table).delete().eq("bot_id", botId).ilike("email", email);
+        }
+        if (phone) {
+          await supabase.from(table).delete().eq("bot_id", botId).eq("phone", phone);
+        }
+      }
+      return;
+    }
+
+    case "shop/redact": {
+      // Sent 48h after uninstall. Remove everything we hold about this shop's
+      // shoppers and the store record itself.
+      if (botId) {
+        await supabase.from("leads").delete().eq("bot_id", botId);
+        await supabase.from("conversations").delete().eq("bot_id", botId);
+      }
+      await supabase.from("shopify_stores").delete().eq("shop", shop);
+      return;
+    }
+  }
 }

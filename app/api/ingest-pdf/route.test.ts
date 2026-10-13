@@ -1,6 +1,7 @@
 import { POST } from "./route";
 import { createEmbedding } from "../lib/embeddings";
 import { getDb } from "../lib/db";
+import { canManageBot, getRequestPrincipal } from "../lib/requestAuth";
 
 if (typeof Response === "undefined" || !Response.json) {
   (global as unknown as Record<string, unknown>).Response = class MockResponse {
@@ -48,6 +49,11 @@ jest.mock("../lib/db", () => ({
   getDb: jest.fn(),
 }));
 
+jest.mock("../lib/requestAuth", () => ({
+  getRequestPrincipal: jest.fn(),
+  canManageBot: jest.fn(),
+}));
+
 describe("POST /api/ingest-pdf", () => {
   const mockedGetDb = getDb as jest.Mock;
   const mockedCreateEmbedding = createEmbedding as jest.Mock;
@@ -58,6 +64,9 @@ describe("POST /api/ingest-pdf", () => {
     jest.clearAllMocks();
     shouldFailPdfParse = false;
     mockPdfRawText = "Sample PDF extracted content text for testing.";
+
+    (getRequestPrincipal as jest.Mock).mockResolvedValue({ kind: "user", userId: "user_1" });
+    (canManageBot as jest.Mock).mockResolvedValue(true);
 
     mockedGetDb.mockResolvedValue({
       getRepository: () => ({
@@ -81,8 +90,37 @@ describe("POST /api/ingest-pdf", () => {
     } as unknown as Request;
   };
 
-  const createMockFile = (content: string) => ({
+  const createMockFile = (content: string, size = content.length) => ({
+    size,
     arrayBuffer: jest.fn().mockResolvedValue(Buffer.from(content).buffer),
+  });
+
+  it("should return 401 when the caller is not signed in", async () => {
+    (getRequestPrincipal as jest.Mock).mockResolvedValueOnce(null);
+    const req = createMockRequest({ file: createMockFile("x"), publicKey: "pk_test" });
+    const res = (await POST(req)) as unknown as { status: number };
+
+    expect(res.status).toBe(401);
+    expect(mockSave).not.toHaveBeenCalled();
+  });
+
+  it("should return 403 when the caller does not own the bot", async () => {
+    (canManageBot as jest.Mock).mockResolvedValueOnce(false);
+    const req = createMockRequest({ file: createMockFile("x"), publicKey: "pk_someone_else" });
+    const res = (await POST(req)) as unknown as { status: number };
+
+    expect(res.status).toBe(403);
+    expect(mockSave).not.toHaveBeenCalled();
+  });
+
+  it("should return 413 for PDFs over 10MB", async () => {
+    const req = createMockRequest({
+      file: createMockFile("x", 11 * 1024 * 1024),
+      publicKey: "pk_test",
+    });
+    const res = (await POST(req)) as unknown as { status: number };
+
+    expect(res.status).toBe(413);
   });
 
   it("should return 400 Bad Request if file or publicKey is missing", async () => {

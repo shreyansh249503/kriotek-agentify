@@ -1,51 +1,41 @@
 import { getDb } from "../../lib/db";
-import { getUserFromRequest } from "../../lib/auth";
+import { getOwnedBot } from "../../lib/bot";
 import { Bot } from "../../lib/entities";
 
+/**
+ * GET /api/bots/[id]
+ * Returns the full bot record, but only to its owner. The storefront widget
+ * uses /api/public/bot/[publicKey], which exposes only display fields.
+ */
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
+  const owned = await getOwnedBot(req, id);
+  if (!owned.ok) return owned.response;
 
-  console.log("Fetching bot with ID:", id);
-  console.log("ID type:", typeof id);
-  const db = await getDb();
-  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-  let bot: unknown = null;
-  try {
-    const query = isUuid
-      ? `SELECT * FROM bots WHERE id = $1`
-      : `SELECT * FROM bots WHERE public_key = $1`;
-    const rawRows = await db.query(query, [id]);
-    if (Array.isArray(rawRows) && rawRows.length > 0) {
-      bot = rawRows[0];
-    } else {
-      bot = await db.getRepository("Bot").findOne({
-        where: isUuid ? { id } : { public_key: id },
-      });
-    }
-  } catch {
-    bot = await db.getRepository("Bot").findOne({
-      where: isUuid ? { id } : { public_key: id },
-    });
-  }
-
-  console.log("Query result:", bot);
-
-  if (!bot) {
-    return Response.json({ error: "Bot not found" }, { status: 404 });
-  }
-
-  return Response.json(bot);
+  return Response.json(owned.bot);
 }
 
+/**
+ * PUT /api/bots/[id]
+ * Updates a bot the signed-in user owns. Only whitelisted fields are written.
+ */
 export async function PUT(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const body = await req.json();
+  const owned = await getOwnedBot(req, id);
+  if (!owned.ok) return owned.response;
+
+  let body: Record<string, unknown>;
+  try {
+    body = await req.json();
+  } catch {
+    return Response.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
 
   const {
     name,
@@ -83,11 +73,18 @@ export async function PUT(
     updateData.company_name = companyName;
   }
   if (lastTrainedAt !== undefined) {
-    updateData.last_trained_at = lastTrainedAt ? new Date(lastTrainedAt) : new Date();
+    updateData.last_trained_at = lastTrainedAt
+      ? new Date(lastTrainedAt as string)
+      : new Date();
+  }
+
+  // Drop keys the client didn't send so a partial update can't null out fields.
+  for (const key of Object.keys(updateData)) {
+    if (updateData[key] === undefined) delete updateData[key];
   }
 
   const db = await getDb();
-  await db.getRepository("Bot").update(id, updateData);
+  await db.getRepository<Bot>("Bot").update(owned.bot.id, updateData);
 
   return Response.json({ status: "ok" });
 }
@@ -97,36 +94,21 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const user = await getUserFromRequest(req);
-  if (!user) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const owned = await getOwnedBot(req, id);
+  if (!owned.ok) return owned.response;
 
   const db = await getDb();
-  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-
-  const botRepo = db.getRepository<Bot>("Bot");
-  const bot = await botRepo.findOne({
-    where: isUuid ? { id, user_id: user.id } : { public_key: id, user_id: user.id },
-  });
-
-  if (!bot) {
-    return Response.json({ error: "Bot not found" }, { status: 404 });
-  }
-
-  const botId = bot.id;
-  const publicKey = bot.public_key;
+  const botId = owned.bot.id;
+  const publicKey = owned.bot.public_key;
 
   if (publicKey) {
     await db.query(`DELETE FROM bot_documents WHERE public_key = $1`, [publicKey]).catch(() => {});
     await db.query(`DELETE FROM crawled_pages WHERE bot_public_key = $1`, [publicKey]).catch(() => {});
   }
-  if (botId) {
-    await db.query(`DELETE FROM leads WHERE bot_id = $1`, [botId]).catch(() => {});
-    await db.query(`DELETE FROM conversations WHERE bot_id = $1`, [botId]).catch(() => {});
-    await db.query(`UPDATE shopify_stores SET bot_id = NULL WHERE bot_id = $1`, [botId]).catch(() => {});
-    await db.query(`DELETE FROM bots WHERE id = $1`, [botId]).catch(() => {});
-  }
+  await db.query(`DELETE FROM leads WHERE bot_id = $1`, [botId]).catch(() => {});
+  await db.query(`DELETE FROM conversations WHERE bot_id = $1`, [botId]).catch(() => {});
+  await db.query(`UPDATE shopify_stores SET bot_id = NULL WHERE bot_id = $1`, [botId]).catch(() => {});
+  await db.query(`DELETE FROM bots WHERE id = $1`, [botId]).catch(() => {});
 
   return Response.json({ status: "ok", message: "Bot deleted successfully" });
 }

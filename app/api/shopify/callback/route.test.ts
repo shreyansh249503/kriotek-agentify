@@ -56,10 +56,10 @@ describe("API: /api/shopify/callback", () => {
     const data = await res.json();
 
     expect(res.status).toBe(400);
-    expect(data).toEqual({ error: "Missing shop or code parameters" });
+    expect(data).toEqual({ error: "Missing shop, code or hmac parameters" });
   });
 
-  it("should return 403 if state parameter mismatches cookie in production", async () => {
+  it("should return 403 if state parameter mismatches cookie", async () => {
     const params = { shop: "test.myshopify.com", code: "code_123", state: "state_a" };
     const hmac = createHmac(params);
 

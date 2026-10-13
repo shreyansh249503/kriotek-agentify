@@ -3,6 +3,7 @@ import { createEmbedding } from "../lib/embeddings";
 import { getDb } from "../lib/db";
 import { Bot, BotDocument } from "../lib/entities";
 import PDFParser from "pdf2json";
+import { canManageBot, getRequestPrincipal } from "../lib/requestAuth";
 
 function extractTextFromPdf(buffer: Buffer): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -28,13 +29,28 @@ function extractTextFromPdf(buffer: Buffer): Promise<string> {
   });
 }
 
+const MAX_PDF_BYTES = 10 * 1024 * 1024;
+
 export async function POST(req: Request) {
+  const principal = await getRequestPrincipal(req);
+  if (!principal) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const formData = await req.formData();
   const file = formData.get("file") as File;
   const publicKey = formData.get("publicKey") as string;
 
   if (!file || !publicKey) {
     return Response.json({ error: "Missing file or publicKey" }, { status: 400 });
+  }
+
+  if (!(await canManageBot(principal, publicKey))) {
+    return Response.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  if (file.size > MAX_PDF_BYTES) {
+    return Response.json({ error: "PDF too large. Max size is 10MB." }, { status: 413 });
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());

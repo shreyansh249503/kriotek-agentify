@@ -1,3 +1,4 @@
+import { authHeaders } from "@/lib/authHeaders";
 import React, { useState } from "react";
 import { Product, ProductMetadata } from "@/types/bot";
 import {
@@ -68,6 +69,7 @@ export const ProductCard = ({
       const res = await fetch("/api/upload", {
         method: "POST",
         body: formData,
+        headers: await authHeaders(),
       });
       const data = await res.json();
       if (data.url) {

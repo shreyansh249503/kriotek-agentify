@@ -4,9 +4,15 @@ process.env.SUPABASE_SERVICE_ROLE_KEY = "test_service_key";
 import { POST } from "./route";
 import { NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { getShopFromSession, verifySessionToken } from "../lib/verifySessionToken";
 
 jest.mock("@supabase/supabase-js", () => ({
   createClient: jest.fn(),
+}));
+
+jest.mock("../lib/verifySessionToken", () => ({
+  verifySessionToken: jest.fn(),
+  getShopFromSession: jest.fn(),
 }));
 
 describe("API: /api/shopify/sync", () => {
@@ -37,6 +43,8 @@ describe("API: /api/shopify/sync", () => {
     });
 
     (createClient as jest.Mock).mockReturnValue({ from: mockFrom });
+    (verifySessionToken as jest.Mock).mockReturnValue({ dest: "https://test.myshopify.com" });
+    (getShopFromSession as jest.Mock).mockReturnValue("test.myshopify.com");
     global.fetch = jest.fn();
   });
 
@@ -44,17 +52,34 @@ describe("API: /api/shopify/sync", () => {
     global.fetch = originalFetch;
   });
 
-  it("should return 400 if shop or bot_id is missing", async () => {
+  it("should return 401 without a valid Shopify session token", async () => {
+    (verifySessionToken as jest.Mock).mockImplementationOnce(() => {
+      throw new Error("Missing authorization header");
+    });
+
     const req = new NextRequest("http://localhost/api/shopify/sync", {
       method: "POST",
-      body: JSON.stringify({ shop: "test.myshopify.com" }),
+      body: JSON.stringify({ shop: "victim.myshopify.com", bot_id: "attacker_bot" }),
     });
 
     const res = await POST(req);
-    const data = await res.json();
 
-    expect(res.status).toBe(400);
-    expect(data).toEqual({ error: "shop and bot_id are required" });
+    expect(res.status).toBe(401);
+    expect(mockFrom).not.toHaveBeenCalled();
+  });
+
+  it("should return 409 when no bot is linked to the shop yet", async () => {
+    mockSingle.mockResolvedValueOnce({ data: { access_token: "shpat_123", bot_id: null } });
+
+    const req = new NextRequest("http://localhost/api/shopify/sync", {
+      method: "POST",
+      body: JSON.stringify({}),
+    });
+
+    const res = await POST(req);
+
+    expect(res.status).toBe(409);
+    expect(global.fetch).not.toHaveBeenCalled();
   });
 
   it("should return 404 if shop is not found in shopify_stores table", async () => {
@@ -73,7 +98,7 @@ describe("API: /api/shopify/sync", () => {
   });
 
   it("should return 502 if Shopify GraphQL API returns non-200 status", async () => {
-    mockSingle.mockResolvedValueOnce({ data: { access_token: "shpat_123" } });
+    mockSingle.mockResolvedValueOnce({ data: { access_token: "shpat_123", bot_id: "bot_linked" } });
     (global.fetch as jest.Mock).mockResolvedValueOnce({ ok: false, status: 500 });
 
     const req = new NextRequest("http://localhost/api/shopify/sync", {
@@ -89,7 +114,7 @@ describe("API: /api/shopify/sync", () => {
   });
 
   it("should return 502 if Shopify GraphQL response includes errors", async () => {
-    mockSingle.mockResolvedValueOnce({ data: { access_token: "shpat_123" } });
+    mockSingle.mockResolvedValueOnce({ data: { access_token: "shpat_123", bot_id: "bot_linked" } });
     (global.fetch as jest.Mock).mockResolvedValueOnce({
       ok: true,
       json: jest.fn().mockResolvedValue({ errors: [{ message: "Unauthorized access to products" }] }),
@@ -108,8 +133,9 @@ describe("API: /api/shopify/sync", () => {
   });
 
   it("should sync products, update bot, and return success payload", async () => {
-    mockSingle.mockResolvedValueOnce({ data: { access_token: "shpat_123" } });
-    mockUpdate.mockReturnValue({ eq: jest.fn().mockResolvedValue({ error: null }) });
+    mockSingle.mockResolvedValueOnce({ data: { access_token: "shpat_123", bot_id: "bot_linked" } });
+    const botEq = jest.fn().mockResolvedValue({ error: null });
+    mockUpdate.mockReturnValue({ eq: botEq });
 
     const mockProductsResponse = {
       data: {
@@ -161,10 +187,16 @@ describe("API: /api/shopify/sync", () => {
     });
     expect(data.products[0].variants).toBeDefined();
     expect(data.products[0].metadata).toBeDefined();
+    // Uses the shop from the session token and the bot already linked to it,
+    // ignoring the bot_id in the body; never re-links the store.
+    expect(mockEq).toHaveBeenCalledWith("shop", "test.myshopify.com");
+    expect(botEq).toHaveBeenCalledWith("id", "bot_linked");
+    expect(botEq).not.toHaveBeenCalledWith("id", "bot_123");
+    expect(mockUpdate).toHaveBeenCalledTimes(1);
   });
 
   it("should return 500 when Supabase bot update returns error", async () => {
-    mockSingle.mockResolvedValueOnce({ data: { access_token: "shpat_123" } });
+    mockSingle.mockResolvedValueOnce({ data: { access_token: "shpat_123", bot_id: "bot_linked" } });
     mockUpdate.mockReturnValue({ eq: jest.fn().mockResolvedValue({ error: new Error("Update bot error") }) });
 
     (global.fetch as jest.Mock).mockResolvedValueOnce({
