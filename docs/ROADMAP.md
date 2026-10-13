@@ -42,7 +42,7 @@ The market research, competitor analysis, pricing and go-to-market plan behind t
 | # | Item | Why | Where | Done when |
 |---|---|---|---|---|
 | 2.1 | COD confirmation on site | RTO is the most expensive problem for COD-heavy brands | `orders/create` webhook, `public/widget.js` order status page block | COD orders get a confirm or cancel prompt; order is tagged in Shopify |
-| 2.2 | Prepaid nudge | Prepaid incentives were part of brands cutting RTO from 39.2% to 21% | Widget and checkout extension; merchant-set discount | Merchant can offer an incentive; conversions are logged |
+| 2.2 | Prepaid nudge | Brands using prepaid incentives and address checks were at 21% RTO, against 39.2% at the festive peak (Unicommerce) | Widget and checkout extension; merchant-set discount | Merchant can offer an incentive; conversions are logged |
 | 2.3 | Returns and exchanges | Most common support question after order status | `lib/shopify/*`, agent tools | Shopper can start a return or exchange within the store's policy |
 | 2.4 | Add to cart and checkout link from product cards | Turns recommendations into orders | `public/widget.js` (Shopify AJAX cart API), `salesAgent.ts` | A shopper can add a recommended item without leaving chat |
 | 2.5 | Hindi and Hinglish replies | Most new D2C customers are outside metros | Agent prompts, bot settings | Agent answers in the shopper's language; tested with a Hinglish set |
