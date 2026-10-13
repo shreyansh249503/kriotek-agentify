@@ -99,6 +99,51 @@ describe("API: /api/bots/[id]", () => {
       expect(mockBotRepo.update).not.toHaveBeenCalled();
     });
 
+    it.each([["publicKey"], ["public_key"]])(
+      "rejects changing the public key via %s and writes nothing",
+      async (field) => {
+        mockBotRepo.findOne.mockResolvedValueOnce({
+          id: validUuid,
+          public_key: "pk_original",
+          user_id: "user_123",
+        });
+
+        const res = await PUT(
+          new Request(`http://localhost/api/bots/${validUuid}`, {
+            method: "PUT",
+            body: JSON.stringify({ name: "Renamed", [field]: "pk_hijacked" }),
+          }),
+          { params: Promise.resolve({ id: validUuid }) },
+        );
+
+        expect(res.status).toBe(400);
+        expect(await res.json()).toEqual({ error: "A bot's public key cannot be changed." });
+        expect(mockBotRepo.update).not.toHaveBeenCalled();
+      },
+    );
+
+    it("accepts the unchanged public key and never writes public_key", async () => {
+      mockBotRepo.findOne.mockResolvedValueOnce({
+        id: validUuid,
+        public_key: "pk_original",
+        user_id: "user_123",
+      });
+      mockBotRepo.update.mockResolvedValueOnce({ affected: 1 });
+
+      const res = await PUT(
+        new Request(`http://localhost/api/bots/${validUuid}`, {
+          method: "PUT",
+          body: JSON.stringify({ name: "Renamed", publicKey: "pk_original" }),
+        }),
+        { params: Promise.resolve({ id: validUuid }) },
+      );
+
+      expect(res.status).toBe(200);
+      const written = mockBotRepo.update.mock.calls[0][1];
+      expect(written).not.toHaveProperty("public_key");
+      expect(written).not.toHaveProperty("publicKey");
+    });
+
     it("updates only the fields that were sent for the owner's bot", async () => {
       mockBotRepo.findOne.mockResolvedValueOnce({ id: validUuid, user_id: "user_123" });
       mockBotRepo.update.mockResolvedValueOnce({ affected: 1 });

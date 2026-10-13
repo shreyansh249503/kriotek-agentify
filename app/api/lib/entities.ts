@@ -17,7 +17,8 @@ export class Bot {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
 
-  @Column({ type: "varchar", name: "public_key", unique: true, nullable: true })
+  // Immutable after creation: never included in ORM UPDATEs. See botImmutable.ts.
+  @Column({ type: "varchar", name: "public_key", unique: true, nullable: true, update: false })
   public_key?: string;
 
   @Column({ type: "varchar" })

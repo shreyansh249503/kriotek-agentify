@@ -1,6 +1,7 @@
 import { getDb } from "../../lib/db";
 import { getOwnedBot } from "../../lib/bot";
 import { Bot } from "../../lib/entities";
+import { publicKeyChangeError } from "../../lib/botImmutable";
 
 /**
  * GET /api/bots/[id]
@@ -35,6 +36,11 @@ export async function PUT(
     body = await req.json();
   } catch {
     return Response.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+
+  const keyError = publicKeyChangeError(body, owned.bot.public_key);
+  if (keyError) {
+    return Response.json({ error: keyError }, { status: 400 });
   }
 
   const {

@@ -1,6 +1,7 @@
 import "reflect-metadata";
 import { DataSource } from "typeorm";
 import { Bot, Conversation, Lead, CrawledPage, BotDocument, ShopifyStore } from "./entities";
+import { BOT_PUBLIC_KEY_IMMUTABLE_SQL } from "./botImmutable";
 
 const globalForTypeorm = globalThis as unknown as {
   AppDataSource: DataSource;
@@ -39,6 +40,9 @@ export const getDb = async () => {
           ALTER TABLE bots ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
         `).catch((err) => {
           console.log("Migration columns error:", err);
+        });
+        await AppDataSource.query(BOT_PUBLIC_KEY_IMMUTABLE_SQL).catch((err) => {
+          console.error("Failed to install bots.public_key immutability trigger:", err);
         });
       }
       return AppDataSource;

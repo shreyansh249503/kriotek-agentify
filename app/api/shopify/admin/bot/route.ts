@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getShopFromSession, verifySessionToken } from "../../lib/verifySessionToken";
+import { PUBLIC_KEY_FIELDS, publicKeyChangeError } from "@/app/api/lib/botImmutable";
 
 const {
   NEXT_PUBLIC_SUPABASE_URL,
@@ -80,6 +81,18 @@ export async function PATCH(req: NextRequest) {
 
     if (!storeData?.bot_id || storeData.bot_id !== body.id) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    if (PUBLIC_KEY_FIELDS.some((f) => body[f] !== undefined)) {
+      const { data: current } = await supabase
+        .from("bots")
+        .select("public_key")
+        .eq("id", storeData.bot_id)
+        .single();
+      const keyError = publicKeyChangeError(body, current?.public_key);
+      if (keyError) {
+        return NextResponse.json({ error: keyError }, { status: 400 });
+      }
     }
 
     const { id, name, description, tone, primary_color, contact_enabled, contact_email, contact_prompt, ecommerce_enabled, ecommerce_prompt, logo_url } = body;
