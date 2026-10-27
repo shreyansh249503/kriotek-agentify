@@ -1,8 +1,17 @@
 import axios from "axios";
 import { getDb } from "./db";
+import { isPrivateIp, isSafePublicUrl } from "./crawler";
 
 jest.mock("axios");
 jest.mock("./db");
+jest.mock("dns/promises", () => ({
+  lookup: jest.fn().mockImplementation((hostname: string) => {
+    if (hostname.includes("169.254") || hostname.includes("internal")) {
+      return Promise.resolve([{ address: "169.254.169.254", family: 4 }]);
+    }
+    return Promise.resolve([{ address: "93.184.216.34", family: 4 }]);
+  }),
+}));
 jest.mock("ai", () => ({
   generateObject: jest.fn().mockResolvedValue({
     object: { isProduct: false },
@@ -186,5 +195,33 @@ describe("crawlWebsite", () => {
 
     expect(axios.get).not.toHaveBeenCalled();
     expect(result.collectedText).toBe("");
+  });
+
+  describe("SSRF Protection", () => {
+    it("should accurately identify private and loopback IP addresses", () => {
+      expect(isPrivateIp("127.0.0.1")).toBe(true);
+      expect(isPrivateIp("169.254.169.254")).toBe(true);
+      expect(isPrivateIp("10.0.0.5")).toBe(true);
+      expect(isPrivateIp("192.168.1.1")).toBe(true);
+      expect(isPrivateIp("172.16.0.1")).toBe(true);
+      expect(isPrivateIp("::1")).toBe(true);
+      expect(isPrivateIp("93.184.216.34")).toBe(false);
+      expect(isPrivateIp("8.8.8.8")).toBe(false);
+    });
+
+    it("should reject unsafe internal hosts and cloud metadata URLs", async () => {
+      expect(await isSafePublicUrl("http://169.254.169.254/latest/meta-data")).toBe(false);
+      expect(await isSafePublicUrl("http://localhost:3000")).toBe(false);
+      expect(await isSafePublicUrl("http://sub.internal")).toBe(false);
+      expect(await isSafePublicUrl("ftp://example.com")).toBe(false);
+      expect(await isSafePublicUrl("https://example.com")).toBe(true);
+    });
+
+    it("should refuse to crawl unsafe start URLs", async () => {
+      const result = await crawlWebsite("http://169.254.169.254/latest/meta-data", "pk_123", 1, false);
+      expect(axios.get).not.toHaveBeenCalled();
+      expect(result.collectedText).toBe("");
+      expect(result.products).toEqual([]);
+    });
   });
 });

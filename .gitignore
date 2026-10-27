@@ -38,3 +38,8 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
+
+# temporary and scratch files
+/scratch/
+/tmp/
+test_user_crawl.ts

@@ -65,6 +65,39 @@ describe("API: /api/upload", () => {
     expect(data.error).toContain("Invalid file type");
   });
 
+  it("should reject SVG file uploads to prevent stored XSS", async () => {
+    const file = createFile("<svg><script>alert(1)</script></svg>", "bad.svg", "image/svg+xml");
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const req = createMockRequest(formData);
+
+    const res = await POST(req);
+    const data = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(data.error).toContain("Invalid file type");
+  });
+
+  it("should return 401 in production when unauthenticated", async () => {
+    const originalEnv = process.env.NODE_ENV;
+    (process.env as Record<string, string | undefined>).NODE_ENV = "production";
+    try {
+      const file = createFile("valid", "img.png", "image/png");
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const req = createMockRequest(formData);
+      const res = await POST(req);
+      const data = await res.json();
+
+      expect(res.status).toBe(401);
+      expect(data.error).toBe("Unauthorized");
+    } finally {
+      (process.env as Record<string, string | undefined>).NODE_ENV = originalEnv;
+    }
+  });
+
   it("should return 400 if file size exceeds 1MB", async () => {
     const largeBuffer = new Uint8Array(1024 * 1024 + 10);
     const file = new File([largeBuffer], "large.png", { type: "image/png" });

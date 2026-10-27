@@ -166,7 +166,13 @@ export default function IngestPage() {
 
               const res = await fetch(
                 `${process.env.NEXT_PUBLIC_API_URL}/api/ingest-pdf`,
-                { method: "POST", body: form },
+                {
+                  method: "POST",
+                  headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                  },
+                  body: form,
+                },
               );
               const data = await res.json();
               if (!res.ok) throw new Error(data.error || "PDF ingest failed");

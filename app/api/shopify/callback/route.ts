@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
 import { registerWebhooks } from "../lib/registerWebhooks";
+import { encryptToken } from "@/app/api/lib/crypto";
 
 const {
   SHOPIFY_API_KEY,
@@ -59,9 +60,11 @@ export async function GET(req: NextRequest) {
     SUPABASE_SERVICE_ROLE_KEY!,
   );
 
+  const encryptedToken = encryptToken(access_token);
+
   const { error } = await supabase
     .from("shopify_stores")
-    .upsert({ shop, access_token, scopes: scope }, { onConflict: "shop" });
+    .upsert({ shop, access_token: encryptedToken, scopes: scope }, { onConflict: "shop" });
 
   if (error) {
     console.error("Supabase upsert error:", error);

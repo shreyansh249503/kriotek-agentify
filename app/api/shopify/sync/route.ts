@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { verifySessionToken, getShopFromSession } from "../lib/verifySessionToken";
+import { getUserFromRequest } from "../../lib/auth";
+import { decryptToken } from "@/app/api/lib/crypto";
 
 interface ShopifyProductImageEdge {
   node: {
@@ -132,14 +135,40 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    let authorizedShop: string | null = null;
+    const authHeader = req.headers.get("authorization");
+    if (authHeader) {
+      try {
+        const session = verifySessionToken(authHeader);
+        authorizedShop = getShopFromSession(session);
+      } catch {}
+    }
+
     const supabase = createClient(
       NEXT_PUBLIC_SUPABASE_URL!,
       SUPABASE_SERVICE_ROLE_KEY!
     );
 
+    if (!authorizedShop) {
+      const user = await getUserFromRequest(req);
+      if (user) {
+        const { data: bot } = await supabase
+          .from("bots")
+          .select("id")
+          .eq("id", bot_id)
+          .eq("user_id", user.id)
+          .single();
+        if (bot) authorizedShop = shop;
+      }
+    }
+
+    if (!authorizedShop || authorizedShop !== shop) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { data: storeData, error: storeError } = await supabase
       .from("shopify_stores")
-      .select("access_token")
+      .select("access_token, bot_id")
       .eq("shop", shop)
       .single();
 
@@ -150,7 +179,21 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { access_token } = storeData;
+    if (storeData.bot_id && storeData.bot_id !== bot_id) {
+      return NextResponse.json(
+        { error: "Store is associated with another bot" },
+        { status: 403 }
+      );
+    }
+
+    if (!storeData.bot_id) {
+      await supabase
+        .from("shopify_stores")
+        .update({ bot_id })
+        .eq("shop", shop);
+    }
+
+    const access_token = decryptToken(storeData.access_token);
 
     let allProducts: ShopifyProductNode[] = [];
     let cursor: string | null = null;

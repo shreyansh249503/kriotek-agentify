@@ -193,4 +193,104 @@ describe("POST /api/shopify/webhooks", () => {
     expect(data.ok).toBe(true);
     expect(mockStoreDelete).toHaveBeenCalled();
   });
+
+  describe("Shopify GDPR / Privacy Compliance Webhooks", () => {
+    it("should process customers/data_request webhook and return 200 acknowledge", async () => {
+      const payload = {
+        shop_id: 12345,
+        shop_domain: "test-store.myshopify.com",
+        customer: { id: 101, email: "customer@example.com" },
+      };
+
+      const req = createWebhookRequest(payload, {
+        "x-shopify-topic": "customers/data_request",
+      });
+
+      const res = await POST(req);
+      const data = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(data.ok).toBe(true);
+    });
+
+    it("should process customers/redact webhook and delete matching customer leads and conversations", async () => {
+      const mockStoreSelect = jest.fn().mockReturnValue({
+        eq: jest.fn().mockReturnValue({
+          single: jest.fn().mockResolvedValue({ data: { bot_id: "bot-123" } }),
+        }),
+      });
+
+      const mockLeadDelete = jest.fn().mockReturnValue({
+        eq: jest.fn().mockReturnValue({
+          eq: jest.fn().mockResolvedValue({ error: null }),
+        }),
+      });
+
+      const mockConvoDelete = jest.fn().mockReturnValue({
+        eq: jest.fn().mockReturnValue({
+          eq: jest.fn().mockResolvedValue({ error: null }),
+        }),
+      });
+
+      mockFrom.mockImplementation((tableName: string) => {
+        if (tableName === "shopify_stores") {
+          return { select: mockStoreSelect };
+        }
+        if (tableName === "leads") {
+          return { delete: mockLeadDelete };
+        }
+        if (tableName === "conversations") {
+          return { delete: mockConvoDelete };
+        }
+        return {};
+      });
+
+      const payload = {
+        shop_id: 12345,
+        shop_domain: "test-store.myshopify.com",
+        customer: { id: 101, email: "privacy@example.com", phone: "+15551234567" },
+      };
+
+      const req = createWebhookRequest(payload, {
+        "x-shopify-topic": "customers/redact",
+      });
+
+      const res = await POST(req);
+      const data = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(data.ok).toBe(true);
+      expect(mockLeadDelete).toHaveBeenCalled();
+      expect(mockConvoDelete).toHaveBeenCalled();
+    });
+
+    it("should process shop/redact webhook and delete store record", async () => {
+      const mockStoreDelete = jest.fn().mockReturnValue({
+        eq: jest.fn().mockResolvedValue({ error: null }),
+      });
+
+      mockFrom.mockImplementation((tableName: string) => {
+        if (tableName === "shopify_stores") {
+          return { delete: mockStoreDelete };
+        }
+        return {};
+      });
+
+      const payload = {
+        shop_id: 12345,
+        shop_domain: "test-store.myshopify.com",
+      };
+
+      const req = createWebhookRequest(payload, {
+        "x-shopify-topic": "shop/redact",
+      });
+
+      const res = await POST(req);
+      const data = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(data.ok).toBe(true);
+      expect(mockStoreDelete).toHaveBeenCalled();
+    });
+  });
 });

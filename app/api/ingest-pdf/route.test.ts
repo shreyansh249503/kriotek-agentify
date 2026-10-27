@@ -48,22 +48,41 @@ jest.mock("../lib/db", () => ({
   getDb: jest.fn(),
 }));
 
+jest.mock("../lib/auth", () => ({
+  getUserFromRequest: jest.fn(),
+}));
+
+import { getUserFromRequest } from "../lib/auth";
+
 describe("POST /api/ingest-pdf", () => {
   const mockedGetDb = getDb as jest.Mock;
   const mockedCreateEmbedding = createEmbedding as jest.Mock;
+  const mockedGetUser = getUserFromRequest as jest.Mock;
   const mockCreate = jest.fn((doc) => doc);
   const mockSave = jest.fn().mockResolvedValue(undefined);
+  const mockFindOne = jest.fn().mockResolvedValue({ id: "bot-1", public_key: "pk_test" });
 
   beforeEach(() => {
     jest.clearAllMocks();
     shouldFailPdfParse = false;
     mockPdfRawText = "Sample PDF extracted content text for testing.";
+    mockedGetUser.mockResolvedValue({ id: "user-123" });
 
     mockedGetDb.mockResolvedValue({
-      getRepository: () => ({
-        create: mockCreate,
-        save: mockSave,
-      }),
+      getRepository: (entityName: string) => {
+        if (entityName === "Bot") {
+          return {
+            findOne: mockFindOne,
+            save: jest.fn().mockResolvedValue(undefined),
+          };
+        }
+        return {
+          create: mockCreate,
+          save: mockSave,
+          findOne: mockFindOne,
+        };
+      },
+      query: jest.fn().mockResolvedValue([]),
     });
   });
 
@@ -78,11 +97,23 @@ describe("POST /api/ingest-pdf", () => {
 
     return {
       formData: jest.fn().mockResolvedValue(formData),
+      headers: new Headers(),
     } as unknown as Request;
   };
 
   const createMockFile = (content: string) => ({
     arrayBuffer: jest.fn().mockResolvedValue(Buffer.from(content).buffer),
+  });
+
+  it("should return 401 Unauthorized if user is not authenticated", async () => {
+    mockedGetUser.mockResolvedValueOnce(null);
+    const file = createMockFile("valid pdf bytes");
+    const req = createMockRequest({ file, publicKey: "pk_test" });
+    const res = (await POST(req)) as unknown as { status: number; json: () => Promise<Record<string, unknown>> };
+    const data = await res.json();
+
+    expect(res.status).toBe(401);
+    expect(data.error).toBe("Unauthorized");
   });
 
   it("should return 400 Bad Request if file or publicKey is missing", async () => {

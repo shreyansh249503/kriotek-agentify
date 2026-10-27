@@ -3,8 +3,8 @@ export interface RateLimitResult {
   reason?: "ip_limit_exceeded" | "bot_limit_exceeded";
   limit: number;
   remaining: number;
-  reset: number; // Unix timestamp in seconds
-  retryAfter: number; // Seconds until next token / window reset
+  reset: number;
+  retryAfter: number;
   headers: Record<string, string>;
 }
 
@@ -15,7 +15,6 @@ export interface RateLimitOptions {
   botWindowSeconds?: number;
 }
 
-// In-Memory Sliding Window Store Fallback
 interface WindowEntry {
   timestamps: number[];
 }
@@ -28,9 +27,6 @@ export function clearInMemoryRateLimits(): void {
   botMemoryStore.clear();
 }
 
-/**
- * Extract client IP address from standard proxy/CDN headers
- */
 export function getClientIp(req: Request): string {
   const headers = req.headers;
   const forwardedFor = headers.get("x-forwarded-for");
@@ -59,7 +55,6 @@ function checkMemorySlidingWindow(
   const windowStart = now - windowMs;
 
   const entry = store.get(key) || { timestamps: [] };
-  // Remove expired timestamps
   const validTimestamps = entry.timestamps.filter((ts) => ts > windowStart);
 
   if (validTimestamps.length >= limit) {
@@ -93,7 +88,6 @@ function checkMemorySlidingWindow(
   };
 }
 
-// Lazy loaded Upstash instances
 let upstashClient: unknown = null;
 let upstashIpLimiter: { limit: (id: string) => Promise<{ success: boolean; limit: number; remaining: number; reset: number }> } | null = null;
 let upstashBotLimiter: { limit: (id: string) => Promise<{ success: boolean; limit: number; remaining: number; reset: number }> } | null = null;
@@ -145,23 +139,19 @@ async function getUpstashLimiters(
   }
 }
 
-/**
- * Checks dual-tier rate limiting for an incoming chat request
- */
 export async function checkRateLimit(
   req: Request,
   publicKey?: string,
   options?: RateLimitOptions,
 ): Promise<RateLimitResult> {
-  const ipLimit = options?.ipLimit ?? 20; // 20 requests per min per IP
+  const ipLimit = options?.ipLimit ?? 20;
   const ipWindowSeconds = options?.ipWindowSeconds ?? 60;
-  const botLimit = options?.botLimit ?? 100; // 100 requests per min per Bot
+  const botLimit = options?.botLimit ?? 100;
   const botWindowSeconds = options?.botWindowSeconds ?? 60;
 
   const clientIp = getClientIp(req);
   const limiters = await getUpstashLimiters(ipLimit, ipWindowSeconds, botLimit, botWindowSeconds);
 
-  // 1. Check IP limit
   if (limiters?.ipLimiter) {
     try {
       const ipRes = await limiters.ipLimiter.limit(clientIp);
@@ -196,7 +186,6 @@ export async function checkRateLimit(
     }
   }
 
-  // 2. Check Bot limit (if publicKey provided)
   if (publicKey) {
     if (limiters?.botLimiter) {
       try {
@@ -233,7 +222,6 @@ export async function checkRateLimit(
     }
   }
 
-  // Default passing result
   const defaultReset = Math.ceil((Date.now() + ipWindowSeconds * 1000) / 1000);
   return {
     success: true,

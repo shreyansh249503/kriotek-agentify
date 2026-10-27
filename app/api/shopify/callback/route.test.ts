@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
 import { registerWebhooks } from "../lib/registerWebhooks";
+import { decryptToken } from "@/app/api/lib/crypto";
 
 jest.mock("@supabase/supabase-js", () => ({
   createClient: jest.fn(),
@@ -131,9 +132,15 @@ describe("API: /api/shopify/callback", () => {
 
     expect(res.status).toBe(200);
     expect(mockUpsert).toHaveBeenCalledWith(
-      { shop: "test.myshopify.com", access_token: "shpat_123", scopes: "read_products" },
+      expect.objectContaining({
+        shop: "test.myshopify.com",
+        access_token: expect.stringMatching(/^enc:v1:/),
+        scopes: "read_products",
+      }),
       { onConflict: "shop" }
     );
+    const savedToken = mockUpsert.mock.calls[0][0].access_token;
+    expect(decryptToken(savedToken)).toBe("shpat_123");
     expect(registerWebhooks).toHaveBeenCalledWith("test.myshopify.com", "shpat_123");
     expect(html).toContain("https://test.myshopify.com/admin/apps/test_api_key");
   });

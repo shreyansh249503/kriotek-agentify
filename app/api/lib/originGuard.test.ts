@@ -87,6 +87,16 @@ describe("Origin Guard (originGuard.ts)", () => {
       expect(res.reason).toBe("origin_not_whitelisted");
     });
 
+    it("should reject ngrok domain in production when not explicitly in allowed_origins", () => {
+      (process.env as Record<string, string | undefined>).NODE_ENV = "production";
+      const req = new Request("http://localhost/api/chat", {
+        headers: { origin: "https://random-attacker.ngrok-free.app" },
+      });
+      const res = verifyOrigin(req, mockBot, mockShopify);
+      expect(res.allowed).toBe(false);
+      expect(res.reason).toBe("origin_not_whitelisted");
+    });
+
     it("should reject missing origin in production when bot has domain restrictions", () => {
       (process.env as Record<string, string | undefined>).NODE_ENV = "production";
       const req = new Request("http://localhost/api/chat");

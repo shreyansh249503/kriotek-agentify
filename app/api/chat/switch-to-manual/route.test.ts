@@ -47,6 +47,23 @@ describe("API: /api/chat/switch-to-manual", () => {
       expect(data).toEqual({ error: "conversationId and publicKey are required" });
     });
 
+    it("should return 429 when rate limit is exceeded", async () => {
+      // Send 31 requests from the same IP to exceed ipLimit of 30
+      let lastRes;
+      for (let i = 0; i < 32; i++) {
+        const req = new Request("http://localhost/api/chat/switch-to-manual", {
+          method: "POST",
+          headers: { "x-forwarded-for": "198.51.100.99" },
+          body: JSON.stringify({ conversationId: "convo_123", publicKey: "pk_123" }),
+        });
+        lastRes = await POST(req);
+      }
+
+      expect(lastRes?.status).toBe(429);
+      const data = await lastRes?.json();
+      expect(data.error).toContain("Rate limit exceeded");
+    });
+
     it("should return 404 if bot is not found for public key", async () => {
       mockBotRepo.findOne.mockResolvedValueOnce(null);
 

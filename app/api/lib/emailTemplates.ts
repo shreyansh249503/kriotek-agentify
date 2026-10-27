@@ -3,8 +3,6 @@ export function generateUserConfirmationTemplate({
   companyName,
   companyDescription,
   customMessage,
-  userEmail,
-  userPhone,
 }: {
   userName: string;
   companyName: string;

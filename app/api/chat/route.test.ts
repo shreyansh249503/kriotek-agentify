@@ -4,8 +4,7 @@ import { POST, OPTIONS } from "./route";
 import { getBotByPublicKey } from "../lib/bot";
 import { sendOwnerNotification, sendUserEmail } from "../lib/sendEmail";
 import { getDb } from "../lib/db";
-import { runLeadAgent } from "../lib/agents/leadAgent";
-import { runReceptionistAgent } from "../lib/agents/receptionistAgent";
+import { runLeadAgent, runReceptionistAgent } from "../lib/agents";
 import { checkRateLimit } from "../lib/rateLimit";
 import { verifyOrigin } from "../lib/originGuard";
 import { checkBotBudget } from "../lib/tokenBudget";
@@ -81,12 +80,16 @@ jest.mock("../lib/emailTemplates", () => ({
   generateUserConfirmationTemplate: jest.fn().mockReturnValue("<p>Confirmation</p>"),
 }));
 
-jest.mock("../lib/agents/leadAgent", () => ({
+jest.mock("../lib/agents", () => ({
   runLeadAgent: jest.fn(),
-}));
-
-jest.mock("../lib/agents/receptionistAgent", () => ({
   runReceptionistAgent: jest.fn(),
+  runSalesAgent: jest.fn(),
+  classifyUserIntent: jest.fn().mockResolvedValue({
+    primaryIntent: "GENERAL",
+    confidence: 0.9,
+    rationale: "Mock general query",
+    suggestedRouting: "RECEPTIONIST",
+  }),
 }));
 
 jest.mock("../lib/rateLimit", () => ({

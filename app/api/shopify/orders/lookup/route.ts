@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { mapShopifyOrderToJourney, RawShopifyOrderNode } from "@/lib/shopify/shopifyOrderMapper";
+import { checkRateLimit } from "@/app/api/lib/rateLimit";
+import { decryptToken } from "@/app/api/lib/crypto";
 
 const { NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = process.env;
+
+function sanitizeQuery(input: string): string {
+  return input.replace(/["\\{}()[\]^~*?:!]/g, "").trim();
+}
 
 const ORDER_QUERY_FIELDS = `
   id
@@ -58,6 +64,14 @@ const ORDER_QUERY_FIELDS = `
 
 export async function POST(req: NextRequest) {
   try {
+    const rateLimit = await checkRateLimit(req, undefined, { ipLimit: 15, ipWindowSeconds: 60 });
+    if (!rateLimit.success) {
+      return NextResponse.json(
+        { error: "Too many order lookup attempts. Please try again later." },
+        { status: 429, headers: rateLimit.headers }
+      );
+    }
+
     const body = await req.json();
     const { bot_id, public_key, order_number, email, phone } = body;
 
@@ -106,13 +120,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { shop, access_token } = storeData;
+    const shop = storeData.shop;
+    const access_token = decryptToken(storeData.access_token);
 
-    const cleanOrderNum = order_number.trim();
+    const rawOrderNum = order_number.trim();
+    const sanitizedOrderNum = sanitizeQuery(rawOrderNum);
+    const cleanOrderNum = sanitizedOrderNum;
     const searchName = cleanOrderNum.startsWith("#") ? cleanOrderNum : `#${cleanOrderNum}`;
     const rawNum = cleanOrderNum.replace(/^#/, "");
 
-    const targetEmail = email ? email.trim().toLowerCase() : null;
+    const targetEmail = email ? sanitizeQuery(email.trim().toLowerCase()) : null;
     const targetPhone = phone ? phone.trim().replace(/\D/g, "") : null;
 
     const fetchOrdersFromShopify = async (queryParam?: string) => {
@@ -148,7 +165,7 @@ export async function POST(req: NextRequest) {
 
     let orderEdges = await fetchOrdersFromShopify(queryStr);
 
-    if (orderEdges.length === 0) {
+    if (orderEdges.length === 0 && rawNum) {
       orderEdges = await fetchOrdersFromShopify(rawNum);
     }
 
@@ -191,9 +208,8 @@ export async function POST(req: NextRequest) {
 
       let isMatch = false;
 
-      if (!hasAnyContactInRecord) {
-        isMatch = true;
-      } else {
+      // Never auto-match without contact verification
+      if (hasAnyContactInRecord) {
         if (targetEmail) {
           if (
             (orderTopEmail && orderTopEmail === targetEmail) ||
@@ -203,18 +219,14 @@ export async function POST(req: NextRequest) {
           }
         }
 
-        if (targetPhone) {
+        if (targetPhone && targetPhone.length >= 4) {
           if (
-            (orderTopPhone && orderTopPhone.endsWith(targetPhone)) ||
-            (orderCustomerPhone && orderCustomerPhone.endsWith(targetPhone)) ||
-            (orderShippingPhone && orderShippingPhone.endsWith(targetPhone))
+            (orderTopPhone && (orderTopPhone === targetPhone || (targetPhone.length >= 7 && orderTopPhone.endsWith(targetPhone)))) ||
+            (orderCustomerPhone && (orderCustomerPhone === targetPhone || (targetPhone.length >= 7 && orderCustomerPhone.endsWith(targetPhone)))) ||
+            (orderShippingPhone && (orderShippingPhone === targetPhone || (targetPhone.length >= 7 && orderShippingPhone.endsWith(targetPhone))))
           ) {
             isMatch = true;
           }
-        }
-
-        if (!targetEmail && !targetPhone) {
-          isMatch = true;
         }
       }
 

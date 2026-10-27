@@ -1,9 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { nanoid } from "nanoid";
 import { supabaseAdmin } from "../lib/supabase-admin";
+import { getUserFromRequest } from "../lib/auth";
+import { verifySessionToken } from "../shopify/lib/verifySessionToken";
 
 export async function POST(req: NextRequest) {
   try {
+    const user = await getUserFromRequest(req);
+    let isShopifyAuth = false;
+    const authHeader = req.headers.get("authorization");
+    if (authHeader) {
+      try {
+        verifySessionToken(authHeader);
+        isShopifyAuth = true;
+      } catch {}
+    }
+
+    if (process.env.NODE_ENV === "production" && !user && !isShopifyAuth) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
 
@@ -11,9 +27,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    const allowedTypes = ["image/jpeg", "image/png", "image/svg+xml", "image/webp"];
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
     if (!allowedTypes.includes(file.type)) {
-      return NextResponse.json({ error: "Invalid file type. Only JPEG, PNG, SVG, and WEBP are allowed." }, { status: 400 });
+      return NextResponse.json({ error: "Invalid file type. Only JPEG, PNG, and WEBP are allowed." }, { status: 400 });
     }
 
     const maxSize = 1024 * 1024;

@@ -7,14 +7,10 @@ export interface OriginVerificationResult {
   requestOrigin?: string;
 }
 
-/**
- * Normalizes a URL or domain string to a clean hostname (lowercase, no protocol, no port, no path)
- */
 export function extractHostname(urlOrDomain: string): string {
   if (!urlOrDomain) return "";
   let clean = urlOrDomain.trim().toLowerCase();
 
-  // If missing protocol but looks like URL, prepend https:// for URL parser
   if (!clean.startsWith("http://") && !clean.startsWith("https://")) {
     clean = `https://${clean}`;
   }
@@ -23,7 +19,6 @@ export function extractHostname(urlOrDomain: string): string {
     const parsed = new URL(clean);
     return parsed.hostname;
   } catch {
-    // Fallback regex strip
     return clean
       .replace(/^https?:\/\//, "")
       .split("/")[0]
@@ -31,9 +26,6 @@ export function extractHostname(urlOrDomain: string): string {
   }
 }
 
-/**
- * Checks if a candidate hostname matches a pattern (supports wildcards like *.example.com)
- */
 export function matchesDomainPattern(hostname: string, pattern: string): boolean {
   const cleanHost = extractHostname(hostname);
   const cleanPattern = extractHostname(pattern);
@@ -44,7 +36,6 @@ export function matchesDomainPattern(hostname: string, pattern: string): boolean
     return true;
   }
 
-  // Handle wildcard domain matching, e.g., *.example.com or example.com matching sub.example.com
   if (pattern.startsWith("*.")) {
     const rootPattern = pattern.slice(2).toLowerCase();
     return cleanHost.endsWith(`.${rootPattern}`) || cleanHost === rootPattern;
@@ -67,9 +58,6 @@ function isDevOrigin(hostname: string): boolean {
   return false;
 }
 
-/**
- * Verifies if an incoming chat request originates from an authorized merchant domain
- */
 export function verifyOrigin(
   req: Request,
   bot: Bot,
@@ -79,14 +67,11 @@ export function verifyOrigin(
   const refererHeader = req.headers.get("referer");
   const rawOrigin = originHeader || refererHeader || "";
 
-  // If no origin and no referer header
   if (!rawOrigin) {
-    // If running in development or test, allow requests with missing referer/origin
     if (process.env.NODE_ENV !== "production") {
       return { allowed: true, reason: "dev_no_origin_header" };
     }
 
-    // In production: if bot explicitly configured allowed_origins or has shopify stores, require origin/referer
     const hasConfiguredRestrictions =
       (bot.allowed_origins && bot.allowed_origins.length > 0) ||
       (Array.isArray(shopifyStores) ? shopifyStores.length > 0 : Boolean(shopifyStores));
@@ -98,14 +83,12 @@ export function verifyOrigin(
       };
     }
 
-    // Unrestricted bot
     return { allowed: true, reason: "unrestricted_bot" };
   }
 
   const requestHost = extractHostname(rawOrigin);
 
-  // 1. Development bypass
-  if (process.env.NODE_ENV !== "production" || isDevOrigin(requestHost)) {
+  if (process.env.NODE_ENV !== "production") {
     if (isDevOrigin(requestHost)) {
       return {
         allowed: true,
@@ -116,7 +99,6 @@ export function verifyOrigin(
     }
   }
 
-  // 2. Check Shopify Stores
   const stores = Array.isArray(shopifyStores)
     ? shopifyStores
     : shopifyStores
@@ -137,7 +119,6 @@ export function verifyOrigin(
     }
   }
 
-  // 3. Check Bot Allowed Origins
   const allowedList = Array.isArray(bot.allowed_origins) ? bot.allowed_origins : [];
   if (allowedList.length > 0) {
     for (const pattern of allowedList) {
@@ -151,7 +132,6 @@ export function verifyOrigin(
       }
     }
 
-    // Origin was supplied but didn't match any allowed domain
     return {
       allowed: false,
       requestOrigin: rawOrigin,
@@ -159,7 +139,6 @@ export function verifyOrigin(
     };
   }
 
-  // 4. If neither shopify store nor allowed_origins are restricted, default to pass
   return {
     allowed: true,
     requestOrigin: rawOrigin,

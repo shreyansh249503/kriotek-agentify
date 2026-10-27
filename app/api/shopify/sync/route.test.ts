@@ -9,6 +9,17 @@ jest.mock("@supabase/supabase-js", () => ({
   createClient: jest.fn(),
 }));
 
+jest.mock("../../lib/auth", () => ({
+  getUserFromRequest: jest.fn().mockResolvedValue(null),
+}));
+
+jest.mock("../lib/verifySessionToken", () => ({
+  verifySessionToken: jest.fn(),
+  getShopFromSession: jest.fn((session) => new URL(session.dest).hostname),
+}));
+
+import { verifySessionToken } from "../lib/verifySessionToken";
+
 describe("API: /api/shopify/sync", () => {
   const mockSingle = jest.fn();
   const mockUpdate = jest.fn();
@@ -16,10 +27,15 @@ describe("API: /api/shopify/sync", () => {
   const mockSelect = jest.fn(() => ({ eq: mockEq }));
   const mockFrom = jest.fn();
   const originalFetch = global.fetch;
+  const mockedVerifySession = verifySessionToken as jest.Mock;
 
   beforeEach(() => {
     jest.clearAllMocks();
     jest.spyOn(console, "error").mockImplementation(() => {});
+
+    mockedVerifySession.mockReturnValue({
+      dest: "https://test.myshopify.com",
+    });
 
     mockEq.mockImplementation(() => ({
       single: mockSingle,
@@ -36,6 +52,10 @@ describe("API: /api/shopify/sync", () => {
       return {};
     });
 
+    mockUpdate.mockReturnValue({
+      eq: jest.fn().mockResolvedValue({ error: null }),
+    });
+
     (createClient as jest.Mock).mockReturnValue({ from: mockFrom });
     global.fetch = jest.fn();
   });
@@ -44,11 +64,40 @@ describe("API: /api/shopify/sync", () => {
     global.fetch = originalFetch;
   });
 
-  it("should return 400 if shop or bot_id is missing", async () => {
+  const createReq = (body: Record<string, unknown>, headers: Record<string, string> = { Authorization: "Bearer valid_token" }) => {
+    return new NextRequest("http://localhost/api/shopify/sync", {
+      method: "POST",
+      headers,
+      body: JSON.stringify(body),
+    });
+  };
+
+  it("should return 401 if unauthenticated or token invalid", async () => {
+    mockedVerifySession.mockImplementationOnce(() => {
+      throw new Error("Invalid token");
+    });
+
+    const req = createReq(
+      { shop: "test.myshopify.com", bot_id: "bot_123" },
+      { Authorization: "Bearer invalid_token" }
+    );
+
+    const res = await POST(req);
+    expect(res.status).toBe(401);
+  });
+
+  it("should return 401 if authorization header is missing completely", async () => {
     const req = new NextRequest("http://localhost/api/shopify/sync", {
       method: "POST",
-      body: JSON.stringify({ shop: "test.myshopify.com" }),
+      body: JSON.stringify({ shop: "test.myshopify.com", bot_id: "bot_123" }),
     });
+
+    const res = await POST(req);
+    expect(res.status).toBe(401);
+  });
+
+  it("should return 400 if shop or bot_id is missing", async () => {
+    const req = createReq({ shop: "test.myshopify.com" });
 
     const res = await POST(req);
     const data = await res.json();
@@ -58,12 +107,10 @@ describe("API: /api/shopify/sync", () => {
   });
 
   it("should return 404 if shop is not found in shopify_stores table", async () => {
+    mockedVerifySession.mockReturnValueOnce({ dest: "https://unknown.myshopify.com" });
     mockSingle.mockResolvedValueOnce({ data: null, error: new Error("Not found") });
 
-    const req = new NextRequest("http://localhost/api/shopify/sync", {
-      method: "POST",
-      body: JSON.stringify({ shop: "unknown.myshopify.com", bot_id: "bot_123" }),
-    });
+    const req = createReq({ shop: "unknown.myshopify.com", bot_id: "bot_123" });
 
     const res = await POST(req);
     const data = await res.json();
@@ -76,10 +123,7 @@ describe("API: /api/shopify/sync", () => {
     mockSingle.mockResolvedValueOnce({ data: { access_token: "shpat_123" } });
     (global.fetch as jest.Mock).mockResolvedValueOnce({ ok: false, status: 500 });
 
-    const req = new NextRequest("http://localhost/api/shopify/sync", {
-      method: "POST",
-      body: JSON.stringify({ shop: "test.myshopify.com", bot_id: "bot_123" }),
-    });
+    const req = createReq({ shop: "test.myshopify.com", bot_id: "bot_123" });
 
     const res = await POST(req);
     const data = await res.json();
@@ -95,10 +139,7 @@ describe("API: /api/shopify/sync", () => {
       json: jest.fn().mockResolvedValue({ errors: [{ message: "Unauthorized access to products" }] }),
     });
 
-    const req = new NextRequest("http://localhost/api/shopify/sync", {
-      method: "POST",
-      body: JSON.stringify({ shop: "test.myshopify.com", bot_id: "bot_123" }),
-    });
+    const req = createReq({ shop: "test.myshopify.com", bot_id: "bot_123" });
 
     const res = await POST(req);
     const data = await res.json();
@@ -138,10 +179,7 @@ describe("API: /api/shopify/sync", () => {
       json: jest.fn().mockResolvedValue(mockProductsResponse),
     });
 
-    const req = new NextRequest("http://localhost/api/shopify/sync", {
-      method: "POST",
-      body: JSON.stringify({ shop: "test.myshopify.com", bot_id: "bot_123" }),
-    });
+    const req = createReq({ shop: "test.myshopify.com", bot_id: "bot_123" });
 
     const res = await POST(req);
     const data = await res.json();
@@ -179,15 +217,26 @@ describe("API: /api/shopify/sync", () => {
       }),
     });
 
-    const req = new Request("http://localhost/api/shopify/sync", {
-      method: "POST",
-      body: JSON.stringify({ shop: "test.myshopify.com", bot_id: "bot_123" }),
-    });
+    const req = createReq({ shop: "test.myshopify.com", bot_id: "bot_123" });
 
-    const res = await POST(req as NextRequest);
+    const res = await POST(req);
     const data = await res.json();
 
     expect(res.status).toBe(500);
     expect(data).toEqual({ error: "Failed to save products to bot" });
+  });
+
+  it("should return 403 if store is already associated with another bot", async () => {
+    mockSingle.mockResolvedValueOnce({
+      data: { access_token: "shpat_123", bot_id: "other_bot_999" },
+    });
+
+    const req = createReq({ shop: "test.myshopify.com", bot_id: "bot_123" });
+
+    const res = await POST(req);
+    const data = await res.json();
+
+    expect(res.status).toBe(403);
+    expect(data.error).toBe("Store is associated with another bot");
   });
 });

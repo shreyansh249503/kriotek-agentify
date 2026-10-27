@@ -1,6 +1,8 @@
 import axios from "axios";
 import * as cheerio from "cheerio";
 import https from "https";
+import dns from "dns/promises";
+import net from "net";
 import { getDb } from "./db";
 import { CrawledPage } from "./entities";
 import { Product } from "../../../types/bot";
@@ -8,7 +10,68 @@ import { generateObject } from "ai";
 import { google } from "@ai-sdk/google";
 import { z } from "zod";
 
-// A generic recursive type for arbitrary JSON-LD structures
+export function isPrivateIp(ip: string): boolean {
+  if (ip === "::1" || ip === "0.0.0.0") return true;
+
+  if (ip.startsWith("::ffff:")) {
+    ip = ip.replace("::ffff:", "");
+  }
+
+  const parts = ip.split(".").map(Number);
+  if (parts.length === 4) {
+    const [b0, b1] = parts;
+    if (b0 === 10) return true; // 10.0.0.0/8
+    if (b0 === 127) return true; // 127.0.0.0/8
+    if (b0 === 169 && b1 === 254) return true; // 169.254.0.0/16
+    if (b0 === 192 && b1 === 168) return true; // 192.168.0.0/16
+    if (b0 === 172 && b1 >= 16 && b1 <= 31) return true; // 172.16.0.0/12
+    if (b0 === 0) return true; // 0.0.0.0/8
+    if (b0 === 100 && b1 >= 64 && b1 <= 127) return true; // 100.64.0.0/10
+  }
+
+  if (net.isIPv6(ip)) {
+    const lower = ip.toLowerCase();
+    if (lower.startsWith("fe80:") || lower.startsWith("fc") || lower.startsWith("fd")) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+export async function isSafePublicUrl(targetUrl: string): Promise<boolean> {
+  try {
+    const parsed = new URL(targetUrl);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      return false;
+    }
+
+    const hostname = parsed.hostname.toLowerCase();
+    if (
+      hostname === "localhost" ||
+      hostname.endsWith(".localhost") ||
+      hostname.endsWith(".local") ||
+      hostname.endsWith(".internal")
+    ) {
+      return false;
+    }
+
+    if (net.isIP(hostname)) {
+      return !isPrivateIp(hostname);
+    }
+
+    const addresses = await dns.lookup(hostname, { all: true });
+    for (const record of addresses) {
+      if (isPrivateIp(record.address)) {
+        return false;
+      }
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 type JsonLdValue =
   | string
   | number
@@ -90,7 +153,6 @@ async function extractProductFromPage(
   url: string,
 ): Promise<Product | null> {
   try {
-    // 0. Quick Shopify Product JSON API check if URL has /products/
     if (url.includes("/products/")) {
       try {
         const cleanUrl = url.split("?")[0].replace(/\/$/, "");
@@ -115,7 +177,6 @@ async function extractProductFromPage(
           const brand = sp.vendor || undefined;
           const category = sp.product_type || undefined;
 
-          // Parse options for size and color
           let optColor: string | undefined;
           let optSize: string | undefined;
           if (Array.isArray(sp.options)) {
@@ -158,7 +219,6 @@ async function extractProductFromPage(
 
     const $ = cheerio.load(html);
 
-    // Parse technical specifications and attribute tables across all e-commerce platforms
     const specs: Record<string, string> = {};
     const tableNodes = $(
       "table tr, .product-overview tr, .po-expander tr, #productDetails_techSpec_section_1 tr, .tech-specs tr, .specifications tr, .specs-table tr",
@@ -219,7 +279,6 @@ async function extractProductFromPage(
       specs["item type"] ||
       "";
 
-    // 1. Check for JSON-LD Product schemas
     let jsonLdProduct: JsonLdNode | null = null;
     $("script[type='application/ld+json']").each((_, el) => {
       try {
@@ -241,7 +300,6 @@ async function extractProductFromPage(
       let currency = "";
       let inStock = true;
 
-      // Check offers on product or inside hasVariant array
       let offersRaw = productNode.offers;
       if (!offersRaw && Array.isArray(productNode.hasVariant) && productNode.hasVariant.length > 0) {
         const firstVar = productNode.hasVariant[0];
@@ -350,7 +408,6 @@ async function extractProductFromPage(
       }
     }
 
-    // 2. Check for OpenGraph / meta tags
     const ogType = $("meta[property='og:type']").attr("content");
     const isProductType =
       ogType === "product" ||
@@ -435,7 +492,6 @@ async function extractProductFromPage(
       }
     }
 
-    // 3. Direct DOM E-commerce selectors (Amazon, Flipkart, Shopify, standard storefronts)
     const domTitle =
       $("#title").text().trim() ||
       $("#productTitle").text().trim() ||
@@ -472,14 +528,12 @@ async function extractProductFromPage(
         }
       }
 
-      // If price was formatted with detached whole and fraction (e.g. Amazon mobile .a-price-whole + .a-price-fraction)
       if (!domPrice && $(".a-price-whole").first().length > 0) {
         const whole = $(".a-price-whole").first().text().trim();
         const symbol = $(".a-price-symbol").first().text().trim() || "₹";
         domPrice = `${symbol}${whole}`;
       }
 
-      // Regex scan for price if still empty
       if (!domPrice) {
         const priceMatch = html.match(/(?:₹|Rs\.?|INR|\$|€|£)\s*[\d,]+(?:\.\d{2})?/i);
         if (priceMatch) {
@@ -565,7 +619,6 @@ async function extractProductFromPage(
       };
     }
 
-    // 4. LLM fallback for dynamic or unstructured product pages
     const isAmazonUrl =
       /amazon\.(in|com|co\.uk|de|fr|ca|com\.au|es|it)\/(.+)/i.test(url) ||
       /amzn\.in\/(.+)/i.test(url);
@@ -701,6 +754,12 @@ export async function crawlWebsite(
   maxPages = 40,
   extractProducts = false,
 ): Promise<{ collectedText: string; products: Product[] }> {
+  const isStartSafe = await isSafePublicUrl(startUrl);
+  if (!isStartSafe) {
+    console.warn(`[SSRF Guard] Blocked unsafe startUrl: ${startUrl}`);
+    return { collectedText: "", products: [] };
+  }
+
   const visited = new Set<string>();
   const queue: string[] = [startUrl];
 
@@ -720,6 +779,11 @@ export async function crawlWebsite(
     const url = queue.shift();
     if (!url) continue;
 
+    const isUrlSafe = await isSafePublicUrl(url);
+    if (!isUrlSafe) {
+      continue;
+    }
+
     try {
       if (!extractProducts) {
         const db = await getDb();
@@ -735,7 +799,6 @@ export async function crawlWebsite(
       }
     } catch {}
 
-    // Canonicalize Amazon product URLs to bypass tracking parameters that trigger bot checks
     let requestUrl = url;
     const isAmazon = /amazon\.(in|com|co\.uk|de|fr|ca|com\.au|es|it)/i.test(url);
     if (isAmazon) {
@@ -796,11 +859,9 @@ export async function crawlWebsite(
       text = text.replace(/\s+/g, " ").trim();
       collectedText += "\n\n" + text;
 
-      // Extract product if requested
       if (extractProducts) {
         const prod = await extractProductFromPage(html, text, finalUrl);
         if (prod) {
-          // Check if we already have this product to avoid duplicates
           const isDup = products.some(
             (p) =>
               p.name.toLowerCase() === prod.name.toLowerCase() ||
@@ -868,7 +929,6 @@ export async function crawlWebsite(
             );
 
           if (extractProducts && isProductLike) {
-            // Prioritize product detail pages
             queue.unshift(absoluteUrl);
           } else {
             queue.push(absoluteUrl);

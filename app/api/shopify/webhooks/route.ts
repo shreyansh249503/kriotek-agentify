@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
+import { decryptToken } from "@/app/api/lib/crypto";
 
 interface ShopifyProduct {
   shopify_id: string;
@@ -72,13 +73,52 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing headers" }, { status: 400 });
     }
 
-    const payload = JSON.parse(rawBody) as ShopifyWebhookProductPayload;
+    const payload = JSON.parse(rawBody);
 
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
+    // 1. Mandatory Shopify Privacy / GDPR compliance handlers
+    if (topic === "customers/data_request") {
+      // Agentify does not build persistent cross-session customer profiles
+      return NextResponse.json({
+        ok: true,
+        message: "Customer data request acknowledged. Data stored is limited to ephemeral conversations and captured leads.",
+      });
+    }
+
+    if (topic === "customers/redact") {
+      const customerEmail = payload?.customer?.email;
+      const customerPhone = payload?.customer?.phone;
+
+      const { data: store } = await supabase
+        .from("shopify_stores")
+        .select("bot_id")
+        .eq("shop", shop)
+        .single();
+
+      if (store?.bot_id) {
+        if (customerEmail) {
+          await supabase.from("leads").delete().eq("bot_id", store.bot_id).eq("email", customerEmail);
+          await supabase.from("conversations").delete().eq("bot_id", store.bot_id).eq("email", customerEmail);
+        }
+        if (customerPhone) {
+          await supabase.from("leads").delete().eq("bot_id", store.bot_id).eq("phone", customerPhone);
+          await supabase.from("conversations").delete().eq("bot_id", store.bot_id).eq("phone", customerPhone);
+        }
+      }
+
+      return NextResponse.json({ ok: true, message: "Customer data redacted." });
+    }
+
+    if (topic === "shop/redact" || topic === "app/uninstalled") {
+      await supabase.from("shopify_stores").delete().eq("shop", shop);
+      return NextResponse.json({ ok: true, message: "Store data redacted." });
+    }
+
+    // 2. Product and inventory sync handlers
     const { data: storeData } = await supabase
       .from("shopify_stores")
       .select("bot_id, access_token")
@@ -90,6 +130,8 @@ export async function POST(req: NextRequest) {
     }
 
     const { bot_id } = storeData;
+    const decryptedToken = storeData.access_token ? decryptToken(storeData.access_token) : null;
+    void decryptedToken; // Available for authenticated Shopify API queries if needed
 
     const { data: botData } = await supabase
       .from("bots")
@@ -98,12 +140,13 @@ export async function POST(req: NextRequest) {
       .single();
 
     let products: ShopifyProduct[] = (botData?.ecommerce_products as ShopifyProduct[]) ?? [];
-    const shopifyGid = `gid://shopify/Product/${payload.id}`;
+    const productPayload = payload as ShopifyWebhookProductPayload;
+    const shopifyGid = `gid://shopify/Product/${productPayload.id}`;
 
     switch (topic) {
       case "products/create":
       case "products/update": {
-        const updated = mapWebhookProduct(payload, shop);
+        const updated = mapWebhookProduct(productPayload, shop);
         const existingIndex = products.findIndex(
           (p) => p.shopify_id === shopifyGid
         );
@@ -119,11 +162,6 @@ export async function POST(req: NextRequest) {
       case "products/delete": {
         products = products.filter((p) => p.shopify_id !== shopifyGid);
         break;
-      }
-
-      case "app/uninstalled": {
-        await supabase.from("shopify_stores").delete().eq("shop", shop);
-        return NextResponse.json({ ok: true });
       }
     }
 
@@ -207,9 +245,18 @@ function mapWebhookProduct(payload: ShopifyWebhookProductPayload, shop: string):
 function isValidWebhookHmac(body: string, hmac: string | null): boolean {
   const secret = process.env.SHOPIFY_API_SECRET;
   if (!hmac || !secret) return false;
-  const digest = crypto
-    .createHmac("sha256", secret)
-    .update(body, "utf8")
-    .digest("base64");
-  return digest === hmac;
+  try {
+    const digest = crypto
+      .createHmac("sha256", secret)
+      .update(body, "utf8")
+      .digest("base64");
+    const digestBuffer = Buffer.from(digest, "utf8");
+    const hmacBuffer = Buffer.from(hmac, "utf8");
+    if (digestBuffer.length !== hmacBuffer.length) {
+      return false;
+    }
+    return crypto.timingSafeEqual(digestBuffer, hmacBuffer);
+  } catch {
+    return false;
+  }
 }

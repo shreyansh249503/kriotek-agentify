@@ -1,5 +1,6 @@
 import { getDb } from "@/app/api/lib/db";
 import { Conversation, Bot } from "@/app/api/lib/entities";
+import { checkRateLimit } from "@/app/api/lib/rateLimit";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -19,6 +20,22 @@ export async function POST(req: Request) {
       return new Response(
         JSON.stringify({ error: "conversationId and publicKey are required" }),
         { status: 400, headers: corsHeaders }
+      );
+    }
+
+    const rateLimit = await checkRateLimit(req, publicKey, {
+      ipLimit: 30,
+      ipWindowSeconds: 60,
+      botLimit: 120,
+      botWindowSeconds: 60,
+    });
+    if (!rateLimit.success) {
+      return new Response(
+        JSON.stringify({ error: "Rate limit exceeded. Please try again later." }),
+        {
+          status: 429,
+          headers: { ...corsHeaders, ...rateLimit.headers, "Content-Type": "application/json" },
+        }
       );
     }
 

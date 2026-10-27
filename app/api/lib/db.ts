@@ -14,13 +14,17 @@ const globalForTypeorm = globalThis as unknown as {
   AppDataSource: DataSource;
 };
 
+const isProduction = process.env.NODE_ENV === "production";
+const dbUrl = process.env.SUPABASE_DATABASE_URL || "";
+const isSupabase = dbUrl.includes("supabase.co") || dbUrl.includes("supabase.com");
+
 export const AppDataSource =
   globalForTypeorm.AppDataSource ||
   new DataSource({
     type: "postgres",
-    url: process.env.SUPABASE_DATABASE_URL,
-    synchronize: true,
-    logging: false,
+    url: dbUrl,
+    synchronize: false,
+    logging: !isProduction && process.env.DEBUG_TYPEORM === "true",
     entities: [
       Bot,
       Conversation,
@@ -30,14 +34,22 @@ export const AppDataSource =
       ShopifyStore,
       BotUsage,
     ],
-    ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : undefined,
+    ssl: isSupabase || isProduction ? { rejectUnauthorized: false } : undefined,
+    extra: {
+      max: 10,
+      connectionTimeoutMillis: 10000,
+      idleTimeoutMillis: 30000,
+    },
   });
 
-let dbMigrationRun = false;
+if (!isProduction) {
+  globalForTypeorm.AppDataSource = AppDataSource;
+}
+
 let initPromise: Promise<DataSource> | null = null;
 
-export const getDb = async () => {
-  if (AppDataSource.isInitialized && dbMigrationRun) {
+export const getDb = async (): Promise<DataSource> => {
+  if (AppDataSource.isInitialized) {
     return AppDataSource;
   }
 
@@ -46,21 +58,11 @@ export const getDb = async () => {
       if (!AppDataSource.isInitialized) {
         await AppDataSource.initialize();
       }
-      if (!dbMigrationRun && AppDataSource.isInitialized) {
-        dbMigrationRun = true;
-        await AppDataSource.query(`
-          ALTER TABLE bots ADD COLUMN IF NOT EXISTS last_trained_at TIMESTAMPTZ;
-          ALTER TABLE bots ADD COLUMN IF NOT EXISTS company_name VARCHAR;
-          ALTER TABLE bots ADD COLUMN IF NOT EXISTS allowed_origins JSONB DEFAULT '[]';
-          ALTER TABLE bots ADD COLUMN IF NOT EXISTS monthly_token_budget INT;
-          ALTER TABLE bots ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
-          ALTER TABLE bots ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
-        `).catch((err) => {
-          console.log("Migration columns error:", err);
-        });
-      }
       return AppDataSource;
-    })();
+    })().catch((err) => {
+      initPromise = null;
+      throw err;
+    });
   }
 
   return initPromise;
@@ -69,10 +71,7 @@ export const getDb = async () => {
 export const db = {
   query: async (queryStr: string, params?: unknown[]) => {
     const dataSource = await getDb();
-    const rows = await dataSource.query(queryStr, params).catch((err) => {
-      console.log(err);
-      return [];
-    });
-    return { rows, rowCount: rows.length };
+    const rows = await dataSource.query(queryStr, params);
+    return { rows, rowCount: Array.isArray(rows) ? rows.length : 0 };
   },
 };

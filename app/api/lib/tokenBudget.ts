@@ -15,22 +15,15 @@ export function getCurrentBillingPeriod(date: Date = new Date()): string {
   return `${year}-${month}`;
 }
 
-/**
- * Approximate token count from text (~4 chars per token for English text)
- */
 export function estimateTokens(text: string): number {
   if (!text) return 0;
   return Math.max(1, Math.ceil(text.length / 4));
 }
 
-/**
- * Pre-flight check to verify if a bot has exceeded its monthly LLM token budget
- */
 export async function checkBotBudget(
   botId: string,
   monthlyBudget?: number | null,
 ): Promise<BudgetCheckResult> {
-  // If no budget limit is set or budget is 0, usage is unlimited
   if (!monthlyBudget || monthlyBudget <= 0) {
     return {
       allowed: true,
@@ -75,7 +68,6 @@ export async function checkBotBudget(
     };
   } catch (err) {
     console.error("[TokenBudget] Error checking bot budget:", err);
-    // On DB error, allow request to avoid breaking chatbot
     return {
       allowed: true,
       currentTokens: 0,
@@ -86,9 +78,6 @@ export async function checkBotBudget(
   }
 }
 
-/**
- * Asynchronously records prompt & completion tokens consumed by an LLM call for a bot
- */
 export async function recordBotTokenUsage(
   botId: string,
   tokens: {

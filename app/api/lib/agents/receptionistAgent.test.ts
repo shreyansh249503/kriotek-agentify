@@ -27,6 +27,8 @@ describe("receptionistAgent", () => {
     contact_email_message: "Thanks!",
     user_id: "user-123",
     logo_url: "",
+    allowed_origins: [],
+    usages: [],
     leads: [],
     conversations: [],
     shopify_stores: [],

@@ -71,24 +71,19 @@ describe("db utility", () => {
     spyQuery.mockRestore();
   });
 
-  it("should catch errors in db.query and return empty array with rowCount 0", async () => {
+  it("should rethrow errors in db.query so callers can detect failures", async () => {
     Object.defineProperty(AppDataSource, "isInitialized", {
       value: true,
       configurable: true,
       writable: true,
     });
 
-    const consoleSpy = jest.spyOn(console, "log").mockImplementation(() => {});
     const spyQuery = jest
       .spyOn(AppDataSource, "query")
       .mockRejectedValueOnce(new Error("DB error"));
 
-    const result = await db.query("SELECT * FROM invalid_table");
+    await expect(db.query("SELECT * FROM invalid_table")).rejects.toThrow("DB error");
 
-    expect(consoleSpy).toHaveBeenCalled();
-    expect(result).toEqual({ rows: [], rowCount: 0 });
-
-    consoleSpy.mockRestore();
     spyQuery.mockRestore();
   });
 });

@@ -19,11 +19,13 @@ import {
 import { checkRateLimit } from "../lib/rateLimit";
 import { verifyOrigin } from "../lib/originGuard";
 import { checkBotBudget, estimateTokens, recordBotTokenUsage } from "../lib/tokenBudget";
+import { createChatTrace, TraceHandle } from "../lib/langfuse";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST,OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization, x-forwarded-for, cf-connecting-ip, x-real-ip",
+  "Access-Control-Expose-Headers": "x-trace-id",
 };
 
 export async function OPTIONS() {
@@ -127,6 +129,16 @@ export async function POST(req: Request) {
     await convoRepo.save(convo);
   }
 
+  // Initialize Langfuse Observability Trace
+  const trace = createChatTrace({
+    botId: bot.id,
+    botName: bot.name,
+    storeId: shopifyStore?.id,
+    storeDomain: shopifyStore?.shop,
+    conversationId: convo.id,
+    userMessage: message,
+  });
+
   let history: Message[] = [];
   try {
     history = JSON.parse(convo.messages || "[]");
@@ -148,6 +160,7 @@ export async function POST(req: Request) {
       headers: {
         ...corsHeaders,
         ...rateLimitResult.headers,
+        "x-trace-id": trace.traceId,
       },
     });
   }
@@ -183,6 +196,9 @@ export async function POST(req: Request) {
       }),
     ]);
 
+  trace.recordSpan("intent_classification", { message }, intentDecision);
+  trace.recordSpan("rag_retrieval", { message }, { hasContext: Boolean(websiteContext) });
+
   const isShopifyConnected = Boolean(shopifyStore);
 
   if (
@@ -199,53 +215,49 @@ export async function POST(req: Request) {
     if (partial.phone) updates.phone = partial.phone;
 
     if (Object.keys(updates).length > 0) {
-      try {
-        await convoRepo.update(convo.id, updates);
-        console.log("[route] Partial save OK:", updates);
-      } catch (err) {
-        console.error("[route] Partial save FAILED:", err);
-      }
+      await convoRepo.update(convo.id, updates);
     }
   }
 
-  if (contactEnabled && leadDecision?.isComplete && !alreadyComplete) {
-    const { name = "", email = "", phone = "" } = leadDecision.collectedInfo;
-
-    console.log("[route] LEAD COMPLETE — firing pipeline:", {
-      name,
-      email,
-      phone,
-    });
+  if (
+    contactEnabled &&
+    !alreadyComplete &&
+    leadDecision &&
+    leadDecision.isComplete
+  ) {
+    const { name, email, phone } = leadDecision.collectedInfo;
 
     await convoRepo.update(convo.id, {
       state: "completed",
-      name,
-      email,
-      phone,
+      name: name ?? undefined,
+      email: email ?? undefined,
+      phone: phone ?? undefined,
     });
 
     const leadRepo = dbInstance.getRepository<Lead>("Lead");
+    const lead = leadRepo.create({
+      bot_id: bot.id,
+      name: name || undefined,
+      email: email || undefined,
+      phone: phone || undefined,
+    });
+    await leadRepo.save(lead);
+
+    trace.recordSpan("lead_captured", { name, email, phone });
+
     Promise.all([
-      leadRepo.save(
-        leadRepo.create({
-          bot_id: bot.id,
-          name,
-          email,
-          phone,
-        }),
-      ),
       email
         ? sendUserEmail({
             to: email,
             subject: `Thank you for contacting ${bot.name}`,
             body: "We'll contact you shortly.",
             html: generateUserConfirmationTemplate({
-              userName: name,
+              userName: name || "there",
               companyName: bot.name,
-              companyDescription: bot.description,
-              customMessage: bot.contact_email_message,
+              companyDescription: bot.description || "",
+              customMessage: bot.contact_email_message || undefined,
               userEmail: email,
-              userPhone: phone,
+              userPhone: phone || "",
             }),
           })
         : Promise.resolve(),
@@ -253,7 +265,7 @@ export async function POST(req: Request) {
         ? sendOwnerNotification({
             ownerEmail: bot.contact_email,
             botName: bot.name,
-            leadData: { name, email, phone },
+            leadData: { name: name ?? "", email: email ?? "", phone: phone ?? "" },
           })
         : Promise.resolve(),
     ]).catch((err) => console.error("[leads pipeline]", err));
@@ -270,10 +282,6 @@ export async function POST(req: Request) {
       intentDecision.primaryIntent === "SALES" &&
       Boolean(bot.ecommerce_enabled) &&
       Boolean(bot.ecommerce_products?.length);
-
-    console.log(
-      `[route] Dispatching agent - Intent: ${intentDecision.primaryIntent} (confidence: ${intentDecision.confidence}, isSales: ${isSales})`,
-    );
 
     if (isSales) {
       result = await runSalesAgent({
@@ -295,7 +303,6 @@ export async function POST(req: Request) {
 
   } catch (err) {
     const error = err as StreamError;
-    console.error("[route] Sync error starting agent:", error);
     const isQuota =
       error?.statusCode === 429 ||
       error?.lastError?.statusCode === 429 ||
@@ -305,22 +312,19 @@ export async function POST(req: Request) {
       : "An error occurred.";
     return new Response(msg, {
       status: isQuota ? 429 : 500,
-      headers: corsHeaders,
+      headers: {
+        ...corsHeaders,
+        "x-trace-id": trace.traceId,
+      },
     });
   }
 
   const encoder = new TextEncoder();
   const customStream = new ReadableStream({
     async start(controller) {
-      console.log("[route] customStream start() executing...");
       try {
         for await (const part of result.fullStream) {
-          console.log("[route] fullStream part:", part.type);
           if (part.type === "text-delta") {
-            console.log(
-              "[route] enqueuing text-delta:",
-              JSON.stringify(part.text),
-            );
             controller.enqueue(encoder.encode(part.text));
           } else if (part.type === "tool-result") {
             const toolPart = part as unknown as {
@@ -329,14 +333,9 @@ export async function POST(req: Request) {
             };
             const toolRes = toolPart.output || toolPart.result;
             if (toolRes && typeof toolRes.tagPayload === "string") {
-              console.log(
-                "[route] Injecting tool result tagPayload into stream:",
-                toolRes.tagPayload.slice(0, 50),
-              );
               controller.enqueue(encoder.encode(`\n\n${toolRes.tagPayload}`));
             }
           } else if (part.type === "error") {
-            console.error("[route] fullStream error:", part.error);
             const err = part.error as StreamError;
             const isQuota =
               err?.statusCode === 429 ||
@@ -362,7 +361,6 @@ export async function POST(req: Request) {
         }
       } catch (err) {
         const error = err as StreamError;
-        console.error("[route] Stream error exception:", error);
         const isQuota =
           error?.statusCode === 429 ||
           error?.lastError?.statusCode === 429 ||
@@ -389,9 +387,14 @@ export async function POST(req: Request) {
   });
 
   const [streamForClient, streamForSaving] = customStream.tee();
-  saveAssistantMessage(streamForSaving, convo.id, bot.id, fullConversation).catch(
-    console.error,
-  );
+  saveAssistantMessage(
+    streamForSaving,
+    convo.id,
+    bot.id,
+    fullConversation,
+    result?.usage,
+    trace,
+  ).catch(console.error);
 
   return new Response(streamForClient, {
     headers: {
@@ -399,6 +402,7 @@ export async function POST(req: Request) {
       "Cache-Control": "no-cache",
       ...corsHeaders,
       ...rateLimitResult.headers,
+      "x-trace-id": trace.traceId,
     },
   });
 }
@@ -408,6 +412,8 @@ async function saveAssistantMessage(
   conversationId: string,
   botId: string,
   existingHistory: Message[],
+  usagePromise?: PromiseLike<{ promptTokens?: number; completionTokens?: number; totalTokens?: number }>,
+  trace?: TraceHandle,
 ) {
   let fullText = "";
   const reader = stream.getReader();
@@ -423,9 +429,28 @@ async function saveAssistantMessage(
     { role: "assistant" as const, content: fullText },
   ];
 
-  const promptText = existingHistory.map((m) => m.content).join(" ");
-  const promptTokens = estimateTokens(promptText);
-  const completionTokens = estimateTokens(fullText);
+  let promptTokens: number;
+  let completionTokens: number;
+  let totalTokens: number;
+
+  try {
+    const resolvedUsage = usagePromise ? await usagePromise : null;
+    if (resolvedUsage && typeof resolvedUsage.promptTokens === "number") {
+      promptTokens = resolvedUsage.promptTokens;
+      completionTokens = resolvedUsage.completionTokens ?? 0;
+      totalTokens = resolvedUsage.totalTokens ?? (promptTokens + completionTokens);
+    } else {
+      const promptText = existingHistory.map((m) => m.content).join(" ");
+      promptTokens = estimateTokens(promptText);
+      completionTokens = estimateTokens(fullText);
+      totalTokens = promptTokens + completionTokens;
+    }
+  } catch {
+    const promptText = existingHistory.map((m) => m.content).join(" ");
+    promptTokens = estimateTokens(promptText);
+    completionTokens = estimateTokens(fullText);
+    totalTokens = promptTokens + completionTokens;
+  }
 
   const dbInstance = await getDb();
   const convoRepo = dbInstance.getRepository<Conversation>("Conversation");
@@ -435,7 +460,21 @@ async function saveAssistantMessage(
   await recordBotTokenUsage(botId, {
     promptTokens,
     completionTokens,
-    totalTokens: promptTokens + completionTokens,
+    totalTokens,
   });
-}
 
+  // Record generation telemetry to Langfuse
+  if (trace) {
+    trace.recordGeneration({
+      name: "chat_agent_generation",
+      model: process.env.GEMINI_MODEL || "gemini-1.5-flash",
+      input: existingHistory,
+      output: fullText,
+      usage: {
+        promptTokens,
+        completionTokens,
+        totalTokens,
+      },
+    });
+  }
+}

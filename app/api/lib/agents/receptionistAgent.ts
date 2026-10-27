@@ -6,6 +6,7 @@ import { buildSystemPrompt, type ContactState } from "../agent";
 import type { LeadDecision } from "./leadAgent";
 import type { Bot } from "../entities";
 import { mapShopifyOrderToJourney, RawShopifyOrderNode } from "@/lib/shopify/shopifyOrderMapper";
+import { decryptToken } from "../crypto";
 
 type Message = { role: "user" | "assistant" | "system"; content: string };
 
@@ -144,6 +145,8 @@ export function runReceptionistAgent({
               const targetEmail = email ? email.trim().toLowerCase() : null;
               const targetPhone = phone ? phone.trim().replace(/\D/g, "") : null;
 
+              const accessToken = decryptToken(storeData.access_token);
+
               const fetchOrdersFromShopify = async (queryParam?: string) => {
                 const gqlPayload = {
                   query: queryParam
@@ -158,7 +161,7 @@ export function runReceptionistAgent({
                     method: "POST",
                     headers: {
                       "Content-Type": "application/json",
-                      "X-Shopify-Access-Token": storeData.access_token,
+                      "X-Shopify-Access-Token": accessToken,
                     },
                     body: JSON.stringify(gqlPayload),
                   }
