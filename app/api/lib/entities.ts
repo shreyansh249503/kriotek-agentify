@@ -205,6 +205,10 @@ export class ShopifyStore {
 
   @CreateDateColumn({ name: "installed_at" })
   installed_at!: Date;
+
+  /** Set on app/uninstalled (token wiped); the row is deleted on shop/redact. */
+  @Column({ type: "timestamptz", name: "uninstalled_at", nullable: true })
+  uninstalled_at!: Date | null;
 }
 
 @Entity("bot_usages")

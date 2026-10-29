@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logger } from "../../../../../lib/logger";
 import { createClient } from "@supabase/supabase-js";
 import { setupCollection } from "../../../lib/vector-db-setup";
 import { getDb } from "../../../lib/db";
@@ -84,7 +85,7 @@ export async function POST(req: NextRequest) {
     }
 
     const chunks = chunkText(collectedText);
-    console.log("Shopify Ingest Chunks Count:", chunks.length);
+    logger.info("[shopify-ingest-url] Chunks split count", { chunksCount: chunks.length });
 
     const batchSize = 10;
     for (let i = 0; i < chunks.length; i += batchSize) {

@@ -5,6 +5,7 @@ import { getDb } from "../lib/db";
 import { Bot, CrawledPage } from "../lib/entities";
 import { ingestDocument } from "../lib/ingest";
 import { setupCollection } from "../lib/vector-db-setup";
+import { logger } from "../../../lib/logger";
 
 export async function POST(req: Request) {
   await setupCollection();
@@ -83,7 +84,7 @@ export async function POST(req: Request) {
 
   const chunks = chunkText(collectedText);
 
-  console.log("CHUNKS COUNT:", chunks.length);
+  logger.info("[ingest-url] Chunks split count", { chunksCount: chunks.length });
 
   const batchSize = 10;
   for (let i = 0; i < chunks.length; i += batchSize) {

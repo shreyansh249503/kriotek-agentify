@@ -10,6 +10,8 @@ const config: Config = {
   coverageProvider: "v8",
   testEnvironment: "jsdom",
   testPathIgnorePatterns: ["<rootDir>/node_modules/", "<rootDir>/e2e/"],
+  // Recycle workers that grow past 1GB; suites loading the AI SDK otherwise crash a worker with OOM.
+  workerIdleMemoryLimit: "1GB",
   setupFilesAfterEnv: ["<rootDir>/jest.setup.ts"],
   moduleNameMapper: {
     // Handle module aliases to match tsconfig.json

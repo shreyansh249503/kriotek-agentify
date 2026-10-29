@@ -1,0 +1,100 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NEXT_TELEMETRY_DISABLED: "1"
+  # Placeholders only: some modules create Supabase clients at import time, so the build and the
+  # E2E dev server need values. Tests mock all network and database access; no secrets are used.
+  NEXT_PUBLIC_SUPABASE_URL: https://ci-placeholder.supabase.co
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
+  SUPABASE_URL: https://ci-placeholder.supabase.co
+  SUPABASE_SERVICE_ROLE_KEY: ci-placeholder-service-role-key
+  GOOGLE_GENERATIVE_AI_API_KEY: ci-placeholder
+
+jobs:
+  checks:
+    name: Lint, typecheck, unit tests, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npx tsc --noEmit
+      - name: Unit tests
+        run: npx jest --ci --maxWorkers=2
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+      - run: npm run build
+
+  migrations:
+    name: Migrations apply cleanly and keep the database locked down
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: localhost
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: postgres
+    steps:
+      - uses: actions/checkout@v5
+      - name: Apply migrations twice (they must be idempotent), then verify security rules
+        run: |
+          psql -v ON_ERROR_STOP=1 -q -f supabase/ci/bootstrap.sql
+          for pass in 1 2; do
+            for file in supabase/migrations/*.sql; do
+              echo "pass $pass: $file"
+              psql -v ON_ERROR_STOP=1 -q -f "$file"
+            done
+          done
+          psql -v ON_ERROR_STOP=1 -q -f supabase/ci/verify.sql
+
+  e2e:
+    name: E2E (Playwright, Chromium)
+    needs: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+        env:
+          CI: "true"
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

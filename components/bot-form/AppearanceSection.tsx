@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { CreateBotInput } from "@/types/bot";
+import { uploadImage } from "@/services/upload.api";
 import { ColorPicker } from "../color-picker";
 import {
   FormSection,
@@ -35,15 +36,9 @@ export const AppearanceSection = ({ form, update }: AppearanceSectionProps) => {
     }
 
     setUploading(true);
-    const formData = new FormData();
-    formData.append("file", file);
 
     try {
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
-      const data = await res.json();
+      const data = await uploadImage(file);
       if (data.url) {
         update("logoUrl", data.url);
       } else {

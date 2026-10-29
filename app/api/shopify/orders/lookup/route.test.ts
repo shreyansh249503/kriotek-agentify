@@ -126,7 +126,7 @@ describe("API: /api/shopify/orders/lookup", () => {
 
     const req = new NextRequest("http://localhost/api/shopify/orders/lookup", {
       method: "POST",
-      body: JSON.stringify({ bot_id: "bot_123", order_number: "9999" }),
+      body: JSON.stringify({ bot_id: "bot_123", order_number: "9999", email: "customer@example.com" }),
     });
 
     const res = await POST(req);
@@ -134,6 +134,25 @@ describe("API: /api/shopify/orders/lookup", () => {
 
     expect(res.status).toBe(404);
     expect(data.error).toContain("not found in store");
+  });
+
+  it.each([
+    ["no email or phone", {}],
+    ["a phone number that is too short", { phone: "1234" }],
+  ])("should require verification before searching when given %s", async (_label, contact) => {
+    mockSingle.mockResolvedValueOnce({ data: { shop: "shop.myshopify.com", access_token: "token_123" } });
+
+    const req = new NextRequest("http://localhost/api/shopify/orders/lookup", {
+      method: "POST",
+      body: JSON.stringify({ bot_id: "bot_123", order_number: "1001", ...contact }),
+    });
+
+    const res = await POST(req);
+    const data = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(data.requiresVerification).toBe(true);
+    expect(global.fetch).not.toHaveBeenCalled();
   });
 
   it("should return 401 if order number exists but email/phone verification fails", async () => {

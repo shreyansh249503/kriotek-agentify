@@ -96,5 +96,23 @@ describe("Rate Limiter (rateLimit.ts)", () => {
       expect(blockedRes.reason).toBe("bot_limit_exceeded");
       expect(blockedRes.remaining).toBe(0);
     });
+
+    it("should keep separate counters per scope", async () => {
+      const req = () =>
+        new Request("http://localhost/api/public/conversation/x", {
+          headers: { "x-forwarded-for": "10.0.0.20" },
+        });
+
+      // Exhaust the polling scope
+      await checkRateLimit(req(), "bot-key-3", { scope: "public-conversation", ipLimit: 2 });
+      await checkRateLimit(req(), "bot-key-3", { scope: "public-conversation", ipLimit: 2 });
+      const pollBlocked = await checkRateLimit(req(), "bot-key-3", { scope: "public-conversation", ipLimit: 2 });
+
+      // Same IP and bot, different scope: still allowed
+      const chatAllowed = await checkRateLimit(req(), "bot-key-3", { ipLimit: 2 });
+
+      expect(pollBlocked.success).toBe(false);
+      expect(chatAllowed.success).toBe(true);
+    });
   });
 });

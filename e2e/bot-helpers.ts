@@ -349,8 +349,6 @@ export async function mockBotAPIs(
         primary_color: targetBot.primary_color,
         logo_url: targetBot.logo_url || null,
         ecommerce_enabled: targetBot.ecommerce_enabled,
-        supabaseUrl: null,
-        supabaseAnonKey: null,
       }),
     });
   });

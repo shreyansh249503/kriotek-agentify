@@ -1,5 +1,6 @@
 import { getDb } from "@/app/api/lib/db";
 import { ShopifyStore } from "@/app/api/lib/entities";
+import { checkRateLimit } from "@/app/api/lib/rateLimit";
 import { NextRequest } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -24,14 +25,20 @@ const botCache = new Map<
       primary_color: string;
       logo_url: string | null;
       ecommerce_enabled: boolean;
-      supabaseUrl: string | null;
-      supabaseAnonKey: string | null;
     };
     ts: number;
   }
 >();
 
 export async function GET(req: NextRequest) {
+  const rateLimit = await checkRateLimit(req, undefined, { scope: "public-bot-by-shop", ipLimit: 60, ipWindowSeconds: 60 });
+  if (!rateLimit.success) {
+    return Response.json(
+      { error: "Too many requests. Please try again later." },
+      { status: 429, headers: { ...corsHeaders, ...rateLimit.headers } },
+    );
+  }
+
   const { searchParams } = new URL(req.url);
   let shop = searchParams.get("shop");
 
@@ -62,7 +69,7 @@ export async function GET(req: NextRequest) {
       relations: ["bot"],
     });
 
-    if (!store || !store.bot) {
+    if (!store || !store.bot || store.uninstalled_at) {
       return Response.json(
         { error: "Bot not found for this shop" },
         { status: 404, headers: corsHeaders }
@@ -76,8 +83,6 @@ export async function GET(req: NextRequest) {
       primary_color: bot.primary_color,
       logo_url: bot.logo_url || null,
       ecommerce_enabled: bot.ecommerce_enabled,
-      supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL || null,
-      supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || null,
     };
 
     botCache.set(shop, { data: result, ts: Date.now() });

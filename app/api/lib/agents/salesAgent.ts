@@ -1,12 +1,10 @@
-import { generateObject, streamText, tool } from "ai";
+import { generateObject, streamText } from "ai";
 import { google } from "@ai-sdk/google";
 import { z } from "zod";
-import { createClient } from "@supabase/supabase-js";
 import { Product, ProductVariant } from "@/types/bot";
 import type { LeadDecision } from "./leadAgent";
 import type { Bot } from "../entities";
-import { mapShopifyOrderToJourney, RawShopifyOrderNode } from "@/lib/shopify/shopifyOrderMapper";
-import { decryptToken } from "../crypto";
+import { createOrderLookupTool } from "./orderLookupTool";
 
 export type Message = {
   role: "user" | "assistant" | "system";
@@ -536,58 +534,6 @@ ${context.websiteContext}
 `;
 }
 
-const ORDER_QUERY_FIELDS = `
-  id
-  name
-  email
-  phone
-  createdAt
-  cancelledAt
-  cancelReason
-  displayFinancialStatus
-  displayFulfillmentStatus
-  totalPriceSet {
-    presentmentMoney {
-      amount
-      currencyCode
-    }
-  }
-  shippingAddress {
-    address1
-    city
-    province
-    country
-    zip
-    phone
-  }
-  lineItems(first: 10) {
-    edges {
-      node {
-        title
-        quantity
-        originalUnitPriceSet {
-          presentmentMoney {
-            amount
-            currencyCode
-          }
-        }
-        image {
-          url
-          altText
-        }
-      }
-    }
-  }
-  fulfillments(first: 5) {
-    updatedAt
-    trackingInfo {
-      number
-      url
-      company
-    }
-  }
-`;
-
 export async function runSalesAgent({
   messages,
   botConfig,
@@ -625,161 +571,10 @@ export async function runSalesAgent({
 
   const tools = isShopifyConnected
     ? {
-        lookup_shopify_order: tool({
-          description:
-            "Lookup Shopify order status and order journey timeline using order number and customer email or phone.",
-          inputSchema: z.object({
-            order_number: z.string().describe("The Shopify order number, e.g. #1042 or 1042"),
-            email: z.string().optional().describe("Customer's email address associated with the order"),
-            phone: z.string().optional().describe("Customer's phone number associated with the order"),
-          }),
-          execute: async ({ order_number, email, phone }) => {
-            try {
-              const supabase = createClient(
-                process.env.NEXT_PUBLIC_SUPABASE_URL!,
-                process.env.SUPABASE_SERVICE_ROLE_KEY!,
-              );
-
-              const { data: storeData, error: storeErr } = await supabase
-                .from("shopify_stores")
-                .select("shop, access_token")
-                .eq("bot_id", botConfig.id)
-                .single();
-
-              if (storeErr || !storeData?.access_token || !storeData?.shop) {
-                return {
-                  error: "Shopify store integration is not configured for this assistant.",
-                };
-              }
-
-              const cleanOrderNum = order_number.trim();
-              const searchName = cleanOrderNum.startsWith("#")
-                ? cleanOrderNum
-                : `#${cleanOrderNum}`;
-              const rawNum = cleanOrderNum.replace(/^#/, "");
-              const targetEmail = email ? email.trim().toLowerCase() : null;
-              const targetPhone = phone ? phone.trim().replace(/\D/g, "") : null;
-
-              const accessToken = decryptToken(storeData.access_token);
-
-              const fetchOrdersFromShopify = async (queryParam?: string) => {
-                const gqlPayload = {
-                  query: queryParam
-                    ? `query searchOrders($query: String!) { orders(first: 25, query: $query) { edges { node { ${ORDER_QUERY_FIELDS} } } } }`
-                    : `query searchOrders { orders(first: 50) { edges { node { ${ORDER_QUERY_FIELDS} } } } }`,
-                  variables: queryParam ? { query: queryParam } : undefined,
-                };
-
-                const response = await fetch(
-                  `https://${storeData.shop}/admin/api/2026-04/graphql.json`,
-                  {
-                    method: "POST",
-                    headers: {
-                      "Content-Type": "application/json",
-                      "X-Shopify-Access-Token": accessToken,
-                    },
-                    body: JSON.stringify(gqlPayload),
-                  },
-                );
-
-                if (!response.ok) return [];
-                const resJson = await response.json();
-                return resJson?.data?.orders?.edges ?? [];
-              };
-
-              let queryStr = `name:"${searchName}" OR name:"${rawNum}" OR "${rawNum}"`;
-              if (targetEmail) queryStr += ` OR email:"${targetEmail}"`;
-
-              let orderEdges = await fetchOrdersFromShopify(queryStr);
-              if (orderEdges.length === 0) {
-                orderEdges = await fetchOrdersFromShopify(rawNum);
-              }
-              if (orderEdges.length === 0) {
-                orderEdges = await fetchOrdersFromShopify();
-              }
-              if (orderEdges.length === 0) {
-                return { error: `Order ${cleanOrderNum} was not found.` };
-              }
-
-              let matchedOrder: RawShopifyOrderNode | null = null;
-              for (const edge of orderEdges) {
-                const node = edge.node as RawShopifyOrderNode;
-                const nodeName = node.name.trim();
-                const nodeRawNum = nodeName.replace(/^#/, "").trim();
-
-                const isOrderNumMatch =
-                  nodeName === searchName ||
-                  nodeName === cleanOrderNum ||
-                  nodeRawNum === rawNum ||
-                  node.id.includes(rawNum);
-
-                if (!isOrderNumMatch) continue;
-
-                const orderTopEmail = node.email?.trim().toLowerCase();
-                const orderCustomerEmail = node.customer?.email?.trim().toLowerCase();
-                const orderTopPhone = node.phone?.replace(/\D/g, "");
-                const orderCustomerPhone = node.customer?.phone?.replace(/\D/g, "");
-                const orderShippingPhone = node.shippingAddress?.phone?.replace(/\D/g, "");
-
-                const hasAnyContact = Boolean(
-                  orderTopEmail || orderCustomerEmail || orderTopPhone || orderCustomerPhone || orderShippingPhone,
-                );
-
-                let isContactMatch = false;
-                if (!hasAnyContact) {
-                  isContactMatch = true;
-                } else {
-                  if (targetEmail) {
-                    if (
-                      (orderTopEmail && orderTopEmail === targetEmail) ||
-                      (orderCustomerEmail && orderCustomerEmail === targetEmail)
-                    ) {
-                      isContactMatch = true;
-                    }
-                  }
-                  if (targetPhone) {
-                    if (
-                      (orderTopPhone && orderTopPhone.endsWith(targetPhone)) ||
-                      (orderCustomerPhone && orderCustomerPhone.endsWith(targetPhone)) ||
-                      (orderShippingPhone && orderShippingPhone.endsWith(targetPhone))
-                    ) {
-                      isContactMatch = true;
-                    }
-                  }
-                  if (!targetEmail && !targetPhone) isContactMatch = true;
-                }
-
-                if (isContactMatch) {
-                  matchedOrder = node;
-                  break;
-                }
-              }
-
-              if (!matchedOrder) {
-                return {
-                  error: "Verification failed. The provided email or phone does not match order records.",
-                };
-              }
-
-              const journey = mapShopifyOrderToJourney(matchedOrder);
-              const tagString = `[ORDER_JOURNEY_JSON:${JSON.stringify(journey)}]`;
-
-              return {
-                success: true,
-                orderNumber: journey.orderNumber,
-                statusBadge: journey.statusBadge,
-                statusDescription: journey.statusDescription,
-                tagPayload: tagString,
-                instruction: `Write a warm, friendly 1-sentence status summary for order ${journey.orderNumber}.`,
-              };
-            } catch (err) {
-              console.error("[lookup_shopify_order error]", err);
-              return {
-                error: "An unexpected error occurred while fetching order details.",
-              };
-            }
-          },
-        }),
+        lookup_shopify_order: createOrderLookupTool(
+          botConfig.id,
+          (journey) => `Write a warm, friendly 1-sentence status summary for order ${journey.orderNumber}.`,
+        ),
       }
     : undefined;
 

@@ -19,6 +19,7 @@ jest.mock("../lib/verifySessionToken", () => ({
 }));
 
 import { verifySessionToken } from "../lib/verifySessionToken";
+import { getUserFromRequest } from "../../lib/auth";
 
 describe("API: /api/shopify/sync", () => {
   const mockSingle = jest.fn();
@@ -238,5 +239,62 @@ describe("API: /api/shopify/sync", () => {
 
     expect(res.status).toBe(403);
     expect(data.error).toBe("Store is associated with another bot");
+  });
+
+  describe("dashboard user (Supabase) auth", () => {
+    beforeEach(() => {
+      mockedVerifySession.mockImplementation(() => {
+        throw new Error("not a Shopify session token");
+      });
+      (getUserFromRequest as jest.Mock).mockResolvedValue({ id: "user_1" });
+      mockFrom.mockImplementation((table: string) => {
+        if (table === "shopify_stores") {
+          return { select: mockSelect, update: mockUpdate, eq: mockEq };
+        }
+        if (table === "bots") {
+          return { select: mockSelect, update: mockUpdate, eq: mockEq };
+        }
+        return {};
+      });
+    });
+
+    afterEach(() => {
+      (getUserFromRequest as jest.Mock).mockResolvedValue(null);
+    });
+
+    it("should refuse to sync or link a store that is not linked to any bot", async () => {
+      mockSingle
+        .mockResolvedValueOnce({ data: { id: "bot_123" } }) // user owns bot_123
+        .mockResolvedValueOnce({ data: { access_token: "shpat_123", bot_id: null } }); // unlinked store
+
+      const res = await POST(createReq({ shop: "victim.myshopify.com", bot_id: "bot_123" }));
+      const data = await res.json();
+
+      expect(res.status).toBe(403);
+      expect(data.error).toBe("Store is not linked to this bot");
+      expect(mockUpdate).not.toHaveBeenCalled();
+      expect(global.fetch).not.toHaveBeenCalled();
+    });
+
+    it("should refuse when the user does not own the bot", async () => {
+      mockSingle.mockResolvedValueOnce({ data: null });
+
+      const res = await POST(createReq({ shop: "test.myshopify.com", bot_id: "someone_elses_bot" }));
+
+      expect(res.status).toBe(401);
+    });
+
+    it("should allow syncing a store already linked to the user's bot", async () => {
+      mockSingle
+        .mockResolvedValueOnce({ data: { id: "bot_123" } })
+        .mockResolvedValueOnce({ data: { access_token: "shpat_123", bot_id: "bot_123" } });
+      (global.fetch as jest.Mock).mockResolvedValueOnce({ ok: false, status: 500, text: async () => "" });
+
+      const res = await POST(createReq({ shop: "test.myshopify.com", bot_id: "bot_123" }));
+
+      // 502 means auth passed and the Shopify API call was attempted
+      expect(res.status).toBe(502);
+      expect(global.fetch).toHaveBeenCalled();
+    });
   });
 });

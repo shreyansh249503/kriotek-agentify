@@ -27,7 +27,6 @@ interface CrawledPage {
 export default function TrainingPage() {
   const router = useRouter();
   const { fetchWithToken } = useSessionToken();
-  const [botId, setBotId] = useState<string | null>(null);
   const [publicKey, setPublicKey] = useState<string | null>(null);
   const [crawledPages, setCrawledPages] = useState<CrawledPage[]>([]);
   const [url, setUrl] = useState("");
@@ -53,7 +52,6 @@ export default function TrainingPage() {
       .then((data) => {
         if (data) {
           if (data.bot) {
-            setBotId(data.bot.id);
             setPublicKey(data.bot.public_key);
           }
           setCrawledPages(data.crawled_pages || []);

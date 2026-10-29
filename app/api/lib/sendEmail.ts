@@ -1,5 +1,41 @@
 import nodemailer from "nodemailer";
 
+let transporter: ReturnType<typeof nodemailer.createTransport> | null = null;
+
+/**
+ * SMTP transport from SMTP_HOST/SMTP_PORT/SMTP_USER/SMTP_PASS (any provider: Resend, Postmark,
+ * SES, ...). Falls back to the legacy GMAIL_USER/GMAIL_APP_PASSWORD config while environments migrate.
+ */
+function getTransport() {
+  if (transporter) return transporter;
+
+  if (process.env.SMTP_HOST) {
+    const port = Number(process.env.SMTP_PORT) || 587;
+    transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port,
+      secure: port === 465,
+      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+    });
+  } else {
+    transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_APP_PASSWORD },
+    });
+  }
+  return transporter;
+}
+
+/** EMAIL_FROM may be a bare address or include a display name ("Agentify <no-reply@example.com>"). */
+function fromAddress(displayName: string): string {
+  const from = process.env.EMAIL_FROM || process.env.SMTP_USER || process.env.GMAIL_USER || "";
+  return from.includes("<") ? from : `"${displayName}" <${from}>`;
+}
+
+export function escapeHtml(text: string): string {
+  return text.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
+}
+
 export async function sendUserEmail({
   to,
   subject,
@@ -11,16 +47,8 @@ export async function sendUserEmail({
   body: string;
   html?: string;
 }) {
-  const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: process.env.GMAIL_USER,
-      pass: process.env.GMAIL_APP_PASSWORD,
-    },
-  });
-
-  await transporter.sendMail({
-    from: `"Support" <${process.env.GMAIL_USER}>`,
+  await getTransport().sendMail({
+    from: fromAddress("Support"),
     to,
     subject,
     text: body,
@@ -41,18 +69,10 @@ export async function sendOwnerNotification({
     phone?: string;
   };
 }) {
-  const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: process.env.GMAIL_USER,
-      pass: process.env.GMAIL_APP_PASSWORD,
-    },
-  });
-
   const html = generateOwnerNotificationTemplate(botName, leadData);
 
-  await transporter.sendMail({
-    from: `"Agentify" <${process.env.GMAIL_USER}>`,
+  await getTransport().sendMail({
+    from: fromAddress("Agentify"),
     to: ownerEmail,
     subject: `New Lead from ${botName} Chatbot`,
     html,
@@ -60,9 +80,16 @@ export async function sendOwnerNotification({
 }
 
 function generateOwnerNotificationTemplate(
-  botName: string,
-  leadData: { name: string; email: string; phone?: string },
+  rawBotName: string,
+  rawLead: { name: string; email: string; phone?: string },
 ) {
+  // Lead details come from anonymous chat visitors; escape them so they can't inject markup or links.
+  const botName = escapeHtml(rawBotName);
+  const leadData = {
+    name: escapeHtml(rawLead.name ?? ""),
+    email: escapeHtml(rawLead.email ?? ""),
+    phone: rawLead.phone ? escapeHtml(rawLead.phone) : undefined,
+  };
   return `
 <!DOCTYPE html>
 <html>

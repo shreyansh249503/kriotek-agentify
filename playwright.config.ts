@@ -5,6 +5,8 @@ import { defineConfig, devices } from '@playwright/test';
  */
 export default defineConfig({
   testDir: './e2e',
+  /* Pre-compile every route on the dev server so first navigations don't time out */
+  globalSetup: './e2e/global-setup.ts',
   timeout: 60 * 1000,
   expect: {
     timeout: 10 * 1000,

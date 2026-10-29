@@ -9,6 +9,8 @@ export interface RateLimitResult {
 }
 
 export interface RateLimitOptions {
+  /** Separate counter per route, so e.g. widget polling doesn't consume the chat budget. */
+  scope?: string;
   ipLimit?: number;
   ipWindowSeconds?: number;
   botLimit?: number;
@@ -88,11 +90,36 @@ function checkMemorySlidingWindow(
   };
 }
 
+type UpstashLimiter = {
+  limit: (id: string) => Promise<{ success: boolean; limit: number; remaining: number; reset: number }>;
+};
+
 let upstashClient: unknown = null;
-let upstashIpLimiter: { limit: (id: string) => Promise<{ success: boolean; limit: number; remaining: number; reset: number }> } | null = null;
-let upstashBotLimiter: { limit: (id: string) => Promise<{ success: boolean; limit: number; remaining: number; reset: number }> } | null = null;
+// One limiter per scope + limit + window; a single shared instance would apply the first caller's limits to every route.
+const upstashLimiters = new Map<string, UpstashLimiter>();
+
+async function getUpstashLimiter(
+  kind: "ip" | "bot",
+  scope: string,
+  limit: number,
+  windowSeconds: number,
+): Promise<UpstashLimiter> {
+  const cacheKey = `${kind}:${scope}:${limit}:${windowSeconds}`;
+  let limiter = upstashLimiters.get(cacheKey);
+  if (!limiter) {
+    const { Ratelimit } = await import("@upstash/ratelimit");
+    limiter = new Ratelimit({
+      redis: upstashClient as never,
+      limiter: Ratelimit.slidingWindow(limit, `${windowSeconds} s`),
+      prefix: `@ratelimit:${kind}:${scope}`,
+    });
+    upstashLimiters.set(cacheKey, limiter);
+  }
+  return limiter;
+}
 
 async function getUpstashLimiters(
+  scope: string,
   ipLimit: number,
   ipWindowSeconds: number,
   botLimit: number,
@@ -114,25 +141,10 @@ async function getUpstashLimiters(
       });
     }
 
-    if (!upstashIpLimiter) {
-      const { Ratelimit } = await import("@upstash/ratelimit");
-      upstashIpLimiter = new Ratelimit({
-        redis: upstashClient as never,
-        limiter: Ratelimit.slidingWindow(ipLimit, `${ipWindowSeconds} s`),
-        prefix: "@ratelimit:ip",
-      });
-    }
-
-    if (!upstashBotLimiter) {
-      const { Ratelimit } = await import("@upstash/ratelimit");
-      upstashBotLimiter = new Ratelimit({
-        redis: upstashClient as never,
-        limiter: Ratelimit.slidingWindow(botLimit, `${botWindowSeconds} s`),
-        prefix: "@ratelimit:bot",
-      });
-    }
-
-    return { ipLimiter: upstashIpLimiter, botLimiter: upstashBotLimiter };
+    return {
+      ipLimiter: await getUpstashLimiter("ip", scope, ipLimit, ipWindowSeconds),
+      botLimiter: await getUpstashLimiter("bot", scope, botLimit, botWindowSeconds),
+    };
   } catch (err) {
     console.warn("[RateLimit] Error loading @upstash modules, using in-memory store:", err);
     return null;
@@ -149,8 +161,11 @@ export async function checkRateLimit(
   const botLimit = options?.botLimit ?? 100;
   const botWindowSeconds = options?.botWindowSeconds ?? 60;
 
+  const scope = options?.scope ?? "default";
   const clientIp = getClientIp(req);
-  const limiters = await getUpstashLimiters(ipLimit, ipWindowSeconds, botLimit, botWindowSeconds);
+  const ipMemoryKey = `${scope}:${clientIp}`;
+  const botMemoryKey = `${scope}:${publicKey}`;
+  const limiters = await getUpstashLimiters(scope, ipLimit, ipWindowSeconds, botLimit, botWindowSeconds);
 
   if (limiters?.ipLimiter) {
     try {
@@ -174,13 +189,13 @@ export async function checkRateLimit(
       }
     } catch (err) {
       console.warn("[RateLimit] Upstash Redis error on IP check, falling back to memory:", err);
-      const memIp = checkMemorySlidingWindow(ipMemoryStore, clientIp, ipLimit, ipWindowSeconds);
+      const memIp = checkMemorySlidingWindow(ipMemoryStore, ipMemoryKey, ipLimit, ipWindowSeconds);
       if (!memIp.success) {
         return buildMemoryResult("ip_limit_exceeded", memIp);
       }
     }
   } else {
-    const memIp = checkMemorySlidingWindow(ipMemoryStore, clientIp, ipLimit, ipWindowSeconds);
+    const memIp = checkMemorySlidingWindow(ipMemoryStore, ipMemoryKey, ipLimit, ipWindowSeconds);
     if (!memIp.success) {
       return buildMemoryResult("ip_limit_exceeded", memIp);
     }
@@ -209,13 +224,13 @@ export async function checkRateLimit(
         }
       } catch (err) {
         console.warn("[RateLimit] Upstash Redis error on Bot check, falling back to memory:", err);
-        const memBot = checkMemorySlidingWindow(botMemoryStore, publicKey, botLimit, botWindowSeconds);
+        const memBot = checkMemorySlidingWindow(botMemoryStore, botMemoryKey, botLimit, botWindowSeconds);
         if (!memBot.success) {
           return buildMemoryResult("bot_limit_exceeded", memBot);
         }
       }
     } else {
-      const memBot = checkMemorySlidingWindow(botMemoryStore, publicKey, botLimit, botWindowSeconds);
+      const memBot = checkMemorySlidingWindow(botMemoryStore, botMemoryKey, botLimit, botWindowSeconds);
       if (!memBot.success) {
         return buildMemoryResult("bot_limit_exceeded", memBot);
       }
@@ -226,13 +241,13 @@ export async function checkRateLimit(
   return {
     success: true,
     limit: ipLimit,
-    remaining: Math.max(0, ipLimit - (ipMemoryStore.get(clientIp)?.timestamps.length || 1)),
+    remaining: Math.max(0, ipLimit - (ipMemoryStore.get(ipMemoryKey)?.timestamps.length || 1)),
     reset: defaultReset,
     retryAfter: 0,
     headers: {
       "X-RateLimit-Limit": String(ipLimit),
       "X-RateLimit-Remaining": String(
-        Math.max(0, ipLimit - (ipMemoryStore.get(clientIp)?.timestamps.length || 1)),
+        Math.max(0, ipLimit - (ipMemoryStore.get(ipMemoryKey)?.timestamps.length || 1)),
       ),
       "X-RateLimit-Reset": String(defaultReset),
     },

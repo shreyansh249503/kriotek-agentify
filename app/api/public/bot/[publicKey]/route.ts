@@ -1,5 +1,6 @@
 import { getDb } from "@/app/api/lib/db";
 import { Bot } from "@/app/api/lib/entities";
+import { checkRateLimit } from "@/app/api/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 
@@ -21,19 +22,24 @@ const botCache = new Map<
       primary_color: string;
       logo_url: string | null;
       ecommerce_enabled: boolean;
-      supabaseUrl: string | null;
-      supabaseAnonKey: string | null;
     };
     ts: number;
   }
 >();
 
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ publicKey: string }> },
 ) {
   const { publicKey } = await params;
-  console.log("PUBLIC_KEY_PARAM:", publicKey);
+
+  const rateLimit = await checkRateLimit(req, undefined, { scope: "public-bot", ipLimit: 60, ipWindowSeconds: 60 });
+  if (!rateLimit.success) {
+    return Response.json(
+      { error: "Too many requests. Please try again later." },
+      { status: 429, headers: { ...corsHeaders, ...rateLimit.headers } },
+    );
+  }
 
   const cached = botCache.get(publicKey);
   if (cached && Date.now() - cached.ts < 60_000) {
@@ -63,8 +69,6 @@ export async function GET(
     primary_color: bot.primary_color,
     logo_url: bot.logo_url || null,
     ecommerce_enabled: bot.ecommerce_enabled,
-    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL || null,
-    supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || null,
   };
 
   botCache.set(publicKey, { data: result, ts: Date.now() });

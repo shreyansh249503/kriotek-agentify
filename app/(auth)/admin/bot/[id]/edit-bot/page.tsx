@@ -33,7 +33,7 @@ export default function EditBotPage() {
         nonLinkable: [id],
       });
     }
-  }, [bot, id]);
+  }, [bot, id, setBreadcrumbMeta]);
   if (isLoading) return <Loader fullScreen />;
 
   return (

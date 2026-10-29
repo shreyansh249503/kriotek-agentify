@@ -1,8 +1,10 @@
-import axios from "axios";
+import axios, { AxiosRequestConfig, AxiosResponse } from "axios";
 import * as cheerio from "cheerio";
+import http from "http";
 import https from "https";
 import dns from "dns/promises";
-import net from "net";
+import dnsCallback, { LookupAddress } from "dns";
+import net, { LookupFunction } from "net";
 import { getDb } from "./db";
 import { CrawledPage } from "./entities";
 import { Product } from "../../../types/bot";
@@ -11,10 +13,10 @@ import { google } from "@ai-sdk/google";
 import { z } from "zod";
 
 export function isPrivateIp(ip: string): boolean {
-  if (ip === "::1" || ip === "0.0.0.0") return true;
+  if (ip === "::1" || ip === "::" || ip === "0.0.0.0") return true;
 
-  if (ip.startsWith("::ffff:")) {
-    ip = ip.replace("::ffff:", "");
+  if (ip.toLowerCase().startsWith("::ffff:")) {
+    ip = ip.slice("::ffff:".length);
   }
 
   const parts = ip.split(".").map(Number);
@@ -27,11 +29,18 @@ export function isPrivateIp(ip: string): boolean {
     if (b0 === 172 && b1 >= 16 && b1 <= 31) return true; // 172.16.0.0/12
     if (b0 === 0) return true; // 0.0.0.0/8
     if (b0 === 100 && b1 >= 64 && b1 <= 127) return true; // 100.64.0.0/10
+    if (b0 === 198 && (b1 === 18 || b1 === 19)) return true; // 198.18.0.0/15
+    if (b0 >= 224) return true; // multicast, reserved, broadcast
   }
 
   if (net.isIPv6(ip)) {
     const lower = ip.toLowerCase();
-    if (lower.startsWith("fe80:") || lower.startsWith("fc") || lower.startsWith("fd")) {
+    if (
+      lower.startsWith("fe80:") ||
+      lower.startsWith("fc") ||
+      lower.startsWith("fd") ||
+      lower.startsWith("ff") // multicast
+    ) {
       return true;
     }
   }
@@ -70,6 +79,78 @@ export async function isSafePublicUrl(targetUrl: string): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+// Resolves DNS at connect time and refuses private addresses, so a hostname that passed
+// isSafePublicUrl can't be re-pointed (DNS rebinding) at an internal IP before the request.
+const guardedLookup: LookupFunction = (hostname, options, callback) => {
+  dnsCallback.lookup(hostname, { ...options, all: true }, (err, result) => {
+    if (err) return callback(err, []);
+    const addresses = result as unknown as LookupAddress[];
+    if (addresses.length === 0 || addresses.some((a) => isPrivateIp(a.address))) {
+      return callback(new Error(`[SSRF Guard] ${hostname} resolves to a non-public address`), []);
+    }
+    if (options.all) return callback(null, addresses);
+    callback(null, addresses[0].address, addresses[0].family);
+  });
+};
+
+const safeHttpAgent = new http.Agent({ lookup: guardedLookup });
+const safeHttpsAgent = new https.Agent({
+  lookup: guardedLookup,
+  rejectUnauthorized: process.env.NODE_ENV !== "development",
+});
+
+const MAX_REDIRECTS = 5;
+
+// Shape of Shopify's public /products/<handle>.json response (fields we read).
+interface ShopifyProductJson {
+  title?: string;
+  body_html?: string | null;
+  vendor?: string;
+  product_type?: string;
+  image?: { src?: string } | null;
+  images?: { src?: string }[];
+  options?: { name?: string; values?: string[] }[];
+  variants?: { price?: string; available?: boolean }[];
+}
+
+/**
+ * GET for user-supplied URLs. Follows redirects manually so every hop is re-checked with
+ * isSafePublicUrl, instead of letting axios follow a public URL into an internal one.
+ */
+export async function safeGet<T = unknown>(
+  url: string,
+  config: AxiosRequestConfig = {},
+): Promise<{ response: AxiosResponse<T>; finalUrl: string }> {
+  let currentUrl = url;
+
+  for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
+    if (!(await isSafePublicUrl(currentUrl))) {
+      throw new Error(`[SSRF Guard] Blocked unsafe URL: ${currentUrl}`);
+    }
+
+    const response = await axios.get<T>(currentUrl, {
+      ...config,
+      httpAgent: safeHttpAgent,
+      httpsAgent: safeHttpsAgent,
+      maxRedirects: 0,
+      validateStatus: (status) => status >= 200 && status < 400,
+    });
+
+    if (response.status >= 300 && response.status < 400) {
+      const location = response.headers?.location;
+      if (!location) {
+        throw new Error(`Redirect without Location header from ${currentUrl}`);
+      }
+      currentUrl = new URL(location, currentUrl).href;
+      continue;
+    }
+
+    return { response, finalUrl: currentUrl };
+  }
+
+  throw new Error(`Too many redirects starting from ${url}`);
 }
 
 type JsonLdValue =
@@ -157,7 +238,7 @@ async function extractProductFromPage(
       try {
         const cleanUrl = url.split("?")[0].replace(/\/$/, "");
         const jsonUrl = `${cleanUrl}.json`;
-        const res = await axios.get(jsonUrl, {
+        const { response: res } = await safeGet<{ product?: ShopifyProductJson }>(jsonUrl, {
           timeout: 4000,
           headers: {
             "User-Agent":
@@ -768,11 +849,6 @@ export async function crawlWebsite(
 
   const baseDomain = new URL(startUrl).hostname;
 
-  const agent =
-    process.env.NODE_ENV === "development"
-      ? new https.Agent({ rejectUnauthorized: false })
-      : undefined;
-
   let activeDomain = baseDomain;
 
   while (queue.length > 0 && visited.size < maxPages) {
@@ -813,10 +889,8 @@ export async function crawlWebsite(
     }
 
     try {
-      const response = await axios.get(requestUrl, {
-        httpsAgent: agent,
+      const { response, finalUrl } = await safeGet<string>(requestUrl, {
         timeout: 15000,
-        maxRedirects: 10,
         headers: {
           "User-Agent":
             "Mozilla/5.0 (Linux; Android 13; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
@@ -829,7 +903,6 @@ export async function crawlWebsite(
       });
 
       const html = response.data;
-      const finalUrl = response.request?.res?.responseUrl || requestUrl;
 
       try {
         const finalHost = new URL(finalUrl).hostname;

@@ -1,6 +1,7 @@
 import { generateObject } from "ai";
 import { google } from "@ai-sdk/google";
 import { z } from "zod";
+import { logger } from "../../../../lib/logger";
 
 const LeadExtractionSchema = z.object({
   name: z
@@ -253,7 +254,7 @@ export async function runLeadAgent(
   const dbName = (knownInfo?.name || "").trim();
   const dbEmail = (knownInfo?.email || "").trim();
 
-  console.log("[leadAgent] knownInfo from DB:", { dbName, dbEmail });
+  logger.info("[leadAgent] Known contact status from DB", { hasName: Boolean(dbName), hasEmail: Boolean(dbEmail) });
 
   const userText = conversation
     .filter((m) => m.role === "user")
@@ -266,7 +267,7 @@ export async function runLeadAgent(
   if (!finalName) {
     const historyName = extractNameFromConversationHistory(conversation);
     if (historyName) {
-      console.log("[leadAgent] Name found via history scan:", historyName);
+      logger.info("[leadAgent] Name found via history scan");
       finalName = historyName;
     }
   }
@@ -319,11 +320,11 @@ Please extract the name and email fields according to the rules above.`,
         const nameLower = object.name.trim().toLowerCase();
         if (userText.includes(nameLower)) {
           finalName = object.name.trim();
-          console.log("[leadAgent] Name found via model:", finalName);
+          logger.info("[leadAgent] Name found via model");
         }
       }
     } catch (err) {
-      console.error("[leadAgent] generateObject error (skipping extraction):", err);
+      logger.error("[leadAgent] generateObject error (skipping extraction)", err);
     }
   }
 
@@ -353,6 +354,6 @@ Please extract the name and email fields according to the rules above.`,
     isComplete: missingFields.length === 0,
   };
 
-  console.log("[leadAgent] result:", JSON.stringify(result));
+  logger.info("[leadAgent] result", { missingFields: result.missingFields, isComplete: result.isComplete });
   return result;
 }

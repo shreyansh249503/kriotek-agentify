@@ -16,7 +16,37 @@ const globalForTypeorm = globalThis as unknown as {
 
 const isProduction = process.env.NODE_ENV === "production";
 const dbUrl = process.env.SUPABASE_DATABASE_URL || "";
-const isSupabase = dbUrl.includes("supabase.co") || dbUrl.includes("supabase.com");
+
+/**
+ * TLS settings for Postgres. With SUPABASE_DB_CA_CERT (the CA from Supabase Dashboard →
+ * Database → SSL) the server certificate is verified; without it the connection is still
+ * encrypted but unverified, which is only acceptable outside production.
+ */
+export function getSslConfig(env: NodeJS.ProcessEnv = process.env) {
+  const url = env.SUPABASE_DATABASE_URL || "";
+  const needsSsl =
+    env.NODE_ENV === "production" || url.includes("supabase.co") || url.includes("supabase.com");
+  if (!needsSsl) return undefined;
+
+  const ca = env.SUPABASE_DB_CA_CERT?.replace(/\\n/g, "\n").trim();
+  if (ca) {
+    return { ca, rejectUnauthorized: true };
+  }
+
+  if (env.NODE_ENV === "production") {
+    console.warn(
+      "[db] SUPABASE_DB_CA_CERT is not set; the database certificate is not being verified.",
+    );
+  }
+  return { rejectUnauthorized: false };
+}
+
+/** Each serverless instance holds its own pool, so production keeps it small. */
+export function getPoolMax(env: NodeJS.ProcessEnv = process.env): number {
+  const configured = Number(env.DB_POOL_MAX);
+  if (Number.isInteger(configured) && configured > 0) return configured;
+  return env.NODE_ENV === "production" ? 3 : 10;
+}
 
 export const AppDataSource =
   globalForTypeorm.AppDataSource ||
@@ -34,9 +64,9 @@ export const AppDataSource =
       ShopifyStore,
       BotUsage,
     ],
-    ssl: isSupabase || isProduction ? { rejectUnauthorized: false } : undefined,
+    ssl: getSslConfig(),
     extra: {
-      max: 10,
+      max: getPoolMax(),
       connectionTimeoutMillis: 10000,
       idleTimeoutMillis: 30000,
     },

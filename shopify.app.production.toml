@@ -1,0 +1,38 @@
+# Production app config.
+#
+# Before the first deploy, replace every REPLACE_ME value:
+#   - client_id: the production app's Client ID (Partner Dashboard → Apps → <app> → Client credentials).
+#     Use a separate app from development so dev changes never reach merchants.
+#   - app.REPLACE_ME.com: the production domain serving this Next.js app.
+#
+# Deploy: npx shopify app config use shopify.app.production.toml && npx shopify app deploy
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "REPLACE_ME_PRODUCTION_CLIENT_ID"
+name = "Agentify"
+application_url = "https://app.REPLACE_ME.com/api/shopify/install"
+embedded = true
+
+[webhooks]
+# Keep in sync with SHOPIFY_API_VERSION in lib/shopify/apiVersion.ts
+api_version = "2026-04"
+
+  # Shopify applies these subscriptions to every shop that installs the app.
+  [[webhooks.subscriptions]]
+  topics = [ "app/uninstalled", "products/create", "products/update", "products/delete" ]
+  uri = "https://app.REPLACE_ME.com/api/shopify/webhooks"
+
+  # Mandatory privacy webhooks (required for the Shopify App Store)
+  [[webhooks.subscriptions]]
+  compliance_topics = [ "customers/data_request", "customers/redact", "shop/redact" ]
+  uri = "https://app.REPLACE_ME.com/api/shopify/webhooks"
+
+[access_scopes]
+scopes = "read_orders,read_products"
+optional_scopes = [ ]
+use_legacy_install_flow = false
+
+[auth]
+redirect_urls = [
+  "https://app.REPLACE_ME.com/api/shopify/callback"
+]

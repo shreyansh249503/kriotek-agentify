@@ -54,8 +54,6 @@ describe("GET /api/public/bot/[publicKey]", () => {
       primary_color: "#4f46e5",
       logo_url: "https://example.com/logo.png",
       ecommerce_enabled: true,
-      supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL || null,
-      supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || null,
     });
   });
 

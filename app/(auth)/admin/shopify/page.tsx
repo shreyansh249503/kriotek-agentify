@@ -225,7 +225,7 @@ export default function ShopifyDashboard() {
                     Performance trends
                   </Text>
                   <div style={{ height: "300px", marginTop: "16px" }}>
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                       <AreaChart
                         data={data.trend}
                         margin={{ top: 10, right: 30, left: 0, bottom: 0 }}

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
-import { registerWebhooks } from "../lib/registerWebhooks";
 import { encryptToken } from "@/app/api/lib/crypto";
 
 const {
@@ -64,14 +63,17 @@ export async function GET(req: NextRequest) {
 
   const { error } = await supabase
     .from("shopify_stores")
-    .upsert({ shop, access_token: encryptedToken, scopes: scope }, { onConflict: "shop" });
+    .upsert(
+      { shop, access_token: encryptedToken, scopes: scope, uninstalled_at: null },
+      { onConflict: "shop" },
+    );
 
   if (error) {
     console.error("Supabase upsert error:", error);
     return NextResponse.json({ error: "DB save failed" }, { status: 500 });
   }
 
-  await registerWebhooks(shop, access_token);
+  // Webhook subscriptions are declared in shopify.app.toml and applied by Shopify to every shop.
 
   const redirectUrl = `https://${shop}/admin/apps/${SHOPIFY_API_KEY}`;
   

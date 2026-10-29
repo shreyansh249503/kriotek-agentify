@@ -2,21 +2,35 @@ import { NextRequest, NextResponse } from "next/server";
 import { nanoid } from "nanoid";
 import { supabaseAdmin } from "../lib/supabase-admin";
 import { getUserFromRequest } from "../lib/auth";
-import { verifySessionToken } from "../shopify/lib/verifySessionToken";
+import { verifySessionToken, getShopFromSession } from "../shopify/lib/verifySessionToken";
+
+const EXTENSION_BY_TYPE: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+};
+
+async function isInstalledShopSession(authHeader: string | null): Promise<boolean> {
+  if (!authHeader) return false;
+  try {
+    const shop = getShopFromSession(verifySessionToken(authHeader));
+    const { data } = await supabaseAdmin
+      .from("shopify_stores")
+      .select("shop")
+      .eq("shop", shop)
+      .maybeSingle();
+    return Boolean(data);
+  } catch {
+    return false;
+  }
+}
 
 export async function POST(req: NextRequest) {
   try {
     const user = await getUserFromRequest(req);
-    let isShopifyAuth = false;
-    const authHeader = req.headers.get("authorization");
-    if (authHeader) {
-      try {
-        verifySessionToken(authHeader);
-        isShopifyAuth = true;
-      } catch {}
-    }
+    const isShopifyAuth = !user && (await isInstalledShopSession(req.headers.get("authorization")));
 
-    if (process.env.NODE_ENV === "production" && !user && !isShopifyAuth) {
+    if (!user && !isShopifyAuth) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -27,8 +41,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
-    if (!allowedTypes.includes(file.type)) {
+    const extension = EXTENSION_BY_TYPE[file.type];
+    if (!extension) {
       return NextResponse.json({ error: "Invalid file type. Only JPEG, PNG, and WEBP are allowed." }, { status: 400 });
     }
 
@@ -40,7 +54,6 @@ export async function POST(req: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    const extension = file.name.split(".").pop();
     const fileName = `${nanoid()}.${extension}`;
     const filePath = `avatars/${fileName}`;
 

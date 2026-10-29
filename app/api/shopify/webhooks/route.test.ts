@@ -4,8 +4,24 @@ process.env.NEXT_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
 process.env.SUPABASE_SERVICE_ROLE_KEY = "service_role_key";
 
 import { POST } from "./route";
-import { NextRequest } from "next/server";
+import { NextRequest, after } from "next/server";
 import crypto from "crypto";
+import { markUninstalled, redactCustomer, redactShop, sendCustomerDataExport } from "../lib/compliance";
+
+jest.mock("next/server", () => ({
+  ...jest.requireActual("next/server"),
+  // Run deferred work immediately; outside a real request after() would throw.
+  after: jest.fn((task: () => unknown) => {
+    void task();
+  }),
+}));
+
+jest.mock("../lib/compliance", () => ({
+  markUninstalled: jest.fn(),
+  redactCustomer: jest.fn(),
+  redactShop: jest.fn(),
+  sendCustomerDataExport: jest.fn().mockResolvedValue(undefined),
+}));
 
 jest.mock("@supabase/supabase-js", () => {
   const mockFrom = jest.fn();
@@ -155,142 +171,91 @@ describe("POST /api/shopify/webhooks", () => {
     });
   });
 
-  it("should process app/uninstalled webhook and delete store record", async () => {
-    const mockStoreSelect = jest.fn().mockReturnValue({
-      eq: jest.fn().mockReturnValue({
-        single: jest.fn().mockResolvedValue({ data: { bot_id: "bot-123" } }),
-      }),
+  describe("uninstall and privacy (GDPR) webhooks", () => {
+    const shop = "test-store.myshopify.com";
+
+    it("app/uninstalled marks the store uninstalled instead of deleting it", async () => {
+      const res = await POST(createWebhookRequest({ id: 1 }, { "x-shopify-topic": "app/uninstalled" }));
+
+      expect(res.status).toBe(200);
+      expect(markUninstalled).toHaveBeenCalledWith(shop);
+      expect(redactShop).not.toHaveBeenCalled();
     });
 
-    const mockStoreDelete = jest.fn().mockReturnValue({
-      eq: jest.fn().mockResolvedValue({ error: null }),
-    });
-
-    const mockBotSelect = jest.fn().mockReturnValue({
-      eq: jest.fn().mockReturnValue({
-        single: jest.fn().mockResolvedValue({ data: { ecommerce_products: [] } }),
-      }),
-    });
-
-    mockFrom.mockImplementation((tableName: string) => {
-      if (tableName === "shopify_stores") {
-        return { select: mockStoreSelect, delete: mockStoreDelete };
-      }
-      if (tableName === "bots") {
-        return { select: mockBotSelect };
-      }
-      return {};
-    });
-
-    const req = createWebhookRequest({ id: 1 }, {
-      "x-shopify-topic": "app/uninstalled",
-    });
-
-    const res = await POST(req);
-    const data = await res.json();
-
-    expect(res.status).toBe(200);
-    expect(data.ok).toBe(true);
-    expect(mockStoreDelete).toHaveBeenCalled();
-  });
-
-  describe("Shopify GDPR / Privacy Compliance Webhooks", () => {
-    it("should process customers/data_request webhook and return 200 acknowledge", async () => {
+    it("customers/data_request schedules the export and replies immediately", async () => {
       const payload = {
-        shop_id: 12345,
-        shop_domain: "test-store.myshopify.com",
-        customer: { id: 101, email: "customer@example.com" },
+        shop_domain: shop,
+        customer: { id: 101, email: "customer@example.com", phone: "+15551234567" },
+        data_request: { id: 9001 },
       };
 
-      const req = createWebhookRequest(payload, {
-        "x-shopify-topic": "customers/data_request",
-      });
+      const res = await POST(createWebhookRequest(payload, { "x-shopify-topic": "customers/data_request" }));
 
-      const res = await POST(req);
+      expect(res.status).toBe(200);
+      expect(after).toHaveBeenCalled();
+      expect(sendCustomerDataExport).toHaveBeenCalledWith(
+        shop,
+        { email: "customer@example.com", phone: "+15551234567" },
+        9001
+      );
+    });
+
+    it("customers/data_request still replies 200 if the export fails later", async () => {
+      jest.spyOn(console, "error").mockImplementation(() => {});
+      (sendCustomerDataExport as jest.Mock).mockRejectedValueOnce(new Error("smtp down"));
+
+      const res = await POST(
+        createWebhookRequest({ customer: { email: "a@b.com" } }, { "x-shopify-topic": "customers/data_request" })
+      );
+
+      expect(res.status).toBe(200);
+    });
+
+    it("customers/redact deletes the customer's records", async () => {
+      (redactCustomer as jest.Mock).mockResolvedValueOnce({ leads: 1, conversations: 2 });
+      const payload = { customer: { id: 101, email: "privacy@example.com", phone: "+15551234567" } };
+
+      const res = await POST(createWebhookRequest(payload, { "x-shopify-topic": "customers/redact" }));
       const data = await res.json();
 
       expect(res.status).toBe(200);
-      expect(data.ok).toBe(true);
+      expect(redactCustomer).toHaveBeenCalledWith(shop, { email: "privacy@example.com", phone: "+15551234567" });
+      expect(data.deleted).toEqual({ leads: 1, conversations: 2 });
     });
 
-    it("should process customers/redact webhook and delete matching customer leads and conversations", async () => {
-      const mockStoreSelect = jest.fn().mockReturnValue({
-        eq: jest.fn().mockReturnValue({
-          single: jest.fn().mockResolvedValue({ data: { bot_id: "bot-123" } }),
-        }),
-      });
-
-      const mockLeadDelete = jest.fn().mockReturnValue({
-        eq: jest.fn().mockReturnValue({
-          eq: jest.fn().mockResolvedValue({ error: null }),
-        }),
-      });
-
-      const mockConvoDelete = jest.fn().mockReturnValue({
-        eq: jest.fn().mockReturnValue({
-          eq: jest.fn().mockResolvedValue({ error: null }),
-        }),
-      });
-
-      mockFrom.mockImplementation((tableName: string) => {
-        if (tableName === "shopify_stores") {
-          return { select: mockStoreSelect };
-        }
-        if (tableName === "leads") {
-          return { delete: mockLeadDelete };
-        }
-        if (tableName === "conversations") {
-          return { delete: mockConvoDelete };
-        }
-        return {};
-      });
-
-      const payload = {
-        shop_id: 12345,
-        shop_domain: "test-store.myshopify.com",
-        customer: { id: 101, email: "privacy@example.com", phone: "+15551234567" },
-      };
-
-      const req = createWebhookRequest(payload, {
-        "x-shopify-topic": "customers/redact",
-      });
-
-      const res = await POST(req);
-      const data = await res.json();
+    it("shop/redact erases the shop's data", async () => {
+      const res = await POST(createWebhookRequest({ shop_domain: shop }, { "x-shopify-topic": "shop/redact" }));
 
       expect(res.status).toBe(200);
-      expect(data.ok).toBe(true);
-      expect(mockLeadDelete).toHaveBeenCalled();
-      expect(mockConvoDelete).toHaveBeenCalled();
+      expect(redactShop).toHaveBeenCalledWith(shop);
     });
 
-    it("should process shop/redact webhook and delete store record", async () => {
-      const mockStoreDelete = jest.fn().mockReturnValue({
-        eq: jest.fn().mockResolvedValue({ error: null }),
-      });
+    it("returns 500 without internal details when a handler fails, so Shopify retries", async () => {
+      jest.spyOn(console, "error").mockImplementation(() => {});
+      (redactShop as jest.Mock).mockRejectedValueOnce(new Error("connection refused at 10.0.0.5"));
 
-      mockFrom.mockImplementation((tableName: string) => {
-        if (tableName === "shopify_stores") {
-          return { delete: mockStoreDelete };
-        }
-        return {};
-      });
-
-      const payload = {
-        shop_id: 12345,
-        shop_domain: "test-store.myshopify.com",
-      };
-
-      const req = createWebhookRequest(payload, {
-        "x-shopify-topic": "shop/redact",
-      });
-
-      const res = await POST(req);
+      const res = await POST(createWebhookRequest({}, { "x-shopify-topic": "shop/redact" }));
       const data = await res.json();
 
-      expect(res.status).toBe(200);
-      expect(data.ok).toBe(true);
-      expect(mockStoreDelete).toHaveBeenCalled();
+      expect(res.status).toBe(500);
+      expect(JSON.stringify(data)).not.toContain("10.0.0.5");
+    });
+
+    it("rejects compliance webhooks with an invalid HMAC", async () => {
+      const req = new Request("http://localhost:3000/api/shopify/webhooks", {
+        method: "POST",
+        headers: new Headers({
+          "x-shopify-hmac-sha256": "forged",
+          "x-shopify-shop-domain": shop,
+          "x-shopify-topic": "shop/redact",
+        }),
+        body: "{}",
+      }) as unknown as NextRequest;
+
+      const res = await POST(req);
+
+      expect(res.status).toBe(401);
+      expect(redactShop).not.toHaveBeenCalled();
     });
   });
 });

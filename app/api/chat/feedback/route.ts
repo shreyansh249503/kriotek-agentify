@@ -24,7 +24,7 @@ export async function POST(req: Request) {
     }
 
     if (botPublicKey) {
-      const rateLimitResult = await checkRateLimit(req, botPublicKey);
+      const rateLimitResult = await checkRateLimit(req, botPublicKey, { scope: "chat-feedback" });
       if (!rateLimitResult.success) {
         return new Response(
           JSON.stringify({

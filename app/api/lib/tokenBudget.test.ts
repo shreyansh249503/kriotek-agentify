@@ -1,5 +1,6 @@
 import {
   checkBotBudget,
+  getDefaultMonthlyBudget,
   estimateTokens,
   getCurrentBillingPeriod,
   recordBotTokenUsage,
@@ -73,6 +74,37 @@ describe("Token Budget Guardrails (tokenBudget.ts)", () => {
       expect(res.allowed).toBe(false);
       expect(res.percentageUsed).toBe(100);
       expect(res.reason).toBe("budget_exceeded");
+    });
+
+    describe("platform default budget", () => {
+      afterEach(() => {
+        delete process.env.DEFAULT_MONTHLY_TOKEN_BUDGET;
+      });
+
+      it("applies DEFAULT_MONTHLY_TOKEN_BUDGET to bots without their own budget", async () => {
+        process.env.DEFAULT_MONTHLY_TOKEN_BUDGET = "1000";
+        mockFindOne.mockResolvedValue({ id: "usage-1", total_tokens: 1000 });
+
+        const res = await checkBotBudget("bot-1", null);
+
+        expect(res.allowed).toBe(false);
+        expect(res.budgetLimit).toBe(1000);
+        expect(res.reason).toBe("budget_exceeded");
+      });
+
+      it("prefers the bot's own budget over the default", async () => {
+        process.env.DEFAULT_MONTHLY_TOKEN_BUDGET = "1000";
+        mockFindOne.mockResolvedValue({ id: "usage-1", total_tokens: 5000 });
+
+        const res = await checkBotBudget("bot-1", 50000);
+
+        expect(res.allowed).toBe(true);
+        expect(res.budgetLimit).toBe(50000);
+      });
+
+      it.each(["", "abc", "-5", "1.5"])("treats an invalid default (%p) as unlimited", (value) => {
+        expect(getDefaultMonthlyBudget({ DEFAULT_MONTHLY_TOKEN_BUDGET: value } as unknown as NodeJS.ProcessEnv)).toBeNull();
+      });
     });
   });
 

@@ -752,10 +752,12 @@
     : generateUUID();
   localStorage.setItem(conversationKey, currentConversationId);
 
+  // Newest first, capped to match the server's /api/public/history limit
+  const MAX_HISTORY_IDS = 50;
   let historyIds = JSON.parse(localStorage.getItem(historyKey) || "[]");
   if (!historyIds.includes(currentConversationId)) {
-    historyIds.push(currentConversationId);
-    localStorage.setItem(historyKey, JSON.stringify(historyIds));
+    historyIds.unshift(currentConversationId);
+    localStorage.setItem(historyKey, JSON.stringify(historyIds.slice(0, MAX_HISTORY_IDS)));
   }
 
   const bot = resolvedBotConfig || (await fetchBotConfig(publicKey));
@@ -769,8 +771,6 @@
         : `${API_BASE_URL}${bot.logo_url.trim()}`
       : DEFAULT_BOT_ICON,
     ecommerceEnabled: !!bot.ecommerce_enabled,
-    supabaseUrl: bot.supabaseUrl || "",
-    supabaseAnonKey: bot.supabaseAnonKey || "",
   };
 
   function applyTheme() {
@@ -1401,126 +1401,18 @@
   let currentConvoState = "idle";
   let renderedCount = 0;
   let pollInterval = null;
-  let supabaseChannel = null;
-
+  // Live-support updates are polled from the rate-limited public API. Supabase Realtime isn't
+  // used here: conversations are protected by RLS, so an anonymous subscriber receives nothing.
   function startPolling() {
     stopPolling();
-    console.log("Agentify: startPolling() called. Current state:", currentConvoState);
-
-    if (THEME.supabaseUrl && THEME.supabaseAnonKey) {
-      console.log("Agentify: Supabase credentials found. Attempting Realtime connection...");
-      if (!window.supabase) {
-        console.log("Agentify: Loading Supabase client library dynamically...");
-        const script = document.createElement("script");
-        script.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
-        script.onload = () => {
-          console.log("Agentify: Supabase library loaded successfully.");
-          initRealtimeChannel(currentConversationId);
-        };
-        script.onerror = () => {
-          console.error("Agentify: Failed to load Supabase CDN, falling back to HTTP polling");
-          startIntervalPolling();
-        };
-        document.head.appendChild(script);
-      } else {
-        initRealtimeChannel(currentConversationId);
-      }
-    } else {
-      console.warn("Agentify: Supabase credentials missing (url/key). Falling back to HTTP polling");
-      startIntervalPolling();
-    }
-  }
-
-  function startIntervalPolling() {
-    console.log("Agentify: Starting short-polling fallback...");
-    if (pollInterval) clearInterval(pollInterval);
     pollConversation(currentConversationId);
     pollInterval = setInterval(async () => {
       await pollConversation(currentConversationId);
     }, 1200);
   }
 
-  function initRealtimeChannel(id) {
-    console.log("Agentify: Initializing Supabase Realtime channel for conversation:", id);
-    if (supabaseChannel) {
-      supabaseChannel.unsubscribe();
-      supabaseChannel = null;
-    }
-    
-    try {
-      const supabaseClient = window.supabase.createClient(THEME.supabaseUrl, THEME.supabaseAnonKey);
-      supabaseChannel = supabaseClient
-        .channel(`convo-${id}`)
-        .on(
-          'postgres_changes',
-          {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'conversations',
-            filter: `id=eq.${id}`,
-          },
-          async (payload) => {
-            console.log("Agentify: Received realtime database update notification:", payload);
-            const updatedConvo = payload.new;
-            const history = typeof updatedConvo.messages === 'string'
-              ? JSON.parse(updatedConvo.messages)
-              : updatedConvo.messages;
-            const newState = updatedConvo.state || "idle";
-
-            if (Array.isArray(history) && history.length > renderedCount) {
-              console.log(`Agentify: Rendering ${history.length - renderedCount} new messages.`);
-              for (let i = renderedCount; i < history.length; i++) {
-                const msg = history[i];
-                if (msg.role === "user") {
-                  messages.appendChild(createUserMessage(msg.content, THEME.color));
-                } else if (msg.role === "assistant") {
-                  const bubble = createBotMessage(messages, THEME.logoUrl);
-                  showSupportButtonGlobal = false;
-                  const processedAnswer = processAnswerText(msg.content);
-                  if (window.marked) {
-                    bubble.innerHTML = window.marked.parse(processedAnswer);
-                  } else {
-                    bubble.innerHTML = processedAnswer;
-                  }
-                } else if (msg.role === "system") {
-                  createSystemMessage(msg.content);
-                }
-              }
-              renderedCount = history.length;
-              messages.scrollTop = messages.scrollHeight;
-            }
-
-            if (newState !== "manual" && newState !== "manual_takeover" && (currentConvoState === "manual" || currentConvoState === "manual_takeover")) {
-              console.log("Agentify: Conversation switched back to AI mode. Stopping manual channel.");
-              currentConvoState = newState;
-              stopPolling();
-              input.placeholder = "Type your message...";
-            }
-          }
-        );
-
-      supabaseChannel.subscribe((status, err) => {
-        console.log(`Agentify: Realtime connection status changed to: ${status}`);
-        if (err) {
-          console.error("Agentify: Realtime subscription error details:", err);
-        }
-        if (status === 'CHANNEL_ERROR') {
-          console.warn("Agentify: Realtime channel error, falling back to HTTP polling as safety measure...");
-          startIntervalPolling();
-        }
-      });
-    } catch (err) {
-      console.error("Agentify: Exception during Supabase Realtime client setup:", err);
-      startIntervalPolling();
-    }
-  }
-
   function stopPolling() {
     console.log("Agentify: stopPolling() called. Stopping subscription/polling timers...");
-    if (supabaseChannel) {
-      supabaseChannel.unsubscribe();
-      supabaseChannel = null;
-    }
     if (pollInterval) {
       clearInterval(pollInterval);
       pollInterval = null;
@@ -1747,7 +1639,7 @@
     let ids = JSON.parse(localStorage.getItem(historyKey) || "[]");
     if (!ids.includes(currentConversationId)) {
       ids.unshift(currentConversationId);
-      localStorage.setItem(historyKey, JSON.stringify(ids));
+      localStorage.setItem(historyKey, JSON.stringify(ids.slice(0, MAX_HISTORY_IDS)));
     }
 
     messages.innerHTML = "";

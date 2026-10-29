@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Product, ProductMetadata } from "@/types/bot";
+import { uploadImage } from "@/services/upload.api";
 import {
   CatalogProductCard,
   ProductImageContainer,
@@ -60,16 +61,9 @@ export const ProductCard = ({
       return;
     }
 
-    const formData = new FormData();
-    formData.append("file", file);
-
     try {
       setUploading(true);
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
-      const data = await res.json();
+      const data = await uploadImage(file);
       if (data.url) {
         onUpdateProduct({ ...product, image: data.url });
       } else {

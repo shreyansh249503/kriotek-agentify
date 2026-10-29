@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { verifySessionToken, getShopFromSession } from "../lib/verifySessionToken";
 import { getUserFromRequest } from "../../lib/auth";
 import { decryptToken } from "@/app/api/lib/crypto";
+import { SHOPIFY_API_VERSION } from "@/lib/shopify/apiVersion";
 
 interface ShopifyProductImageEdge {
   node: {
@@ -136,11 +137,13 @@ export async function POST(req: NextRequest) {
     }
 
     let authorizedShop: string | null = null;
+    let authorizedViaShopifySession = false;
     const authHeader = req.headers.get("authorization");
     if (authHeader) {
       try {
         const session = verifySessionToken(authHeader);
         authorizedShop = getShopFromSession(session);
+        authorizedViaShopifySession = Boolean(authorizedShop);
       } catch {}
     }
 
@@ -179,6 +182,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // A dashboard user only proves they own bot_id, not the shop, so they may only sync
+    // a store already linked to that bot. Linking an unlinked store requires the shop's own session.
+    if (!authorizedViaShopifySession && storeData.bot_id !== bot_id) {
+      return NextResponse.json(
+        { error: "Store is not linked to this bot" },
+        { status: 403 }
+      );
+    }
+
     if (storeData.bot_id && storeData.bot_id !== bot_id) {
       return NextResponse.json(
         { error: "Store is associated with another bot" },
@@ -201,7 +213,7 @@ export async function POST(req: NextRequest) {
 
     while (hasNextPage) {
       const res: Response = await fetch(
-        `https://${shop}/admin/api/2024-01/graphql.json`,
+        `https://${shop}/admin/api/${SHOPIFY_API_VERSION}/graphql.json`,
         {
           method: "POST",
           headers: {

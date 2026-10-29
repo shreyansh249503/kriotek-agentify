@@ -1,15 +1,10 @@
 import { NextRequest } from "next/server";
 import crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
-import { registerWebhooks } from "../lib/registerWebhooks";
 import { decryptToken } from "@/app/api/lib/crypto";
 
 jest.mock("@supabase/supabase-js", () => ({
   createClient: jest.fn(),
-}));
-
-jest.mock("../lib/registerWebhooks", () => ({
-  registerWebhooks: jest.fn(),
 }));
 
 describe("API: /api/shopify/callback", () => {
@@ -25,6 +20,7 @@ describe("API: /api/shopify/callback", () => {
     process.env.NEXT_PUBLIC_SUPABASE_URL = "https://supabase.example.com";
     process.env.SUPABASE_SERVICE_ROLE_KEY = "test_service_key";
     (process.env as Record<string, string | undefined>).NODE_ENV = "production";
+    process.env.ENCRYPTION_KEY = "test_encryption_key_at_least_32_chars_long";
 
     const route = await import("./route");
     GET = route.GET;
@@ -110,7 +106,7 @@ describe("API: /api/shopify/callback", () => {
     expect(data).toEqual({ error: "Token exchange failed" });
   });
 
-  it("should exchange token, upsert store, register webhooks, and return HTML redirect", async () => {
+  it("should exchange token, upsert store, clear uninstall mark, and return HTML redirect", async () => {
     const state = "state_123";
     const params = { shop: "test.myshopify.com", code: "code_123", state };
     const hmac = createHmac(params);
@@ -125,7 +121,6 @@ describe("API: /api/shopify/callback", () => {
     });
 
     mockUpsert.mockResolvedValueOnce({ error: null });
-    (registerWebhooks as jest.Mock).mockResolvedValueOnce(undefined);
 
     const res = await GET(req);
     const html = await res.text();
@@ -136,12 +131,12 @@ describe("API: /api/shopify/callback", () => {
         shop: "test.myshopify.com",
         access_token: expect.stringMatching(/^enc:v1:/),
         scopes: "read_products",
+        uninstalled_at: null,
       }),
       { onConflict: "shop" }
     );
     const savedToken = mockUpsert.mock.calls[0][0].access_token;
     expect(decryptToken(savedToken)).toBe("shpat_123");
-    expect(registerWebhooks).toHaveBeenCalledWith("test.myshopify.com", "shpat_123");
     expect(html).toContain("https://test.myshopify.com/admin/apps/test_api_key");
   });
 

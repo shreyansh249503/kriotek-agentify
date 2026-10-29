@@ -45,6 +45,20 @@ describe("useSessionToken Hook", () => {
     expect(res).toEqual(mockResponse);
   });
 
+  it("should not force a JSON Content-Type for FormData bodies", async () => {
+    window.shopify = { idToken: jest.fn().mockResolvedValue("tok") };
+    global.fetch = jest.fn().mockResolvedValue({ ok: true });
+
+    const { result } = renderHook(() => useSessionToken());
+
+    await act(async () => {
+      await result.current.fetchWithToken("/api/upload", { method: "POST", body: new FormData() });
+    });
+
+    const headers = (global.fetch as jest.Mock).mock.calls[0][1].headers;
+    expect(headers).toEqual({ Authorization: "Bearer tok" });
+  });
+
   it("should handle error when window.shopify.idToken throws", async () => {
     const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
     window.shopify = {

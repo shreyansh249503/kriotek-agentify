@@ -30,6 +30,19 @@ describe("GET /api/public/bot-by-shop", () => {
     expect(data).toEqual({ error: "Missing shop parameter" });
   });
 
+  it("should return 404 for a shop that uninstalled the app", async () => {
+    mockRepo.findOne.mockResolvedValueOnce({
+      shop: "gone-shop.myshopify.com",
+      uninstalled_at: new Date(),
+      bot: { public_key: "pk_1", name: "Bot", primary_color: "#000", logo_url: null, ecommerce_enabled: true },
+    });
+
+    const req = new NextRequest("http://localhost/api/public/bot-by-shop?shop=gone-shop.myshopify.com");
+    const res = await GET(req);
+
+    expect(res.status).toBe(404);
+  });
+
   it("should return 404 when bot is not found for the shop", async () => {
     mockRepo.findOne.mockResolvedValueOnce(null);
 
@@ -65,8 +78,6 @@ describe("GET /api/public/bot-by-shop", () => {
       primary_color: "#10b981",
       logo_url: null,
       ecommerce_enabled: true,
-      supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL || null,
-      supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || null,
     });
   });
 

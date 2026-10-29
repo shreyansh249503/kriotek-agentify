@@ -24,6 +24,7 @@ export async function POST(req: Request) {
     }
 
     const rateLimit = await checkRateLimit(req, publicKey, {
+      scope: "switch-to-manual",
       ipLimit: 30,
       ipWindowSeconds: 60,
       botLimit: 120,

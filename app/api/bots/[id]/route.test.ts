@@ -34,7 +34,8 @@ describe("API: /api/bots/[id]", () => {
       const data = await res.json();
 
       expect(res.status).toBe(200);
-      expect(mockBotRepo.findOne).toHaveBeenCalledWith({ where: { id: validUuid } });
+      expect(mockBotRepo.findOne).toHaveBeenCalledWith({ where: { id: validUuid, user_id: "user_123" } });
+      expect(mockDbQuery).toHaveBeenCalledWith(expect.stringContaining("AND user_id = $2"), [validUuid, "user_123"]);
       expect(data).toEqual(mockBot);
     });
 
@@ -49,8 +50,20 @@ describe("API: /api/bots/[id]", () => {
       const data = await res.json();
 
       expect(res.status).toBe(200);
-      expect(mockBotRepo.findOne).toHaveBeenCalledWith({ where: { public_key: publicKey } });
+      expect(mockBotRepo.findOne).toHaveBeenCalledWith({ where: { public_key: publicKey, user_id: "user_123" } });
       expect(data).toEqual(mockBot);
+    });
+
+    it("should return 401 without reading the bot when unauthenticated", async () => {
+      (getUserFromRequest as jest.Mock).mockResolvedValueOnce(null);
+
+      const res = await GET(new Request("http://localhost/api/bots/pk_public"), {
+        params: Promise.resolve({ id: "pk_public" }),
+      });
+
+      expect(res.status).toBe(401);
+      expect(mockDbQuery).not.toHaveBeenCalled();
+      expect(mockBotRepo.findOne).not.toHaveBeenCalled();
     });
 
     it("should return 404 when bot is not found", async () => {
@@ -68,9 +81,10 @@ describe("API: /api/bots/[id]", () => {
 
   describe("PUT", () => {
     it("should update bot details in repository and return ok status", async () => {
+      const botId = "123e4567-e89b-12d3-a456-426614174000";
+      mockBotRepo.findOne.mockResolvedValueOnce({ id: botId, user_id: "user_123" });
       mockBotRepo.update.mockResolvedValueOnce({ affected: 1 });
 
-      const botId = "bot_123";
       const body = {
         name: "Updated Bot Name",
         description: "Updated description",
@@ -102,7 +116,34 @@ describe("API: /api/bots/[id]", () => {
         ecommerce_prompt: undefined,
         ecommerce_products: undefined,
       });
+      expect(mockBotRepo.findOne).toHaveBeenCalledWith({ where: { id: botId, user_id: "user_123" } });
       expect(data).toEqual({ status: "ok" });
+    });
+
+    it("should return 401 and not update when unauthenticated", async () => {
+      (getUserFromRequest as jest.Mock).mockResolvedValueOnce(null);
+
+      const req = new Request("http://localhost/api/bots/x", {
+        method: "PUT",
+        body: JSON.stringify({ contactEmail: "attacker@example.com" }),
+      });
+      const res = await PUT(req, { params: Promise.resolve({ id: "123e4567-e89b-12d3-a456-426614174000" }) });
+
+      expect(res.status).toBe(401);
+      expect(mockBotRepo.update).not.toHaveBeenCalled();
+    });
+
+    it("should return 404 and not update another user's bot", async () => {
+      mockBotRepo.findOne.mockResolvedValueOnce(null);
+
+      const req = new Request("http://localhost/api/bots/x", {
+        method: "PUT",
+        body: JSON.stringify({ contactEmail: "attacker@example.com" }),
+      });
+      const res = await PUT(req, { params: Promise.resolve({ id: "123e4567-e89b-12d3-a456-426614174000" }) });
+
+      expect(res.status).toBe(404);
+      expect(mockBotRepo.update).not.toHaveBeenCalled();
     });
   });
 

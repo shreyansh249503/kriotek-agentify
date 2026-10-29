@@ -43,6 +43,7 @@ describe("useLogoUpload Hook", () => {
       json: async () => ({ url: "https://example.com/logo.png" }),
     };
     global.fetch = jest.fn().mockResolvedValue(mockResponse);
+    window.shopify = { idToken: jest.fn().mockResolvedValue("shop_session_token") };
 
     const { result } = renderHook(() =>
       useLogoUpload({ update: mockUpdate, setBanner: mockSetBanner })
@@ -52,9 +53,12 @@ describe("useLogoUpload Hook", () => {
       await result.current.handleLogoUpload([], [validFile], []);
     });
 
+    delete window.shopify;
+
     expect(global.fetch).toHaveBeenCalledWith("/api/upload", {
       method: "POST",
       body: expect.any(FormData),
+      headers: { Authorization: "Bearer shop_session_token" },
     });
     expect(mockUpdate).toHaveBeenCalledWith(
       "logo_url",

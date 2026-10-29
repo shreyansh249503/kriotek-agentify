@@ -2,6 +2,11 @@ import "@testing-library/jest-dom";
 import { TextEncoder, TextDecoder } from "util";
 import { ReadableStream, WritableStream, TransformStream } from "stream/web";
 
+// next/jest loads .env, so without this a test missing a getDb mock would query the real
+// database. Tests must mock the DB layer instead.
+delete process.env.SUPABASE_DATABASE_URL;
+delete process.env.DATABASE_URL;
+
 if (typeof global.TextEncoder === "undefined") {
   global.TextEncoder = TextEncoder;
 }

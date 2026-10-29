@@ -1,4 +1,6 @@
-# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+# Development app config. Production uses shopify.app.production.toml
+# (switch with: npx shopify app config use shopify.app.production.toml).
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "1a44dc7edd7e9d3a3f3a7b060696a2d6"
 name = "Agentify"
@@ -6,11 +8,22 @@ application_url = "https://drew-thirteen-heroism.ngrok-free.dev/api/shopify/inst
 embedded = true
 
 [webhooks]
+# Keep in sync with SHOPIFY_API_VERSION in lib/shopify/apiVersion.ts
 api_version = "2026-04"
+
+  # Shopify applies these subscriptions to every shop that installs the app.
+  [[webhooks.subscriptions]]
+  topics = [ "app/uninstalled", "products/create", "products/update", "products/delete" ]
+  uri = "https://drew-thirteen-heroism.ngrok-free.dev/api/shopify/webhooks"
+
+  # Mandatory privacy webhooks (required for the Shopify App Store)
+  [[webhooks.subscriptions]]
+  compliance_topics = [ "customers/data_request", "customers/redact", "shop/redact" ]
+  uri = "https://drew-thirteen-heroism.ngrok-free.dev/api/shopify/webhooks"
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "read_orders,read_fulfillments,read_customers,read_products,write_products"
+scopes = "read_orders,read_products"
 optional_scopes = [ ]
 use_legacy_install_flow = false
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState } from "react";
+import { createContext, useCallback, useContext, useState } from "react";
 
 type BreadcrumbMeta = {
   customLabels: Record<string, string>;
@@ -25,9 +25,10 @@ export const BreadcrumbProvider = ({
     nonLinkable: [],
   });
 
-  const setBreadcrumbMeta = (incoming: Partial<BreadcrumbMeta>) => {
+  // Stable identity so consumers can list it as an effect dependency without re-running every render.
+  const setBreadcrumbMeta = useCallback((incoming: Partial<BreadcrumbMeta>) => {
     setMeta((prev) => ({ ...prev, ...incoming }));
-  };
+  }, []);
 
   return (
     <BreadcrumbContext.Provider value={{ meta, setBreadcrumbMeta }}>

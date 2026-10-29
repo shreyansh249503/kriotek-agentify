@@ -1,6 +1,10 @@
 import { getDb } from "@/app/api/lib/db";
 import { Conversation, Bot } from "@/app/api/lib/entities";
 import { In } from "typeorm";
+import { checkRateLimit } from "@/app/api/lib/rateLimit";
+
+const MAX_HISTORY_IDS = 50;
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 type Message = { role: string; content: string };
 
@@ -16,10 +20,26 @@ export async function OPTIONS() {
 
 export async function POST(req: Request) {
   try {
-    const { publicKey, conversationIds } = await req.json();
+    const rateLimit = await checkRateLimit(req, undefined, { scope: "public-history", ipLimit: 20, ipWindowSeconds: 60 });
+    if (!rateLimit.success) {
+      return new Response(JSON.stringify({ error: "Too many requests. Please try again later." }), {
+        status: 429,
+        headers: { ...corsHeaders, ...rateLimit.headers, "Content-Type": "application/json" },
+      });
+    }
 
-    if (!publicKey || !Array.isArray(conversationIds)) {
+    const { publicKey, conversationIds: rawIds } = await req.json();
+
+    if (!publicKey || !Array.isArray(rawIds)) {
       return new Response(JSON.stringify({ error: "Invalid request" }), { status: 400, headers: corsHeaders });
+    }
+
+    // The widget stores newest first; only look up the most recent valid IDs.
+    const conversationIds = rawIds
+      .filter((id): id is string => typeof id === "string" && UUID_REGEX.test(id))
+      .slice(0, MAX_HISTORY_IDS);
+    if (conversationIds.length === 0) {
+      return new Response(JSON.stringify([]), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const dbInstance = await getDb();

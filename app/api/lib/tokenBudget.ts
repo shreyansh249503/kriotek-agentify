@@ -20,11 +20,21 @@ export function estimateTokens(text: string): number {
   return Math.max(1, Math.ceil(text.length / 4));
 }
 
+/**
+ * Platform-wide cap for bots without their own monthly_token_budget, so no bot has unbounded
+ * Gemini spend. Unset or invalid means unlimited (the production env check warns about that).
+ */
+export function getDefaultMonthlyBudget(env: NodeJS.ProcessEnv = process.env): number | null {
+  const value = Number(env.DEFAULT_MONTHLY_TOKEN_BUDGET);
+  return Number.isInteger(value) && value > 0 ? value : null;
+}
+
 export async function checkBotBudget(
   botId: string,
-  monthlyBudget?: number | null,
+  botBudget?: number | null,
 ): Promise<BudgetCheckResult> {
-  if (!monthlyBudget || monthlyBudget <= 0) {
+  const monthlyBudget = botBudget && botBudget > 0 ? botBudget : getDefaultMonthlyBudget();
+  if (!monthlyBudget) {
     return {
       allowed: true,
       currentTokens: 0,

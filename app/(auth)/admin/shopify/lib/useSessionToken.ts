@@ -24,11 +24,14 @@ export function useSessionToken() {
         console.warn("Shopify App Bridge v4 global object 'shopify' not found on window");
       }
 
+      // FormData bodies need the browser to set the multipart boundary itself
+      const isFormData = typeof FormData !== "undefined" && options.body instanceof FormData;
+
       return fetch(url, {
         ...options,
         headers: {
           ...options.headers,
-          "Content-Type": "application/json",
+          ...(isFormData ? {} : { "Content-Type": "application/json" }),
           Authorization: `Bearer ${token}`,
         },
       });

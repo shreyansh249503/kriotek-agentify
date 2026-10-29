@@ -1,4 +1,5 @@
 import { getDb } from "./db";
+import { logger } from "../../../lib/logger";
 
 export async function setupCollection() {
   const db = await getDb();
@@ -18,5 +19,5 @@ export async function setupCollection() {
     CREATE INDEX IF NOT EXISTS idx_bot_documents_public_key ON bot_documents(public_key);
   `);
 
-  console.log("Vector DB table ready (pgvector)");
+  logger.info("Vector DB table ready (pgvector)");
 }

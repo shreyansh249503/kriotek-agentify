@@ -1,6 +1,7 @@
 import { generateObject } from "ai";
 import { google } from "@ai-sdk/google";
 import { z } from "zod";
+import { logger } from "../../../../lib/logger";
 
 export const UserIntentEnum = z.enum([
   "SALES",
@@ -118,7 +119,7 @@ export async function classifyUserIntent(
 
   const fast = fastPathIntent(latestUserMsg, messages.length, context);
   if (fast) {
-    console.log("[routerAgent] Fast-path classified:", fast.primaryIntent);
+    logger.info("[routerAgent] Fast-path classified", { primaryIntent: fast.primaryIntent });
     return fast;
   }
 
@@ -151,12 +152,13 @@ Capabilities Context:
       prompt: `Conversation history:\n${conversationText}\n\nClassify the intent of the last user message.`,
     });
 
-    console.log(
-      `[routerAgent] LLM classified: ${object.primaryIntent} (confidence: ${object.confidence}) - Reasoning: ${object.reasoning}`,
-    );
+    logger.info("[routerAgent] LLM classified", {
+      primaryIntent: object.primaryIntent,
+      confidence: object.confidence,
+    });
     return object;
   } catch (err) {
-    console.error("[routerAgent] Classification failed, applying fallback:", err);
+    logger.error("[routerAgent] Classification failed, applying fallback", err);
 
     const lower = latestUserMsg.toLowerCase();
     const isSales =

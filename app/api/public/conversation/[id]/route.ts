@@ -1,5 +1,6 @@
 import { getDb } from "@/app/api/lib/db";
 import { Conversation, Bot } from "@/app/api/lib/entities";
+import { checkRateLimit } from "@/app/api/lib/rateLimit";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -22,6 +23,15 @@ export async function GET(
 
     if (!id || !publicKey) {
       return new Response(JSON.stringify({ error: "Missing ID or publicKey" }), { status: 400, headers: corsHeaders });
+    }
+
+    // The widget polls this every ~1.2s (~50/min per tab); leave headroom for several tabs behind one IP.
+    const rateLimit = await checkRateLimit(req, undefined, { scope: "public-conversation", ipLimit: 180, ipWindowSeconds: 60 });
+    if (!rateLimit.success) {
+      return new Response(JSON.stringify({ error: "Too many requests. Please try again later." }), {
+        status: 429,
+        headers: { ...corsHeaders, ...rateLimit.headers, "Content-Type": "application/json" },
+      });
     }
 
     const dbInstance = await getDb();

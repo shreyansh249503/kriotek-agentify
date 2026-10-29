@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs/config";
 
 const nextConfig: NextConfig = {
   compiler: {
@@ -39,11 +40,28 @@ const nextConfig: NextConfig = {
       { key: "Access-Control-Allow-Methods", value: "GET, POST, OPTIONS" },
       {
         key: "Access-Control-Allow-Headers",
-        value: "Content-Type, Authorization, ngrok-skip-browser-warning, x-forwarded-for, cf-connecting-ip, x-real-ip",
+        value: "Content-Type, Authorization, ngrok-skip-browser-warning",
       },
     ];
 
+    const securityHeaders = [
+      { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" },
+      { key: "X-Content-Type-Options", value: "nosniff" },
+      { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+      { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+    ];
+
     return [
+      {
+        source: "/:path*",
+        headers: securityHeaders,
+      },
+      {
+        // Clickjacking protection for every page except the embedded Shopify admin,
+        // whose frame-ancestors (Shopify admin + the shop) is set per request in proxy.ts.
+        source: "/((?!admin/shopify|api/).*)",
+        headers: [{ key: "Content-Security-Policy", value: "frame-ancestors 'self';" }],
+      },
       {
         source: "/api/public/:path*",
         headers: publicCorsHeaders,
@@ -75,4 +93,8 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// Source maps upload only when SENTRY_AUTH_TOKEN (plus SENTRY_ORG / SENTRY_PROJECT) is set.
+export default withSentryConfig(nextConfig, {
+  silent: !process.env.CI,
+  sourcemaps: { disable: !process.env.SENTRY_AUTH_TOKEN },
+});

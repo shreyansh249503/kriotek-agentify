@@ -1,18 +1,24 @@
 import { NextResponse } from "next/server";
 import { getDb } from "../lib/db";
 
+export const dynamic = "force-dynamic";
+
+const noStore = { "Cache-Control": "no-store" };
+
 export async function GET() {
   try {
     const db = await getDb();
-    if (!db.isInitialized) {
-      return NextResponse.json({ status: "error", message: "Database not initialized" }, { status: 503 });
-    }
-    return NextResponse.json({
-      status: "ok",
-      timestamp: new Date().toISOString(),
-    });
+    await db.query("SELECT 1");
+    return NextResponse.json(
+      { status: "ok", timestamp: new Date().toISOString() },
+      { headers: noStore },
+    );
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    return NextResponse.json({ status: "error", message }, { status: 500 });
+    // Details stay in server logs; the public response never exposes them.
+    console.error("[health] Database check failed:", error);
+    return NextResponse.json(
+      { status: "error", message: "Database unavailable" },
+      { status: 503, headers: noStore },
+    );
   }
 }

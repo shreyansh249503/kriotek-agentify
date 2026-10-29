@@ -1,11 +1,33 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
 import {
   MOCK_USER,
   mockSupabaseAuth,
 } from './auth-helpers';
 import { setSessionViaInitScript } from './bot-helpers';
 
+/**
+ * Opens the mobile drawer and waits for its slide-in to finish. Retries the toggle click
+ * because a click that lands before hydration is a no-op; pointer-events flips with React
+ * state, so it tells us whether the drawer is actually open.
+ */
+async function openDrawer(page: Page) {
+  const toggle = page.getByTestId('menu-toggle-btn');
+  const drawer = page.getByTestId('drawer-content');
+  await expect(toggle).toBeVisible({ timeout: 15000 });
+  await expect(async () => {
+    const isOpen = await drawer.evaluate((el) => getComputedStyle(el).pointerEvents === 'auto');
+    if (!isOpen) await toggle.click();
+    await expect(drawer).toBeInViewport({ ratio: 0.95, timeout: 2000 });
+  }).toPass({ timeout: 15000 });
+}
+
 test.describe('Landing Page & Conversion Flow', () => {
+  // The landing layout embeds the live chat widget, which calls the real backend on every
+  // page load. None of these tests need it, and its slow requests stall navigation.
+  test.beforeEach(async ({ page }) => {
+    await page.route('**/widget.js', (route) => route.abort());
+  });
+
   test.describe('E2E-8.1: Landing Page & Hero Conversion (/)', () => {
     test('should render hero headline, sub-headline, conversion value tags, and live chat preview widget mockup', async ({
       page,
@@ -113,16 +135,9 @@ test.describe('Landing Page & Conversion Flow', () => {
     }) => {
       await page.setViewportSize({ width: 390, height: 844 });
       await page.goto('/', { waitUntil: 'domcontentloaded' });
-      await page.waitForLoadState('networkidle');
 
-      const menuToggleBtn = page.getByTestId('menu-toggle-btn');
-      await expect(menuToggleBtn).toBeVisible({ timeout: 15000 });
-      await menuToggleBtn.click();
-
-      const drawerLiveDemo = page.getByTestId('drawer-live-demo');
-      await expect(drawerLiveDemo).toBeInViewport({ timeout: 10000 });
-      await page.waitForTimeout(400);
-      await drawerLiveDemo.click({ force: true });
+      await openDrawer(page);
+      await page.getByTestId('drawer-live-demo').click();
 
       await expect(page).toHaveURL(/\/agent-mart/, { timeout: 15000 });
     });
@@ -187,13 +202,8 @@ test.describe('Landing Page & Conversion Flow', () => {
     }) => {
       await page.setViewportSize({ width: 390, height: 844 });
       await page.goto('/', { waitUntil: 'domcontentloaded' });
-      await page.waitForLoadState('networkidle');
 
-      const menuToggleBtn = page.getByTestId('menu-toggle-btn');
-      await expect(menuToggleBtn).toBeVisible({ timeout: 15000 });
-
-      await menuToggleBtn.click();
-      await page.waitForTimeout(500);
+      await openDrawer(page);
 
       await expect(page.getByTestId('drawer-features-link')).toBeInViewport({ timeout: 10000 });
       await expect(page.getByTestId('drawer-pricing-link')).toBeInViewport({ timeout: 10000 });
@@ -204,39 +214,23 @@ test.describe('Landing Page & Conversion Flow', () => {
       await expect(page.locator('header').getByRole('link', { name: 'Login' })).toBeVisible({ timeout: 10000 });
       await expect(page.locator('header').getByRole('link', { name: 'Sign Up' })).toBeVisible({ timeout: 10000 });
 
-      const drawerPricing = page.getByTestId('drawer-pricing-link');
-      await drawerPricing.click({ force: true });
+      await page.getByTestId('drawer-pricing-link').click();
       await expect(page).toHaveURL(/\/pricing/, { timeout: 15000 });
       await expect(page.getByText('Transparent Pricing')).toBeVisible({ timeout: 15000 });
 
-      const menuBtnPricing = page.getByTestId('menu-toggle-btn');
-      await expect(menuBtnPricing).toBeVisible({ timeout: 15000 });
-      await menuBtnPricing.click();
-      await page.waitForTimeout(500);
-      const drawerAbout = page.getByTestId('drawer-about-link');
-      await expect(drawerAbout).toBeInViewport({ timeout: 10000 });
-      await drawerAbout.click({ force: true });
+      await openDrawer(page);
+      await page.getByTestId('drawer-about-link').click();
       await expect(page).toHaveURL(/\/about/, { timeout: 15000 });
       await expect(page.getByText('About Agentify')).toBeVisible({ timeout: 15000 });
 
-      const menuBtnAbout = page.getByTestId('menu-toggle-btn');
-      await expect(menuBtnAbout).toBeVisible({ timeout: 15000 });
-      await menuBtnAbout.click();
-      await page.waitForTimeout(500);
-      const drawerContact = page.getByTestId('drawer-contact-link');
-      await expect(drawerContact).toBeInViewport({ timeout: 10000 });
-      await drawerContact.click({ force: true });
+      await openDrawer(page);
+      await page.getByTestId('drawer-contact-link').click();
       await expect(page).toHaveURL(/\/contact/, { timeout: 15000 });
       await expect(page.getByText('Contact Us')).toBeVisible({ timeout: 15000 });
 
-      const menuBtnContact = page.getByTestId('menu-toggle-btn');
-      await expect(menuBtnContact).toBeVisible({ timeout: 15000 });
-      await menuBtnContact.click();
-      await page.waitForTimeout(500);
-      await menuBtnContact.click();
-      await page.waitForTimeout(500);
-      const drawerContent = page.getByTestId('drawer-content');
-      await expect(drawerContent).not.toBeInViewport();
+      await openDrawer(page);
+      await page.getByTestId('menu-toggle-btn').click();
+      await expect(page.getByTestId('drawer-content')).not.toBeInViewport();
     });
 
     test('should verify footer branding, social icons, navigation columns, and legal links', async ({

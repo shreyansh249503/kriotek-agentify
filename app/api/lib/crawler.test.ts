@@ -1,6 +1,6 @@
 import axios from "axios";
 import { getDb } from "./db";
-import { isPrivateIp, isSafePublicUrl } from "./crawler";
+import { isPrivateIp, isSafePublicUrl, safeGet } from "./crawler";
 
 jest.mock("axios");
 jest.mock("./db");
@@ -222,6 +222,63 @@ describe("crawlWebsite", () => {
       expect(axios.get).not.toHaveBeenCalled();
       expect(result.collectedText).toBe("");
       expect(result.products).toEqual([]);
+    });
+
+    it("should flag multicast, benchmark, and unspecified addresses as private", () => {
+      expect(isPrivateIp("224.0.0.1")).toBe(true);
+      expect(isPrivateIp("255.255.255.255")).toBe(true);
+      expect(isPrivateIp("198.18.0.1")).toBe(true);
+      expect(isPrivateIp("::")).toBe(true);
+      expect(isPrivateIp("ff02::1")).toBe(true);
+      expect(isPrivateIp("::FFFF:127.0.0.1")).toBe(true);
+    });
+
+    it("should disable automatic redirects so each hop can be checked", async () => {
+      (axios.get as jest.Mock).mockResolvedValueOnce({ status: 200, headers: {}, data: "<html></html>" });
+
+      await safeGet("https://acme.example.com");
+
+      expect(axios.get).toHaveBeenCalledWith(
+        "https://acme.example.com",
+        expect.objectContaining({ maxRedirects: 0 })
+      );
+    });
+
+    it("should block a public URL that redirects to an internal address", async () => {
+      jest.spyOn(console, "warn").mockImplementation(() => {});
+      (axios.get as jest.Mock).mockResolvedValueOnce({
+        status: 302,
+        headers: { location: "http://169.254.169.254/latest/meta-data" },
+        data: "",
+      });
+
+      const result = await crawlWebsite("https://acme.example.com", "pk_123", 1, false);
+
+      expect(axios.get).toHaveBeenCalledTimes(1);
+      expect(axios.get).not.toHaveBeenCalledWith("http://169.254.169.254/latest/meta-data", expect.anything());
+      expect(result.collectedText).toBe("");
+    });
+
+    it("should follow safe redirects and resolve relative Location headers", async () => {
+      (axios.get as jest.Mock)
+        .mockResolvedValueOnce({ status: 301, headers: { location: "/home" }, data: "" })
+        .mockResolvedValueOnce({ status: 200, headers: {}, data: "<html><main>ok</main></html>" });
+
+      const { finalUrl } = await safeGet("https://acme.example.com");
+
+      expect(axios.get).toHaveBeenNthCalledWith(2, "https://acme.example.com/home", expect.anything());
+      expect(finalUrl).toBe("https://acme.example.com/home");
+    });
+
+    it("should stop after too many redirects", async () => {
+      (axios.get as jest.Mock).mockResolvedValue({
+        status: 302,
+        headers: { location: "https://acme.example.com/loop" },
+        data: "",
+      });
+
+      await expect(safeGet("https://acme.example.com")).rejects.toThrow("Too many redirects");
+      expect(axios.get).toHaveBeenCalledTimes(6);
     });
   });
 });
