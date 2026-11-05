@@ -104,6 +104,19 @@ describe("db connection settings", () => {
     });
   });
 
+  it("wraps a bare base64 CA body in PEM armour", () => {
+    const ssl = getSslConfig({
+      NODE_ENV: "production",
+      SUPABASE_DATABASE_URL: pooler,
+      SUPABASE_DB_CA_CERT: "abc\ndef",
+    } as NodeJS.ProcessEnv);
+
+    expect(ssl).toEqual({
+      ca: "-----BEGIN CERTIFICATE-----\nabcdef\n-----END CERTIFICATE-----",
+      rejectUnauthorized: true,
+    });
+  });
+
   it("falls back to unverified TLS and warns in production without a CA", () => {
     const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
 

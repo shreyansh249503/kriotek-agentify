@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { logger } from "../../../../../lib/logger";
-import { createClient } from "@supabase/supabase-js";
+import { supabaseAdmin } from "@/app/api/lib/supabase-admin";
 import { setupCollection } from "../../../lib/vector-db-setup";
 import { getDb } from "../../../lib/db";
 import { crawlWebsite } from "../../../lib/crawler";
@@ -11,8 +11,6 @@ import {
   verifySessionToken,
   getShopFromSession,
 } from "../../lib/verifySessionToken";
-
-const { NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = process.env;
 
 export async function POST(req: NextRequest) {
   await setupCollection();
@@ -25,13 +23,8 @@ export async function POST(req: NextRequest) {
   }
 
   const shop = getShopFromSession(session);
-  const supabase = createClient(
-    NEXT_PUBLIC_SUPABASE_URL!,
-    SUPABASE_SERVICE_ROLE_KEY!,
-  );
-
   try {
-    const { data: storeData } = await supabase
+    const { data: storeData } = await supabaseAdmin
       .from("shopify_stores")
       .select("bot_id")
       .eq("shop", shop)

@@ -1,14 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { supabaseAdmin } from "@/app/api/lib/supabase-admin";
 import {
   verifySessionToken,
   getShopFromSession,
 } from "../../lib/verifySessionToken";
-
-const {
-  NEXT_PUBLIC_SUPABASE_URL,
-  SUPABASE_SERVICE_ROLE_KEY,
-} = process.env;
 
 export async function GET(req: NextRequest) {
   let session;
@@ -19,13 +14,8 @@ export async function GET(req: NextRequest) {
   }
 
   const shop = getShopFromSession(session);
-  const supabase = createClient(
-    NEXT_PUBLIC_SUPABASE_URL!,
-    SUPABASE_SERVICE_ROLE_KEY!
-  );
-
   try {
-    const { data: storeData } = await supabase
+    const { data: storeData } = await supabaseAdmin
       .from("shopify_stores")
       .select("bot_id")
       .eq("shop", shop)
@@ -35,7 +25,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ leads: [] });
     }
 
-    const { data: leads, error } = await supabase
+    const { data: leads, error } = await supabaseAdmin
       .from("leads")
       .select("*")
       .eq("bot_id", storeData.bot_id)

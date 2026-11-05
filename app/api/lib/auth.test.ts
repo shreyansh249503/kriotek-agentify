@@ -1,12 +1,7 @@
-import { getUserFromRequest, supabaseAdmin } from "./auth";
+import { getUserFromRequest } from "./auth";
+import { supabaseAdmin } from "./supabase-admin";
 
-jest.mock("@supabase/supabase-js", () => ({
-  createClient: jest.fn().mockReturnValue({
-    auth: {
-      getUser: jest.fn(),
-    },
-  }),
-}));
+jest.mock("./supabase-admin");
 
 describe("getUserFromRequest", () => {
   beforeEach(() => {
@@ -17,6 +12,7 @@ describe("getUserFromRequest", () => {
     const req = new Request("http://localhost/api/test");
     const user = await getUserFromRequest(req);
     expect(user).toBeNull();
+    expect(supabaseAdmin.auth.getUser).not.toHaveBeenCalled();
   });
 
   it("should extract bearer token and return user from Supabase auth", async () => {
@@ -30,21 +26,19 @@ describe("getUserFromRequest", () => {
     });
 
     const user = await getUserFromRequest(req);
-
-    expect(supabaseAdmin.auth.getUser).toHaveBeenCalledWith("token_xyz_789");
     expect(user).toEqual(mockUser);
+    expect(supabaseAdmin.auth.getUser).toHaveBeenCalledWith("token_xyz_789");
   });
 
-  it("should return null when Supabase auth returns no user", async () => {
+  it("should return null when Supabase does not recognise the token", async () => {
     (supabaseAdmin.auth.getUser as jest.Mock).mockResolvedValueOnce({
       data: { user: null },
     });
 
     const req = new Request("http://localhost/api/test", {
-      headers: { authorization: "Bearer invalid_token" },
+      headers: { authorization: "Bearer expired" },
     });
 
-    const user = await getUserFromRequest(req);
-    expect(user).toBeNull();
+    expect(await getUserFromRequest(req)).toBeNull();
   });
 });

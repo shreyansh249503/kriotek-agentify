@@ -1,5 +1,6 @@
 import { getDb } from "@/app/api/lib/db";
 import { Conversation, Bot } from "@/app/api/lib/entities";
+import { parseMessages } from "@/app/api/lib/conversations";
 import { checkRateLimit } from "@/app/api/lib/rateLimit";
 
 const corsHeaders = {
@@ -48,7 +49,7 @@ export async function GET(
       });
     }
 
-    const messagesArray = typeof convo.messages === 'string' ? JSON.parse(convo.messages) : convo.messages;
+    const messagesArray = parseMessages(convo.messages);
 
     return new Response(JSON.stringify({
       state: convo.state,

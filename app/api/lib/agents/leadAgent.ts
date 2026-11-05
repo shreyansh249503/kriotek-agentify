@@ -2,6 +2,8 @@ import { generateObject } from "ai";
 import { google } from "@ai-sdk/google";
 import { z } from "zod";
 import { logger } from "../../../../lib/logger";
+import { getModelName } from "../model";
+import type { UsageAccumulator } from "../usage";
 
 const LeadExtractionSchema = z.object({
   name: z
@@ -250,6 +252,7 @@ export async function runLeadAgent(
   conversation: Message[],
   _botContactPrompt?: string | null,
   knownInfo?: KnownInfo,
+  usage?: UsageAccumulator,
 ): Promise<LeadDecision> {
   const dbName = (knownInfo?.name || "").trim();
   const dbEmail = (knownInfo?.email || "").trim();
@@ -290,8 +293,8 @@ export async function runLeadAgent(
         .map((m) => `${m.role === "user" ? "USER" : "ASSISTANT"}: ${m.content}`)
         .join("\n\n");
 
-      const modelName = process.env.GEMINI_MODEL || "gemini-2.5-flash-lite";
-      const { object } = await generateObject({
+      const modelName = getModelName();
+      const { object, usage: callUsage } = await generateObject({
         model: google(modelName),
         schema: LeadExtractionSchema,
         prompt: `Extract contact details the USER explicitly typed in this conversation.
@@ -314,6 +317,7 @@ ${conversationText}
 Please extract the name and email fields according to the rules above.`,
       });
 
+      usage?.add(callUsage);
       extractedEmail = object.email;
 
       if (!finalName && object.name && !isLikelyNotAName(object.name)) {

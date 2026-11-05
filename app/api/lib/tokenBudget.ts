@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { getDb } from "./db";
 import { BotUsage } from "./entities";
 
@@ -6,7 +7,7 @@ export interface BudgetCheckResult {
   currentTokens: number;
   budgetLimit: number | null;
   percentageUsed: number;
-  reason?: "budget_exceeded" | "within_budget" | "unlimited";
+  reason?: "budget_exceeded" | "within_budget" | "unlimited" | "check_failed";
 }
 
 export function getCurrentBillingPeriod(date: Date = new Date()): string {
@@ -78,60 +79,52 @@ export async function checkBotBudget(
     };
   } catch (err) {
     console.error("[TokenBudget] Error checking bot budget:", err);
+    Sentry.captureException(err, { tags: { area: "token_budget" } });
+    // Fail closed in production so a database outage can't lift the spend cap.
+    const failClosed = process.env.NODE_ENV === "production";
     return {
-      allowed: true,
+      allowed: !failClosed,
       currentTokens: 0,
       budgetLimit: monthlyBudget,
       percentageUsed: 0,
-      reason: "within_budget",
+      reason: failClosed ? "check_failed" : "within_budget",
     };
   }
 }
 
+/**
+ * Adds one chat message's token usage to the bot's monthly row in a single atomic upsert, so
+ * concurrent messages can't overwrite each other's counts. Relies on UNIQUE (bot_id, billing_period).
+ */
 export async function recordBotTokenUsage(
   botId: string,
   tokens: {
-    promptTokens?: number;
-    completionTokens?: number;
+    inputTokens?: number;
+    outputTokens?: number;
     totalTokens?: number;
+    messageCount?: number;
   },
 ): Promise<void> {
   try {
-    const prompt = tokens.promptTokens || 0;
-    const completion = tokens.completionTokens || 0;
-    const total = tokens.totalTokens || prompt + completion;
+    const input = tokens.inputTokens || 0;
+    const output = tokens.outputTokens || 0;
+    const total = tokens.totalTokens || input + output;
+    const messageCount = tokens.messageCount ?? 1;
 
-    if (total <= 0) return;
+    if (total <= 0 && messageCount <= 0) return;
 
     const db = await getDb();
-    const usageRepo = db.getRepository<BotUsage>("BotUsage");
-    const currentPeriod = getCurrentBillingPeriod();
-
-    let usage = await usageRepo.findOne({
-      where: {
-        bot_id: botId,
-        billing_period: currentPeriod,
-      },
-    });
-
-    if (!usage) {
-      usage = usageRepo.create({
-        bot_id: botId,
-        billing_period: currentPeriod,
-        total_tokens: total,
-        prompt_tokens: prompt,
-        completion_tokens: completion,
-        message_count: 1,
-      });
-      await usageRepo.save(usage);
-    } else {
-      await usageRepo.update(usage.id, {
-        total_tokens: usage.total_tokens + total,
-        prompt_tokens: usage.prompt_tokens + prompt,
-        completion_tokens: usage.completion_tokens + completion,
-        message_count: usage.message_count + 1,
-      });
-    }
+    await db.query(
+      `INSERT INTO bot_usages (bot_id, billing_period, total_tokens, prompt_tokens, completion_tokens, message_count)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT (bot_id, billing_period) DO UPDATE SET
+         total_tokens = COALESCE(bot_usages.total_tokens, 0) + EXCLUDED.total_tokens,
+         prompt_tokens = COALESCE(bot_usages.prompt_tokens, 0) + EXCLUDED.prompt_tokens,
+         completion_tokens = COALESCE(bot_usages.completion_tokens, 0) + EXCLUDED.completion_tokens,
+         message_count = COALESCE(bot_usages.message_count, 0) + EXCLUDED.message_count,
+         updated_at = NOW()`,
+      [botId, getCurrentBillingPeriod(), total, input, output, messageCount],
+    );
   } catch (err) {
     console.error("[TokenBudget] Error recording token usage:", err);
   }

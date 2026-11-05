@@ -1,6 +1,6 @@
 import { tool } from "ai";
 import { z } from "zod";
-import { createClient } from "@supabase/supabase-js";
+import { supabaseAdmin } from "@/app/api/lib/supabase-admin";
 import { lookupVerifiedOrder, MIN_PHONE_DIGITS } from "@/lib/shopify/orderLookup";
 import type { OrderJourneyData } from "@/lib/shopify/shopifyOrderMapper";
 import { decryptToken } from "../crypto";
@@ -20,12 +20,7 @@ export function createOrderLookupTool(botId: string, successInstruction: (journe
     }),
     execute: async ({ order_number, email, phone }) => {
       try {
-        const supabase = createClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.SUPABASE_SERVICE_ROLE_KEY!,
-        );
-
-        const { data: storeData, error: storeErr } = await supabase
+        const { data: storeData, error: storeErr } = await supabaseAdmin
           .from("shopify_stores")
           .select("shop, access_token")
           .eq("bot_id", botId)

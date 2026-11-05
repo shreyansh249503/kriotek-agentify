@@ -41,7 +41,7 @@ Never point staging or development at the production database.
 
 | Variable | Required in production | Notes |
 |---|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | yes | Per environment |
+| `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` | yes | Per environment |
 | `SUPABASE_DATABASE_URL` | yes | Transaction pooler, port 6543 |
 | `SUPABASE_DB_CA_CERT` | recommended | Dashboard → Database → SSL; enables certificate verification |
 | `DB_POOL_MAX` | no | Default 3 per instance in production |
@@ -82,6 +82,7 @@ This release changes encryption, the database and the widget together. Do it in 
 | Uptime | **[account]** UptimeRobot, Better Stack or similar, every 1–5 min | `GET /api/health` is not 200, or `GET /widget.js` is not 200 |
 | Gemini spend | **[account]** Google Cloud billing budget on the Gemini API project | 50% / 90% / 100% of the monthly budget |
 | Per-bot spend | `DEFAULT_MONTHLY_TOKEN_BUDGET` and `bots.monthly_token_budget` | Chat returns `budget_exceeded` |
+| Budget check failures | Sentry issues tagged `area:token_budget` | Any. In production chat returns 503 `budget_check_failed` for bots with a budget |
 | LLM quality / cost | Langfuse | — |
 | Abuse | 429 counts in logs (`rate_limited`) | Sustained spikes |
 
@@ -116,5 +117,6 @@ limiter (429s); run distributed to measure capacity. Pass criteria: no 5xx, brow
 - **A bot is being abused or running up cost:** set its `monthly_token_budget` to a small value
   (chat stops once exceeded), or delete the bot.
 - **Database outage:** `/api/health` returns 503 and uptime alerts fire. Check Supabase status;
-  restore from PITR if data was lost.
+  restore from PITR if data was lost. While the database is down, chat for bots with a token budget
+  returns 503 (`budget_check_failed`) instead of answering without a spend cap.
 - **Suspected key leak:** rotate per section 6, starting with the leaked key.

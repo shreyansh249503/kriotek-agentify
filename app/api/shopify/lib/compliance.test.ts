@@ -93,6 +93,8 @@ describe("Shopify compliance", () => {
       expect(statements[1]).toContain("DELETE FROM leads WHERE bot_id = $1");
       expect(statements[2]).toContain("p->>'shopify_id' IS NULL");
       expect(statements[3]).toContain("DELETE FROM shopify_stores WHERE shop = $1");
+      expect(statements[4]).toContain("DELETE FROM shopify_webhook_events WHERE shop = $1");
+      expect(statements[5]).toContain("DELETE FROM shopify_product_removals WHERE shop = $1");
       expect(statements.join(" ")).not.toContain("DELETE FROM bots");
     });
 
@@ -101,7 +103,8 @@ describe("Shopify compliance", () => {
 
       await redactShop(shop);
 
-      expect(txQuery).toHaveBeenCalledTimes(1);
+      const statements = txQuery.mock.calls.map(([sql]) => sql as string);
+      expect(statements.some((sql) => sql.includes("conversations"))).toBe(false);
       expect(txQuery).toHaveBeenCalledWith(expect.stringContaining("DELETE FROM shopify_stores"), [shop]);
     });
   });

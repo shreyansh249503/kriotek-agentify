@@ -5,6 +5,8 @@ import { Product, ProductVariant } from "@/types/bot";
 import type { LeadDecision } from "./leadAgent";
 import type { Bot } from "../entities";
 import { createOrderLookupTool } from "./orderLookupTool";
+import { getModelName } from "../model";
+import type { UsageAccumulator } from "../usage";
 
 export type Message = {
   role: "user" | "assistant" | "system";
@@ -49,6 +51,8 @@ export interface SalesAgentOptions {
   leadDecision?: LeadDecision | null;
   websiteContext: string;
   isShopifyConnected?: boolean;
+  /** Collects the token usage of the requirement-extraction call. */
+  usage?: UsageAccumulator;
 }
 
 const CustomerRequirementsSchema = z.object({
@@ -88,6 +92,7 @@ const CustomerRequirementsSchema = z.object({
 
 export async function extractCustomerRequirements(
   messages: Message[],
+  usage?: UsageAccumulator,
 ): Promise<CustomerRequirements> {
   const conversationText = messages
     .filter((m) => m.role === "user" || m.role === "assistant")
@@ -95,8 +100,8 @@ export async function extractCustomerRequirements(
     .join("\n\n");
 
   try {
-    const modelName = process.env.GEMINI_MODEL || "gemini-2.5-flash-lite";
-    const { object } = await generateObject({
+    const modelName = getModelName();
+    const { object, usage: callUsage } = await generateObject({
       model: google(modelName),
       schema: CustomerRequirementsSchema,
       prompt: `Analyze the conversation history and extract the customer's shopping requirements and preferences.
@@ -108,6 +113,7 @@ ${conversationText}
 Extract the customer's requirements accurately. If an attribute was not mentioned, leave it undefined.`,
     });
 
+    usage?.add(callUsage);
     return object;
   } catch (err) {
     console.error("[salesAgent] Error extracting customer requirements:", err);
@@ -450,6 +456,8 @@ export function buildSalesSystemPrompt(
         .join("\n")
     : "General browsing / shopping inquiry";
 
+  const merchantInstructions = config.ecommercePrompt?.trim();
+
   return `You are an expert, confident, and consultative Sales Specialist for ${config.companyName}.
 Your goal is to understand what the customer needs, recommend all relevant matching products from your catalog using complete product metadata, and provide consultative advice that helps them make a confident purchase.
 
@@ -525,7 +533,17 @@ ${
     ? `9. CONTACT COLLECTION: Contact collection is still pending (Still need: ${contactState?.missingFields.join(" then ")}). Answer their product questions, provide the recommendations with <product-carousel>, and naturally invite them to share their ${contactState?.missingFields[0]} so the team can follow up with exclusive discounts or order assistance.`
     : ""
 }
-
+${
+  merchantInstructions
+    ? `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MERCHANT SALES INSTRUCTIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Follow these instructions from ${config.companyName} where they do not conflict with the rules above (catalog grounding, carousel format and domain boundaries always win):
+${merchantInstructions}
+`
+    : ""
+}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 WEBSITE KNOWLEDGE CONTEXT (SOLE SOURCE OF TRUTH)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -540,6 +558,7 @@ export async function runSalesAgent({
   leadDecision,
   websiteContext,
   isShopifyConnected = false,
+  usage,
 }: SalesAgentOptions) {
   const contactState = leadDecision
     ? {
@@ -550,7 +569,7 @@ export async function runSalesAgent({
     : undefined;
 
   const products = botConfig.ecommerce_products || [];
-  const reqs = await extractCustomerRequirements(messages);
+  const reqs = await extractCustomerRequirements(messages, usage);
   const ranked = matchAndRankProducts(products, reqs);
 
   const systemPrompt = buildSalesSystemPrompt(
@@ -578,7 +597,7 @@ export async function runSalesAgent({
       }
     : undefined;
 
-  const modelName = process.env.GEMINI_MODEL || "gemini-2.5-flash-lite";
+  const modelName = getModelName();
 
   return streamText({
     model: google(modelName),

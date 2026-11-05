@@ -10,6 +10,7 @@ import { CrawledPage } from "./entities";
 import { Product } from "../../../types/bot";
 import { generateObject } from "ai";
 import { google } from "@ai-sdk/google";
+import { getModelName } from "./model";
 import { z } from "zod";
 
 export function isPrivateIp(ip: string): boolean {
@@ -744,7 +745,7 @@ async function extractProductFromPage(
         );
       }
 
-      const modelName = process.env.GEMINI_MODEL || "gemini-2.5-flash-lite";
+      const modelName = getModelName();
       const { object } = await generateObject({
         model: google(modelName),
         schema: z.object({

@@ -32,6 +32,23 @@ describe("buildSystemPrompt", () => {
     expect(prompt).toContain("lookup_shopify_order");
   });
 
+  it("should not mention lookup_shopify_order when Shopify is not connected, even with contact complete", () => {
+    const prompt = buildSystemPrompt(
+      {
+        companyName: "Agentify",
+        companyDescription: "AI agents",
+      },
+      { websiteContext: "" },
+      {
+        collected: { name: "Alice", email: "alice@example.com" },
+        missingFields: [],
+        isComplete: true,
+      }
+    );
+
+    expect(prompt).not.toContain("lookup_shopify_order");
+  });
+
   it("should append contact collection guidelines when contactState is provided", () => {
     const prompt = buildSystemPrompt(
       {

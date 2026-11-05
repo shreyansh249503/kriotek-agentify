@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
-import { createClient } from "@supabase/supabase-js";
+import { supabaseAdmin } from "@/app/api/lib/supabase-admin";
 
 const {
   SHOPIFY_API_KEY,
   SHOPIFY_SCOPES,
   SHOPIFY_APP_URL,
-  NEXT_PUBLIC_SUPABASE_URL,
-  SUPABASE_SERVICE_ROLE_KEY,
 } = process.env;
 
 export async function GET(req: NextRequest) {
@@ -18,13 +16,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Invalid shop domain" }, { status: 400 });
   }
 
-  const supabase = createClient(
-    NEXT_PUBLIC_SUPABASE_URL!,
-    SUPABASE_SERVICE_ROLE_KEY!
-  );
-
   try {
-    const { data: storeData } = await supabase
+    const { data: storeData } = await supabaseAdmin
       .from("shopify_stores")
       .select("access_token")
       .eq("shop", shop)

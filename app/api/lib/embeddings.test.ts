@@ -41,6 +41,7 @@ describe("createEmbedding", () => {
       })
     );
     expect(result).toEqual(mockVector);
+    expect((global.fetch as jest.Mock).mock.calls[0][1].signal).toBeDefined();
   });
 
   it("should throw error when Google API response is not ok", async () => {

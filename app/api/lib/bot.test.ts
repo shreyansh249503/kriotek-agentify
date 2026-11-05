@@ -27,9 +27,9 @@ describe("getBotByPublicKey", () => {
     expect(bot).toEqual(mockBot);
   });
 
-  it("should throw error 'Bot not found' when bot entity is missing", async () => {
+  it("should return null when bot entity is missing", async () => {
     mockRepo.findOne.mockResolvedValueOnce(null);
 
-    await expect(getBotByPublicKey("non_existent_key")).rejects.toThrow("Bot not found");
+    await expect(getBotByPublicKey("non_existent_key")).resolves.toBeNull();
   });
 });

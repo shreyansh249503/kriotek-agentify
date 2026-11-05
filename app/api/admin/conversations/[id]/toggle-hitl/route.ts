@@ -1,6 +1,7 @@
 import { getDb } from "@/app/api/lib/db";
 import { Conversation } from "@/app/api/lib/entities";
 import { getUserFromRequest } from "@/app/api/lib/auth";
+import { appendMessages } from "@/app/api/lib/conversations";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -64,36 +65,17 @@ export async function POST(
     // enabled === true means Human rep is taking over (AI paused)
     // enabled === false means AI is resumed (Automated)
     const newState = enabled ? "manual_takeover" : "idle";
-    convo.state = newState;
-
-    let history: Array<{ role: string; content: string; sender?: string }> = [];
-    try {
-      history =
-        typeof convo.messages === "string"
-          ? JSON.parse(convo.messages)
-          : convo.messages;
-    } catch {
-      history = [];
-    }
 
     const systemNotice = enabled
       ? "Support representative has taken over the chat. AI responses are currently paused."
       : "AI Assistant has resumed automated responses for this conversation.";
 
-    history.push({
-      role: "system",
-      content: systemNotice,
-    });
-
-    convo.messages = JSON.stringify(history);
-    convo.message_count += 1;
-
-    await convoRepo.save(convo);
+    await appendMessages(convo.id, [{ role: "system", content: systemNotice }], { state: newState });
 
     return new Response(
       JSON.stringify({
         success: true,
-        state: convo.state,
+        state: newState,
         enabled,
       }),
       {

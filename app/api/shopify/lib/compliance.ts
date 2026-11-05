@@ -97,6 +97,8 @@ export async function redactShop(shop: string) {
       );
     }
     await manager.query(`DELETE FROM shopify_stores WHERE shop = $1`, [shop]);
+    await manager.query(`DELETE FROM shopify_webhook_events WHERE shop = $1`, [shop]);
+    await manager.query(`DELETE FROM shopify_product_removals WHERE shop = $1`, [shop]);
   });
 }
 

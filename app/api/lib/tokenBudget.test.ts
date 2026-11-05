@@ -6,9 +6,14 @@ import {
   recordBotTokenUsage,
 } from "./tokenBudget";
 import { getDb } from "./db";
+import * as Sentry from "@sentry/nextjs";
 
 jest.mock("./db", () => ({
   getDb: jest.fn(),
+}));
+
+jest.mock("@sentry/nextjs", () => ({
+  captureException: jest.fn(),
 }));
 
 describe("Token Budget Guardrails (tokenBudget.ts)", () => {
@@ -17,6 +22,7 @@ describe("Token Budget Guardrails (tokenBudget.ts)", () => {
   const mockCreate = jest.fn((d) => d);
   const mockSave = jest.fn().mockResolvedValue(undefined);
   const mockUpdate = jest.fn().mockResolvedValue(undefined);
+  const mockQuery = jest.fn().mockResolvedValue([]);
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -27,6 +33,7 @@ describe("Token Budget Guardrails (tokenBudget.ts)", () => {
         save: mockSave,
         update: mockUpdate,
       }),
+      query: mockQuery,
     });
   });
 
@@ -76,6 +83,40 @@ describe("Token Budget Guardrails (tokenBudget.ts)", () => {
       expect(res.reason).toBe("budget_exceeded");
     });
 
+    describe("when the usage lookup fails", () => {
+      const env = process.env as Record<string, string | undefined>;
+      const originalNodeEnv = env.NODE_ENV;
+
+      beforeEach(() => {
+        jest.spyOn(console, "error").mockImplementation(() => {});
+        mockFindOne.mockRejectedValue(new Error("connection refused"));
+      });
+
+      afterEach(() => {
+        env.NODE_ENV = originalNodeEnv;
+        jest.restoreAllMocks();
+      });
+
+      it("refuses the request in production and reports to Sentry", async () => {
+        env.NODE_ENV = "production";
+
+        const res = await checkBotBudget("bot-1", 50000);
+
+        expect(res.allowed).toBe(false);
+        expect(res.reason).toBe("check_failed");
+        expect(Sentry.captureException).toHaveBeenCalled();
+      });
+
+      it("lets the request through outside production", async () => {
+        env.NODE_ENV = "development";
+
+        const res = await checkBotBudget("bot-1", 50000);
+
+        expect(res.allowed).toBe(true);
+        expect(res.reason).toBe("within_budget");
+      });
+    });
+
     describe("platform default budget", () => {
       afterEach(() => {
         delete process.env.DEFAULT_MONTHLY_TOKEN_BUDGET;
@@ -109,47 +150,35 @@ describe("Token Budget Guardrails (tokenBudget.ts)", () => {
   });
 
   describe("recordBotTokenUsage", () => {
-    it("should create new usage record if none exists for the period", async () => {
-      mockFindOne.mockResolvedValue(null);
+    it("adds usage with a single atomic upsert", async () => {
+      await recordBotTokenUsage("bot-1", { inputTokens: 120, outputTokens: 80 });
 
-      await recordBotTokenUsage("bot-1", {
-        promptTokens: 120,
-        completionTokens: 80,
-      });
-
-      expect(mockCreate).toHaveBeenCalledWith(
-        expect.objectContaining({
-          bot_id: "bot-1",
-          billing_period: getCurrentBillingPeriod(),
-          total_tokens: 200,
-          prompt_tokens: 120,
-          completion_tokens: 80,
-          message_count: 1,
-        }),
-      );
-      expect(mockSave).toHaveBeenCalled();
+      expect(mockQuery).toHaveBeenCalledTimes(1);
+      const [sql, params] = mockQuery.mock.calls[0];
+      expect(sql).toContain("ON CONFLICT (bot_id, billing_period) DO UPDATE");
+      expect(sql).toContain("total_tokens = COALESCE(bot_usages.total_tokens, 0) + EXCLUDED.total_tokens");
+      expect(params).toEqual(["bot-1", getCurrentBillingPeriod(), 200, 120, 80, 1]);
+      expect(mockFindOne).not.toHaveBeenCalled();
     });
 
-    it("should update existing usage record", async () => {
-      mockFindOne.mockResolvedValue({
-        id: "usage-1",
-        total_tokens: 500,
-        prompt_tokens: 300,
-        completion_tokens: 200,
-        message_count: 5,
-      });
+    it("prefers the reported total and records the given message count", async () => {
+      await recordBotTokenUsage("bot-1", { inputTokens: 50, outputTokens: 25, totalTokens: 90, messageCount: 0 });
 
-      await recordBotTokenUsage("bot-1", {
-        promptTokens: 50,
-        completionTokens: 25,
-      });
+      expect(mockQuery.mock.calls[0][1]).toEqual(["bot-1", getCurrentBillingPeriod(), 90, 50, 25, 0]);
+    });
 
-      expect(mockUpdate).toHaveBeenCalledWith("usage-1", {
-        total_tokens: 575,
-        prompt_tokens: 350,
-        completion_tokens: 225,
-        message_count: 6,
-      });
+    it("skips the write when there is nothing to record", async () => {
+      await recordBotTokenUsage("bot-1", { messageCount: 0 });
+
+      expect(mockQuery).not.toHaveBeenCalled();
+    });
+
+    it("logs instead of throwing when the write fails", async () => {
+      const errorSpy = jest.spyOn(console, "error").mockImplementationOnce(() => {});
+      mockQuery.mockRejectedValueOnce(new Error("db down"));
+
+      await expect(recordBotTokenUsage("bot-1", { inputTokens: 1 })).resolves.toBeUndefined();
+      expect(errorSpy).toHaveBeenCalled();
     });
   });
 });

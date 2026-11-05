@@ -31,7 +31,11 @@ export function buildSystemPrompt(
     ? `Supported languages: ${config.supportedLanguages.join(", ")}`
     : "Detect and match the user's language automatically";
 
-  const contactSection = buildContactSection(config.companyName, contactState);
+  const contactSection = buildContactSection(
+    config.companyName,
+    contactState,
+    Boolean(config.shopifyEnabled),
+  );
   const ecommerceSection = buildEcommerceSection(config, contactState);
 
   const shopifySection = config.shopifyEnabled
@@ -212,6 +216,7 @@ SALES RULES:
 function buildContactSection(
   companyName: string,
   state?: ContactState,
+  shopifyEnabled = false,
 ): string {
   if (!state) {
     return `CONTACT COLLECTION
@@ -224,11 +229,15 @@ Not required for this bot. Focus entirely on answering questions.`;
 The USER who is chatting with you has already provided their contact details:
 - USER name: "${c.name}"
 - USER email: "${c.email}"
-
+${
+  shopifyEnabled
+    ? `
 CRITICAL ORDER LOOKUP OVERRIDE:
 - If the user's latest message provides an email or phone number in response to a previous query/prompt about an ORDER NUMBER (e.g. #1001 or 1001), you MUST IMMEDIATELY execute 'lookup_shopify_order' with that order number and the provided email/phone!
 - Do NOT simply say "Thanks for confirming your email!" or ask if they need help with anything else — you MUST look up their order and return the order status & journey card!
-
+`
+    : ""
+}
 CRITICAL IDENTITY RULES:
 - These are the CUSTOMER'S details, NOT yours. You are an AI assistant for ${companyName}.
 - NEVER say "my name is ${c.name}" or introduce yourself using the user's name.

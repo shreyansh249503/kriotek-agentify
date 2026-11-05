@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { supabaseAdmin } from "@/app/api/lib/supabase-admin";
 import crypto from "crypto";
 import { getDb } from "@/app/api/lib/db";
 import { Conversation, Lead } from "@/app/api/lib/entities";
@@ -7,8 +7,6 @@ import {
   verifySessionToken,
   getShopFromSession,
 } from "../../lib/verifySessionToken";
-
-const { NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = process.env;
 
 export async function GET(req: NextRequest) {
   let session;
@@ -20,13 +18,8 @@ export async function GET(req: NextRequest) {
   }
 
   const shop = getShopFromSession(session);
-  const supabase = createClient(
-    NEXT_PUBLIC_SUPABASE_URL!,
-    SUPABASE_SERVICE_ROLE_KEY!,
-  );
-
   try {
-    const { data: storeData, error: storeError } = await supabase
+    const { data: storeData, error: storeError } = await supabaseAdmin
       .from("shopify_stores")
       .select("bot_id")
       .eq("shop", shop)
@@ -50,7 +43,7 @@ export async function GET(req: NextRequest) {
         .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
         .join(" ")} Bot`;
 
-      const { error: createError } = await supabase
+      const { error: createError } = await supabaseAdmin
         .from("bots")
         .insert({
           id: newBotId,
@@ -71,7 +64,7 @@ export async function GET(req: NextRequest) {
         );
       }
 
-      const { error: linkError } = await supabase
+      const { error: linkError } = await supabaseAdmin
         .from("shopify_stores")
         .update({ bot_id: newBotId })
         .eq("shop", shop);
@@ -84,16 +77,16 @@ export async function GET(req: NextRequest) {
     }
 
     const [botRes, convoRes, leadsRes] = await Promise.all([
-      supabase
+      supabaseAdmin
         .from("bots")
         .select("id, name, ecommerce_enabled, ecommerce_products")
         .eq("id", bot_id)
         .single(),
-      supabase
+      supabaseAdmin
         .from("conversations")
         .select("id", { count: "exact" })
         .eq("bot_id", bot_id),
-      supabase
+      supabaseAdmin
         .from("leads")
         .select("id", { count: "exact" })
         .eq("bot_id", bot_id),

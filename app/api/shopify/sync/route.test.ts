@@ -1,16 +1,16 @@
-process.env.NEXT_PUBLIC_SUPABASE_URL = "https://supabase.example.com";
-process.env.SUPABASE_SERVICE_ROLE_KEY = "test_service_key";
 
 import { POST } from "./route";
 import { NextRequest } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { supabaseAdmin } from "@/app/api/lib/supabase-admin";
 
-jest.mock("@supabase/supabase-js", () => ({
-  createClient: jest.fn(),
-}));
+jest.mock("@/app/api/lib/supabase-admin");
 
 jest.mock("../../lib/auth", () => ({
   getUserFromRequest: jest.fn().mockResolvedValue(null),
+}));
+
+jest.mock("../lib/productWebhooks", () => ({
+  saveSyncedProducts: jest.fn(),
 }));
 
 jest.mock("../lib/verifySessionToken", () => ({
@@ -19,6 +19,7 @@ jest.mock("../lib/verifySessionToken", () => ({
 }));
 
 import { verifySessionToken } from "../lib/verifySessionToken";
+import { saveSyncedProducts } from "../lib/productWebhooks";
 import { getUserFromRequest } from "../../lib/auth";
 
 describe("API: /api/shopify/sync", () => {
@@ -57,8 +58,9 @@ describe("API: /api/shopify/sync", () => {
       eq: jest.fn().mockResolvedValue({ error: null }),
     });
 
-    (createClient as jest.Mock).mockReturnValue({ from: mockFrom });
+    (supabaseAdmin.from as jest.Mock).mockImplementation(mockFrom);
     global.fetch = jest.fn();
+    (saveSyncedProducts as jest.Mock).mockImplementation(async ({ synced }) => synced);
   });
 
   afterAll(() => {
@@ -200,11 +202,61 @@ describe("API: /api/shopify/sync", () => {
     });
     expect(data.products[0].variants).toBeDefined();
     expect(data.products[0].metadata).toBeDefined();
+    expect(saveSyncedProducts).toHaveBeenCalledWith({
+      shop: "test.myshopify.com",
+      botId: "bot_123",
+      synced: data.products,
+      syncStartedAt: expect.any(Date),
+    });
   });
 
-  it("should return 500 when Supabase bot update returns error", async () => {
+  it("should use the shop's currency, store it, and skip draft products", async () => {
+    mockSingle.mockResolvedValueOnce({ data: { access_token: "shpat_123", bot_id: "bot_123" } });
+    const storeUpdateEq = jest.fn().mockResolvedValue({ error: null });
+    const botUpdateEq = jest.fn().mockResolvedValue({ error: null });
+    mockFrom.mockImplementation((table: string) =>
+      table === "shopify_stores"
+        ? { select: mockSelect, update: jest.fn((v) => ({ eq: storeUpdateEq, value: v })) }
+        : { update: jest.fn(() => ({ eq: botUpdateEq })) }
+    );
+    const node = (id: string, status: string) => ({
+      id,
+      title: id,
+      descriptionHtml: "",
+      handle: id,
+      status,
+      updatedAt: "2026-11-05T10:00:00Z",
+      priceRangeV2: { minVariantPrice: { amount: "10.00", currencyCode: "USD" } },
+      images: { edges: [] },
+      variants: { edges: [{ node: { id: `${id}-v`, title: "Default", price: "10.00", availableForSale: true } }] },
+    });
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: jest.fn().mockResolvedValue({
+        data: {
+          shop: { currencyCode: "EUR" },
+          products: {
+            pageInfo: { hasNextPage: false, endCursor: null },
+            edges: [{ node: node("gid://shopify/Product/1", "ACTIVE") }, { node: node("gid://shopify/Product/2", "DRAFT") }],
+          },
+        },
+      }),
+    });
+
+    const res = await POST(createReq({ shop: "test.myshopify.com", bot_id: "bot_123" }));
+    const data = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(data.synced).toBe(1);
+    expect(data.products[0]).toMatchObject({ currency: "EUR", updated_at: "2026-11-05T10:00:00Z" });
+    const storeUpdates = (mockFrom.mock.results as { value: { update?: jest.Mock } }[])
+      .flatMap(({ value }) => value.update?.mock.calls ?? []);
+    expect(storeUpdates).toContainEqual([{ bot_id: "bot_123", currency: "EUR" }]);
+  });
+
+  it("should return 500 when saving the products fails", async () => {
     mockSingle.mockResolvedValueOnce({ data: { access_token: "shpat_123" } });
-    mockUpdate.mockReturnValue({ eq: jest.fn().mockResolvedValue({ error: new Error("Update bot error") }) });
+    (saveSyncedProducts as jest.Mock).mockRejectedValueOnce(new Error("Update bot error"));
 
     (global.fetch as jest.Mock).mockResolvedValueOnce({
       ok: true,

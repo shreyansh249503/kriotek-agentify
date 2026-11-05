@@ -126,6 +126,7 @@ export const Hero = () => {
               alt="Chat bot Preview"
               width={1000}
               height={1000}
+              loading="eager"
             />
           </HeroChatBotMainWrapper>
         </HeroChatBotContainer>

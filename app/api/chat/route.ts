@@ -4,6 +4,8 @@ interface StreamError {
   lastError?: { statusCode?: number };
   message?: string;
 }
+import { z } from "zod";
+import type { LanguageModelUsage } from "ai";
 import { getBotByPublicKey } from "../lib/bot";
 import { retrieveWebsiteContext } from "../lib/rag";
 import { sendOwnerNotification, sendUserEmail } from "../lib/sendEmail";
@@ -20,6 +22,9 @@ import { checkRateLimit } from "../lib/rateLimit";
 import { verifyOrigin } from "../lib/originGuard";
 import { checkBotBudget, estimateTokens, recordBotTokenUsage } from "../lib/tokenBudget";
 import { createChatTrace, TraceHandle } from "../lib/langfuse";
+import { getModelName } from "../lib/model";
+import { UsageAccumulator } from "../lib/usage";
+import { appendMessages, parseMessages } from "../lib/conversations";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -28,19 +33,55 @@ const corsHeaders = {
   "Access-Control-Expose-Headers": "x-trace-id",
 };
 
+export const MAX_MESSAGE_LENGTH = 2000;
+/** Only the most recent messages go to the model; the full history stays in the database. */
+export const MAX_HISTORY_MESSAGES = 20;
+/**
+ * Used only when the provider reports no usage. A system prompt with no catalog is about
+ * 5,700 characters, roughly 1,400 tokens.
+ */
+export const ESTIMATED_SYSTEM_PROMPT_TOKENS = 1500;
+
+const REQUIRED_FIELDS_ERROR = "publicKey and message are required";
+
+const ChatRequestSchema = z.object({
+  message: z
+    .string({ error: REQUIRED_FIELDS_ERROR })
+    .trim()
+    .min(1, { error: REQUIRED_FIELDS_ERROR })
+    .max(MAX_MESSAGE_LENGTH, { error: `message must be at most ${MAX_MESSAGE_LENGTH} characters` }),
+  publicKey: z
+    .string({ error: REQUIRED_FIELDS_ERROR })
+    .min(1, { error: REQUIRED_FIELDS_ERROR })
+    .max(128, { error: "publicKey is invalid" }),
+  conversationId: z.unknown().optional(),
+});
+
+function jsonError(status: number, body: Record<string, unknown>) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+/** Keeps the last MAX_HISTORY_MESSAGES, starting at a user turn. */
+export function trimHistoryForModel(messages: Message[]): Message[] {
+  const recent = messages.slice(-MAX_HISTORY_MESSAGES);
+  const firstUserIndex = recent.findIndex((m) => m.role === "user");
+  return firstUserIndex > 0 ? recent.slice(firstUserIndex) : recent;
+}
+
 export async function OPTIONS() {
   return new Response(null, { status: 204, headers: corsHeaders });
 }
 
 export async function POST(req: Request) {
-  const { message, publicKey, conversationId } = await req.json();
-
-  if (!publicKey || !message) {
-    return new Response(
-      JSON.stringify({ error: "publicKey and message are required" }),
-      { status: 400, headers: corsHeaders },
-    );
+  const body = await req.json().catch(() => null);
+  const parsed = ChatRequestSchema.safeParse(body ?? {});
+  if (!parsed.success) {
+    return jsonError(400, { error: parsed.error.issues[0]?.message ?? REQUIRED_FIELDS_ERROR });
   }
+  const { message, publicKey, conversationId } = parsed.data;
 
   // 1. Dual-Tier Rate Limiting (IP & Bot Level)
   const rateLimitResult = await checkRateLimit(req, publicKey);
@@ -63,9 +104,18 @@ export async function POST(req: Request) {
   }
 
   const bot = await getBotByPublicKey(publicKey);
+  if (!bot) {
+    return jsonError(404, { error: "Bot not found" });
+  }
 
   // 2. LLM Monthly Token Budget Guardrails
   const budgetResult = await checkBotBudget(bot.id, bot.monthly_token_budget);
+  if (budgetResult.reason === "check_failed") {
+    return jsonError(503, {
+      error: "The assistant is temporarily unavailable. Please try again shortly.",
+      reason: "budget_check_failed",
+    });
+  }
   if (!budgetResult.allowed) {
     return new Response(
       JSON.stringify({
@@ -108,7 +158,7 @@ export async function POST(req: Request) {
   const uuidRegex =
     /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   const finalConversationId =
-    conversationId && uuidRegex.test(conversationId)
+    typeof conversationId === "string" && uuidRegex.test(conversationId)
       ? conversationId
       : crypto.randomUUID();
 
@@ -124,7 +174,7 @@ export async function POST(req: Request) {
       bot_id: bot.id,
       state: "idle",
       message_count: 0,
-      messages: "[]",
+      messages: [],
     });
     await convoRepo.save(convo);
   }
@@ -139,23 +189,11 @@ export async function POST(req: Request) {
     userMessage: message,
   });
 
-  let history: Message[] = [];
-  try {
-    history = JSON.parse(convo.messages || "[]");
-  } catch {
-    history = [];
-  }
-
-  const fullConversation: Message[] = [
-    ...history,
-    { role: "user" as const, content: message },
-  ];
+  const userMessage: Message = { role: "user", content: message };
+  const fullConversation: Message[] = [...parseMessages(convo.messages), userMessage];
 
   if (convo.state === "manual" || convo.state === "manual_takeover") {
-    await convoRepo.update(convo.id, {
-      message_count: convo.message_count + 1,
-      messages: JSON.stringify(fullConversation),
-    });
+    await appendMessages(convo.id, [userMessage]);
     return new Response("Message sent to customer support.", {
       headers: {
         ...corsHeaders,
@@ -175,6 +213,10 @@ export async function POST(req: Request) {
     phone: convo.phone ?? undefined,
   };
 
+  const isShopifyConnected = Boolean(shopifyStore);
+  const modelConversation = trimHistoryForModel(fullConversation);
+  const helperUsage = new UsageAccumulator();
+
   const [leadDecision, websiteContext, intentDecision] =
     await Promise.all([
       !contactEnabled || alreadyComplete
@@ -187,19 +229,17 @@ export async function POST(req: Request) {
                 }
               : null,
           )
-        : runLeadAgent(fullConversation, bot.contact_prompt, knownInfo),
+        : runLeadAgent(modelConversation, bot.contact_prompt, knownInfo, helperUsage),
       retrieveWebsiteContext(publicKey, message),
-      classifyUserIntent(fullConversation, {
+      classifyUserIntent(modelConversation, {
         ecommerceEnabled: Boolean(bot.ecommerce_enabled),
-        shopifyConnected: true,
+        shopifyConnected: isShopifyConnected,
         hasCatalog: Boolean(bot.ecommerce_products?.length),
-      }),
+      }, helperUsage),
     ]);
 
   trace.recordSpan("intent_classification", { message }, intentDecision);
   trace.recordSpan("rag_retrieval", { message }, { hasContext: Boolean(websiteContext) });
-
-  const isShopifyConnected = Boolean(shopifyStore);
 
   if (
     contactEnabled &&
@@ -271,10 +311,7 @@ export async function POST(req: Request) {
     ]).catch((err) => console.error("[leads pipeline]", err));
   }
 
-  await convoRepo.update(convo.id, {
-    message_count: convo.message_count + 1,
-    messages: JSON.stringify(fullConversation),
-  });
+  await appendMessages(convo.id, [userMessage]);
 
   let result;
   try {
@@ -285,15 +322,16 @@ export async function POST(req: Request) {
 
     if (isSales) {
       result = await runSalesAgent({
-        messages: fullConversation,
+        messages: modelConversation,
         botConfig: bot,
         leadDecision,
         websiteContext,
         isShopifyConnected,
+        usage: helperUsage,
       });
     } else {
       result = runReceptionistAgent({
-        messages: fullConversation,
+        messages: modelConversation,
         botConfig: bot,
         leadDecision,
         websiteContext,
@@ -302,6 +340,9 @@ export async function POST(req: Request) {
     }
 
   } catch (err) {
+    // The helper calls already ran, so their tokens still count against the budget.
+    recordBotTokenUsage(bot.id, { ...helperUsage, messageCount: 0 }).catch(console.error);
+
     const error = err as StreamError;
     const isQuota =
       error?.statusCode === 429 ||
@@ -387,14 +428,15 @@ export async function POST(req: Request) {
   });
 
   const [streamForClient, streamForSaving] = customStream.tee();
-  saveAssistantMessage(
-    streamForSaving,
-    convo.id,
-    bot.id,
-    fullConversation,
-    result?.usage,
+  saveAssistantMessage(streamForSaving, {
+    conversationId: convo.id,
+    botId: bot.id,
+    modelConversation,
+    websiteContext,
+    totalUsage: result?.totalUsage,
+    helperUsage,
     trace,
-  ).catch(console.error);
+  }).catch(console.error);
 
   return new Response(streamForClient, {
     headers: {
@@ -407,13 +449,30 @@ export async function POST(req: Request) {
   });
 }
 
+interface SaveAssistantMessageOptions {
+  conversationId: string;
+  botId: string;
+  /** The trimmed history the model actually saw, for the estimated fallback. */
+  modelConversation: Message[];
+  websiteContext: string;
+  /** Usage of the main reply, summed over all tool steps. */
+  totalUsage?: PromiseLike<LanguageModelUsage>;
+  /** Usage of the lead, intent and requirement calls made before the reply. */
+  helperUsage: UsageAccumulator;
+  trace?: TraceHandle;
+}
+
 async function saveAssistantMessage(
   stream: ReadableStream,
-  conversationId: string,
-  botId: string,
-  existingHistory: Message[],
-  usagePromise?: PromiseLike<{ promptTokens?: number; completionTokens?: number; totalTokens?: number }>,
-  trace?: TraceHandle,
+  {
+    conversationId,
+    botId,
+    modelConversation,
+    websiteContext,
+    totalUsage,
+    helperUsage,
+    trace,
+  }: SaveAssistantMessageOptions,
 ) {
   let fullText = "";
   const reader = stream.getReader();
@@ -424,57 +483,44 @@ async function saveAssistantMessage(
     fullText += decoder.decode(value, { stream: true });
   }
 
-  const updated = [
-    ...existingHistory,
-    { role: "assistant" as const, content: fullText },
-  ];
-
-  let promptTokens: number;
-  let completionTokens: number;
-  let totalTokens: number;
-
-  try {
-    const resolvedUsage = usagePromise ? await usagePromise : null;
-    if (resolvedUsage && typeof resolvedUsage.promptTokens === "number") {
-      promptTokens = resolvedUsage.promptTokens;
-      completionTokens = resolvedUsage.completionTokens ?? 0;
-      totalTokens = resolvedUsage.totalTokens ?? (promptTokens + completionTokens);
-    } else {
-      const promptText = existingHistory.map((m) => m.content).join(" ");
-      promptTokens = estimateTokens(promptText);
-      completionTokens = estimateTokens(fullText);
-      totalTokens = promptTokens + completionTokens;
-    }
-  } catch {
-    const promptText = existingHistory.map((m) => m.content).join(" ");
-    promptTokens = estimateTokens(promptText);
-    completionTokens = estimateTokens(fullText);
-    totalTokens = promptTokens + completionTokens;
+  const replyUsage = new UsageAccumulator();
+  const reported = await Promise.resolve(totalUsage)
+    .then((usage) => replyUsage.add(usage))
+    .catch(() => false);
+  if (!reported) {
+    console.warn("[chat] Model reported no token usage; recording an estimate instead.");
+    const promptText = [websiteContext, ...modelConversation.map((m) => m.content)].join(" ");
+    replyUsage.add({
+      inputTokens: ESTIMATED_SYSTEM_PROMPT_TOKENS + estimateTokens(promptText),
+      outputTokens: estimateTokens(fullText),
+    });
   }
 
-  const dbInstance = await getDb();
-  const convoRepo = dbInstance.getRepository<Conversation>("Conversation");
-  await convoRepo.update(conversationId, { messages: JSON.stringify(updated) });
+  // Appended even if an agent took over mid-stream: the customer already saw this reply.
+  // Only user turns count towards message_count here, as before.
+  await appendMessages(conversationId, [{ role: "assistant", content: fullText }], { incrementCount: 0 });
 
   // Record token usage for cost guardrails
   await recordBotTokenUsage(botId, {
-    promptTokens,
-    completionTokens,
-    totalTokens,
+    inputTokens: replyUsage.inputTokens + helperUsage.inputTokens,
+    outputTokens: replyUsage.outputTokens + helperUsage.outputTokens,
+    totalTokens: replyUsage.totalTokens + helperUsage.totalTokens,
+    messageCount: 1,
   });
 
-  // Record generation telemetry to Langfuse
+  // Record generation telemetry to Langfuse (the main reply only)
   if (trace) {
     trace.recordGeneration({
       name: "chat_agent_generation",
-      model: process.env.GEMINI_MODEL || "gemini-1.5-flash",
-      input: existingHistory,
+      model: getModelName(),
+      input: modelConversation,
       output: fullText,
       usage: {
-        promptTokens,
-        completionTokens,
-        totalTokens,
+        promptTokens: replyUsage.inputTokens,
+        completionTokens: replyUsage.outputTokens,
+        totalTokens: replyUsage.totalTokens,
       },
+      metadata: { usageEstimated: !reported },
     });
   }
 }

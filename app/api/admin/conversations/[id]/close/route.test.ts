@@ -1,9 +1,11 @@
 import { POST, OPTIONS } from "./route";
 import { getDb } from "@/app/api/lib/db";
 import { getUserFromRequest } from "@/app/api/lib/auth";
+import { appendMessages } from "@/app/api/lib/conversations";
 
 jest.mock("@/app/api/lib/db");
 jest.mock("@/app/api/lib/auth");
+jest.mock("@/app/api/lib/conversations");
 
 describe("POST /api/admin/conversations/[id]/close", () => {
   const mockUser = { id: "user_123", email: "admin@example.com" };
@@ -73,15 +75,12 @@ describe("POST /api/admin/conversations/[id]/close", () => {
     expect(res.status).toBe(200);
     expect(data).toEqual({ success: true });
 
-    expect(mockRepo.save).toHaveBeenCalledTimes(1);
-    const savedConvo = mockRepo.save.mock.calls[0][0];
-    expect(savedConvo.state).toBe("completed");
-    expect(savedConvo.message_count).toBe(2);
-    const updatedMessages = JSON.parse(savedConvo.messages);
-    expect(updatedMessages[1]).toEqual({
-      role: "system",
-      content: "The support session has ended. Thank you!",
-    });
+    expect(appendMessages).toHaveBeenCalledWith(
+      "convo_1",
+      [{ role: "system", content: "The support session has ended. Thank you!" }],
+      { state: "completed" },
+    );
+    expect(mockRepo.save).not.toHaveBeenCalled();
   });
 
   it("should return 500 when closing conversation fails", async () => {
@@ -93,7 +92,7 @@ describe("POST /api/admin/conversations/[id]/close", () => {
       messages: "[]",
       message_count: 0,
     });
-    mockRepo.save.mockRejectedValueOnce(new Error("Database save error"));
+    (appendMessages as jest.Mock).mockRejectedValueOnce(new Error("Database save error"));
 
     const req = new Request("http://localhost/api/admin/conversations/convo_1/close", {
       method: "POST",

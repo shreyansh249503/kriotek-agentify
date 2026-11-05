@@ -1,9 +1,7 @@
 import { NextRequest } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { supabaseAdmin } from "@/app/api/lib/supabase-admin";
 
-jest.mock("@supabase/supabase-js", () => ({
-  createClient: jest.fn(),
-}));
+jest.mock("@/app/api/lib/supabase-admin");
 
 describe("API: /api/shopify/install", () => {
   let GET: typeof import("./route").GET;
@@ -17,8 +15,6 @@ describe("API: /api/shopify/install", () => {
     process.env.SHOPIFY_API_KEY = "test_api_key";
     process.env.SHOPIFY_SCOPES = "read_products,write_products";
     process.env.SHOPIFY_APP_URL = "https://app.example.com";
-    process.env.NEXT_PUBLIC_SUPABASE_URL = "https://supabase.example.com";
-    process.env.SUPABASE_SERVICE_ROLE_KEY = "test_service_key";
 
     const route = await import("./route");
     GET = route.GET;
@@ -28,9 +24,7 @@ describe("API: /api/shopify/install", () => {
     jest.clearAllMocks();
     jest.spyOn(console, "error").mockImplementation(() => {});
     mockSingle.mockResolvedValue({ data: null, error: null });
-    (createClient as jest.Mock).mockReturnValue({
-      from: mockFrom,
-    });
+    (supabaseAdmin.from as jest.Mock).mockImplementation(mockFrom);
   });
 
   it("should return 400 when shop parameter is missing or invalid domain", async () => {

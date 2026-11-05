@@ -1,9 +1,7 @@
-process.env.NEXT_PUBLIC_SUPABASE_URL = "https://supabase.example.com";
-process.env.SUPABASE_SERVICE_ROLE_KEY = "test_service_key";
 
 import { POST } from "./route";
 import { NextRequest } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { supabaseAdmin } from "@/app/api/lib/supabase-admin";
 import { setupCollection } from "../../../lib/vector-db-setup";
 import { getDb } from "../../../lib/db";
 import { crawlWebsite } from "../../../lib/crawler";
@@ -11,9 +9,7 @@ import { chunkText } from "../../../lib/chunker";
 import { ingestDocument } from "../../../lib/ingest";
 import { verifySessionToken, getShopFromSession } from "../../lib/verifySessionToken";
 
-jest.mock("@supabase/supabase-js", () => ({
-  createClient: jest.fn(),
-}));
+jest.mock("@/app/api/lib/supabase-admin");
 
 jest.mock("ai", () => ({ generateObject: jest.fn() }));
 jest.mock("@ai-sdk/google", () => ({ google: jest.fn() }));
@@ -43,7 +39,7 @@ describe("API: /api/shopify/admin/ingest-url", () => {
     jest.spyOn(console, "log").mockImplementation(() => {});
 
     (setupCollection as jest.Mock).mockResolvedValue(undefined);
-    (createClient as jest.Mock).mockReturnValue({ from: mockFrom });
+    (supabaseAdmin.from as jest.Mock).mockImplementation(mockFrom);
     (verifySessionToken as jest.Mock).mockReturnValue({ shop: "shop.myshopify.com" });
     (getShopFromSession as jest.Mock).mockReturnValue("shop.myshopify.com");
 

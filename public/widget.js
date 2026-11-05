@@ -985,7 +985,7 @@
     </div>
 
     <form id="ai-form" style="display:flex; border-top:1px solid #eee; padding: 8px; background: #f9fafb;">
-      <input id="ai-input" placeholder="Type your message..."
+      <input id="ai-input" placeholder="Type your message..." maxlength="2000"
         style="flex:1; padding: 12px; border: 1px solid #e5e7eb; border-radius: 8px; outline:none; font-size: 14px;"/>
       <button id="bot-send-btn" style="background:${THEME.color}; color:white; border:none; padding: 0 16px; margin-left: 8px; border-radius: 8px; cursor: pointer; font-weight: 500;">
         Send

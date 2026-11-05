@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
-import { createClient } from "@supabase/supabase-js";
+import { supabaseAdmin } from "@/app/api/lib/supabase-admin";
 import { encryptToken } from "@/app/api/lib/crypto";
+import { fetchShopCurrency } from "@/lib/shopify/shopCurrency";
 
 const {
   SHOPIFY_API_KEY,
   SHOPIFY_API_SECRET,
-  NEXT_PUBLIC_SUPABASE_URL,
-  SUPABASE_SERVICE_ROLE_KEY,
 } = process.env;
 
 export async function GET(req: NextRequest) {
@@ -54,17 +53,20 @@ export async function GET(req: NextRequest) {
 
   const { access_token, scope } = await tokenRes.json();
 
-  const supabase = createClient(
-    NEXT_PUBLIC_SUPABASE_URL!,
-    SUPABASE_SERVICE_ROLE_KEY!,
-  );
-
   const encryptedToken = encryptToken(access_token);
+  // Product webhooks don't include a currency, so remember the shop's.
+  const currency = await fetchShopCurrency(shop, access_token);
 
-  const { error } = await supabase
+  const { error } = await supabaseAdmin
     .from("shopify_stores")
     .upsert(
-      { shop, access_token: encryptedToken, scopes: scope, uninstalled_at: null },
+      {
+        shop,
+        access_token: encryptedToken,
+        scopes: scope,
+        uninstalled_at: null,
+        ...(currency ? { currency } : {}),
+      },
       { onConflict: "shop" },
     );
 

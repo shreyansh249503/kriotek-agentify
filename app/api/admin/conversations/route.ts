@@ -1,6 +1,7 @@
 import { In } from "typeorm";
 import { getDb } from "@/app/api/lib/db";
 import { Conversation } from "@/app/api/lib/entities";
+import { parseMessages } from "@/app/api/lib/conversations";
 import { getUserFromRequest } from "@/app/api/lib/auth";
 
 const corsHeaders = {
@@ -60,8 +61,8 @@ export async function GET(req: Request) {
     const formattedConvos = convos.map((c) => {
       let snippet = "";
       try {
-        const msgs = typeof c.messages === "string" ? JSON.parse(c.messages) : c.messages;
-        if (Array.isArray(msgs) && msgs.length > 0) {
+        const msgs = parseMessages(c.messages);
+        if (msgs.length > 0) {
           const textMsgs = msgs.filter((m) => m.role === "user" || m.role === "assistant");
           if (textMsgs.length > 0) {
             snippet = textMsgs[textMsgs.length - 1].content.replace("[SHOW_SUPPORT_BUTTON]", "");

@@ -1,5 +1,6 @@
 import { classifyUserIntent } from "./routerAgent";
 import { generateObject } from "ai";
+import { UsageAccumulator } from "../usage";
 
 jest.mock("ai", () => ({
   generateObject: jest.fn(),
@@ -80,6 +81,22 @@ describe("classifyUserIntent", () => {
     expect(result.primaryIntent).toBe("SALES");
     expect(result.confidence).toBe(0.96);
     expect(generateObject).toHaveBeenCalledTimes(1);
+  });
+
+  it("should add the classifier call's token usage to the accumulator", async () => {
+    (generateObject as jest.Mock).mockResolvedValueOnce({
+      object: { primaryIntent: "SALES", confidence: 0.9, reasoning: "gift ideas" },
+      usage: { inputTokens: 300, outputTokens: 20, totalTokens: 320 },
+    });
+    const usage = new UsageAccumulator();
+
+    await classifyUserIntent(
+      [{ role: "user" as const, content: "My brother loves gadgets, what should I get him?" }],
+      { ecommerceEnabled: true, hasCatalog: true },
+      usage,
+    );
+
+    expect(usage).toMatchObject({ inputTokens: 300, outputTokens: 20, totalTokens: 320 });
   });
 
   it("should correctly classify support inquiries and not confuse them with sales", async () => {

@@ -1,14 +1,10 @@
-process.env.NEXT_PUBLIC_SUPABASE_URL = "https://supabase.example.com";
-process.env.SUPABASE_SERVICE_ROLE_KEY = "test_service_key";
 
 import { POST } from "./route";
 import { NextRequest } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { supabaseAdmin } from "@/app/api/lib/supabase-admin";
 import { mapShopifyOrderToJourney } from "@/lib/shopify/shopifyOrderMapper";
 
-jest.mock("@supabase/supabase-js", () => ({
-  createClient: jest.fn(),
-}));
+jest.mock("@/app/api/lib/supabase-admin");
 
 jest.mock("@/lib/shopify/shopifyOrderMapper", () => ({
   mapShopifyOrderToJourney: jest.fn().mockReturnValue({ orderId: "1001", status: "Delivered" }),
@@ -30,7 +26,7 @@ describe("API: /api/shopify/orders/lookup", () => {
       eq: mockEq,
     }));
 
-    (createClient as jest.Mock).mockReturnValue({ from: mockFrom });
+    (supabaseAdmin.from as jest.Mock).mockImplementation(mockFrom);
     global.fetch = jest.fn();
   });
 

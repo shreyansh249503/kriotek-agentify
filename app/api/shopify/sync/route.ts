@@ -1,76 +1,36 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { supabaseAdmin } from "@/app/api/lib/supabase-admin";
 import { verifySessionToken, getShopFromSession } from "../lib/verifySessionToken";
 import { getUserFromRequest } from "../../lib/auth";
 import { decryptToken } from "@/app/api/lib/crypto";
 import { SHOPIFY_API_VERSION } from "@/lib/shopify/apiVersion";
-
-interface ShopifyProductImageEdge {
-  node: {
-    url: string;
-    altText?: string | null;
-  };
-}
-
-interface ShopifyProductVariantEdge {
-  node: {
-    id: string;
-    title: string;
-    price: string;
-    availableForSale: boolean;
-    sku?: string | null;
-    selectedOptions?: { name: string; value: string }[];
-  };
-}
-
-interface ShopifyProductNode {
-  id: string;
-  title: string;
-  descriptionHtml: string;
-  handle: string;
-  status: string;
-  productType?: string;
-  vendor?: string;
-  tags?: string[];
-  options?: { name: string; values: string[] }[];
-  priceRangeV2: {
-    minVariantPrice: {
-      amount: string;
-      currencyCode: string;
-    };
-  };
-  images: {
-    edges: ShopifyProductImageEdge[];
-  };
-  variants: {
-    edges: ShopifyProductVariantEdge[];
-  };
-}
-
-interface ShopifyProductEdge {
-  node: ShopifyProductNode;
-}
+import {
+  fromGraphQLProduct,
+  isProductActive,
+  toBotProduct,
+  type ShopifyGraphQLProductNode,
+} from "@/lib/shopify/productMapper";
+import { saveSyncedProducts } from "../lib/productWebhooks";
 
 interface ShopifyGraphQLResponse {
   data: {
+    shop?: { currencyCode?: string | null };
     products: {
       pageInfo: {
         hasNextPage: boolean;
         endCursor: string | null;
       };
-      edges: ShopifyProductEdge[];
+      edges: { node: ShopifyGraphQLProductNode }[];
     };
   };
   errors?: unknown;
 }
 
-const {
-  NEXT_PUBLIC_SUPABASE_URL,
-  SUPABASE_SERVICE_ROLE_KEY,
-} = process.env;
-
 const PRODUCTS_QUERY = `
   query getProducts($cursor: String) {
+    shop {
+      currencyCode
+    }
     products(first: 250, after: $cursor) {
       pageInfo {
         hasNextPage
@@ -83,6 +43,7 @@ const PRODUCTS_QUERY = `
           descriptionHtml
           handle
           status
+          updatedAt
           productType
           vendor
           tags
@@ -147,15 +108,10 @@ export async function POST(req: NextRequest) {
       } catch {}
     }
 
-    const supabase = createClient(
-      NEXT_PUBLIC_SUPABASE_URL!,
-      SUPABASE_SERVICE_ROLE_KEY!
-    );
-
     if (!authorizedShop) {
       const user = await getUserFromRequest(req);
       if (user) {
-        const { data: bot } = await supabase
+        const { data: bot } = await supabaseAdmin
           .from("bots")
           .select("id")
           .eq("id", bot_id)
@@ -169,7 +125,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { data: storeData, error: storeError } = await supabase
+    const { data: storeData, error: storeError } = await supabaseAdmin
       .from("shopify_stores")
       .select("access_token, bot_id")
       .eq("shop", shop)
@@ -199,7 +155,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!storeData.bot_id) {
-      await supabase
+      await supabaseAdmin
         .from("shopify_stores")
         .update({ bot_id })
         .eq("shop", shop);
@@ -207,7 +163,10 @@ export async function POST(req: NextRequest) {
 
     const access_token = decryptToken(storeData.access_token);
 
-    let allProducts: ShopifyProductNode[] = [];
+    // Webhooks that arrive while the sync is fetching are newer than what it fetched.
+    const syncStartedAt = new Date();
+    let allProducts: ShopifyGraphQLProductNode[] = [];
+    let shopCurrency: string | null = null;
     let cursor: string | null = null;
     let hasNextPage = true;
 
@@ -244,6 +203,7 @@ export async function POST(req: NextRequest) {
       }
 
       const { products } = json.data;
+      shopCurrency = json.data.shop?.currencyCode || shopCurrency;
 
       allProducts = [...allProducts, ...products.edges.map((e) => e.node)];
       hasNextPage = products.pageInfo.hasNextPage;
@@ -251,85 +211,28 @@ export async function POST(req: NextRequest) {
     }
 
     const mappedProducts = allProducts
-      .filter((p) => p.status === "ACTIVE") 
-      .map((p) => {
-        const primaryImage = p.images.edges[0]?.node.url ?? null;
-        const allImages = p.images.edges.map((e) => e.node.url);
+      .map(fromGraphQLProduct)
+      .filter(isProductActive)
+      .map((p) => toBotProduct(p, { shop, currency: shopCurrency }));
 
-        const colors = p.options
-          ?.find((o) => /color|colour/i.test(o.name))
-          ?.values ?? [];
-        const sizes = p.options
-          ?.find((o) => /size/i.test(o.name))
-          ?.values ?? [];
-        const materials = p.options
-          ?.find((o) => /material/i.test(o.name))
-          ?.values ?? [];
-        const styles = p.options
-          ?.find((o) => /style|fit/i.test(o.name))
-          ?.values ?? [];
-
-        const mappedVariants = p.variants.edges.map((v) => ({
-          id: v.node.id,
-          title: v.node.title,
-          price: parseFloat(v.node.price || "0"),
-          sku: v.node.sku ?? undefined,
-          available: v.node.availableForSale,
-          color: v.node.selectedOptions?.find((o) => /color|colour/i.test(o.name))?.value,
-          size: v.node.selectedOptions?.find((o) => /size/i.test(o.name))?.value,
-          material: v.node.selectedOptions?.find((o) => /material/i.test(o.name))?.value,
-          style: v.node.selectedOptions?.find((o) => /style|fit/i.test(o.name))?.value,
-        }));
-
-        const isAvailable = p.variants.edges.some((v) => v.node.availableForSale);
-
-        return {
-          shopify_id: p.id,                          
-          name: p.title,
-          description: stripHtml(p.descriptionHtml),
-          price: parseFloat(
-            p.variants.edges[0]?.node.price ??
-            p.priceRangeV2.minVariantPrice.amount ??
-            "0"
-          ),
-          currency: p.priceRangeV2.minVariantPrice.currencyCode,
-          image: primaryImage || "",
-          image_url: primaryImage,
-          images: allImages.length > 0 ? allImages : undefined,
-          url: `https://${shop}/products/${p.handle}`,
-          available: isAvailable,
-          category: p.productType || undefined,
-          brand: p.vendor || undefined,
-          variants: mappedVariants,
-          metadata: {
-            brand: p.vendor || undefined,
-            category: p.productType || undefined,
-            tags: p.tags && p.tags.length > 0 ? p.tags : undefined,
-            color: colors.length > 0 ? (colors.length === 1 ? colors[0] : colors) : undefined,
-            size: sizes.length > 0 ? (sizes.length === 1 ? sizes[0] : sizes) : undefined,
-            material: materials.length > 0 ? (materials.length === 1 ? materials[0] : materials) : undefined,
-            style: styles.length > 0 ? (styles.length === 1 ? styles[0] : styles) : undefined,
-            inStock: isAvailable,
-          },
-        };
-      });
-
-    const { error: botError } = await supabase
-      .from("bots")
-      .update({ ecommerce_products: mappedProducts, ecommerce_enabled: true })
-      .eq("id", bot_id);
-
-    if (botError) {
-      console.error("Supabase Bot update error:", botError);
+    let saved;
+    try {
+      saved = await saveSyncedProducts({ shop, botId: bot_id, synced: mappedProducts, syncStartedAt });
+    } catch (botError) {
+      console.error("Bot product save error:", botError);
       return NextResponse.json(
         { error: "Failed to save products to bot" },
         { status: 500 }
       );
     }
+    if (!saved) {
+      return NextResponse.json({ error: "Bot not found" }, { status: 404 });
+    }
 
-    await supabase
+    // The shop's currency is also what product webhooks use.
+    await supabaseAdmin
       .from("shopify_stores")
-      .update({ bot_id })
+      .update(shopCurrency ? { bot_id, currency: shopCurrency } : { bot_id })
       .eq("shop", shop);
 
     return NextResponse.json({
@@ -347,6 +250,3 @@ export async function POST(req: NextRequest) {
   }
 }
 
-function stripHtml(html: string): string {
-  return html?.replace(/<[^>]*>/g, "").trim() ?? "";
-}

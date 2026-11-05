@@ -1,11 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { supabaseAdmin } from "@/app/api/lib/supabase-admin";
 import { getShopFromSession, verifySessionToken } from "../../lib/verifySessionToken";
-
-const {
-  NEXT_PUBLIC_SUPABASE_URL,
-  SUPABASE_SERVICE_ROLE_KEY,
-} = process.env;
 
 export async function GET(req: NextRequest) {
   let session;
@@ -16,13 +11,8 @@ export async function GET(req: NextRequest) {
   }
 
   const shop = getShopFromSession(session);
-  const supabase = createClient(
-    NEXT_PUBLIC_SUPABASE_URL!,
-    SUPABASE_SERVICE_ROLE_KEY!
-  );
-
   try {
-    const { data: storeData } = await supabase
+    const { data: storeData } = await supabaseAdmin
       .from("shopify_stores")
       .select("bot_id")
       .eq("shop", shop)
@@ -32,7 +22,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ bot: null, crawled_pages: [] });
     }
 
-    const { data: bot, error: botError } = await supabase
+    const { data: bot, error: botError } = await supabaseAdmin
       .from("bots")
       .select("*")
       .eq("id", storeData.bot_id)
@@ -42,7 +32,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Bot not found" }, { status: 404 });
     }
 
-    const { data: crawled_pages } = await supabase
+    const { data: crawled_pages } = await supabaseAdmin
       .from("crawled_pages")
       .select("id, page_url")
       .eq("bot_public_key", bot.public_key || "");
@@ -64,13 +54,8 @@ export async function PATCH(req: NextRequest) {
   }
 
   const shop = getShopFromSession(session);
-  const supabase = createClient(
-    NEXT_PUBLIC_SUPABASE_URL!,
-    SUPABASE_SERVICE_ROLE_KEY!
-  );
-
   try {
-    const { data: storeData } = await supabase
+    const { data: storeData } = await supabaseAdmin
       .from("shopify_stores")
       .select("bot_id")
       .eq("shop", shop)
@@ -83,7 +68,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     const { id, name, description, tone, primary_color, contact_enabled, contact_email, contact_prompt, ecommerce_enabled, ecommerce_prompt, logo_url } = body;
-    const { data: updatedBot, error: updateError } = await supabase
+    const { data: updatedBot, error: updateError } = await supabaseAdmin
       .from("bots")
       .update({
         name,

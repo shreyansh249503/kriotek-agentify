@@ -2,6 +2,8 @@ import { generateObject } from "ai";
 import { google } from "@ai-sdk/google";
 import { z } from "zod";
 import { logger } from "../../../../lib/logger";
+import { getModelName } from "../model";
+import type { UsageAccumulator } from "../usage";
 
 export const UserIntentEnum = z.enum([
   "SALES",
@@ -105,6 +107,7 @@ function fastPathIntent(
 export async function classifyUserIntent(
   messages: Message[],
   context: RouterContext = {},
+  usage?: UsageAccumulator,
 ): Promise<IntentClassificationResult> {
   const userMessages = messages.filter((m) => m.role === "user");
   const latestUserMsg = userMessages[userMessages.length - 1]?.content || "";
@@ -129,7 +132,7 @@ export async function classifyUserIntent(
       .map((m) => `${m.role.toUpperCase()}: ${m.content}`)
       .join("\n");
 
-    const modelName = process.env.GEMINI_MODEL || "gemini-2.5-flash-lite";
+    const modelName = getModelName();
 
     const systemPrompt = `You are a conversational intent classifier for an e-commerce & customer service assistant.
 Classify the user's latest query in the context of the conversation into exactly one primary intent:
@@ -145,13 +148,14 @@ Capabilities Context:
 - E-commerce Catalog Active: ${Boolean(context.ecommerceEnabled && context.hasCatalog)}
 - Shopify Store Connected: ${Boolean(context.shopifyConnected)}`;
 
-    const { object } = await generateObject({
+    const { object, usage: callUsage } = await generateObject({
       model: google(modelName),
       schema: IntentClassificationSchema,
       system: systemPrompt,
       prompt: `Conversation history:\n${conversationText}\n\nClassify the intent of the last user message.`,
     });
 
+    usage?.add(callUsage);
     logger.info("[routerAgent] LLM classified", {
       primaryIntent: object.primaryIntent,
       confidence: object.confidence,

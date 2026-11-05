@@ -90,6 +90,13 @@ export class Bot {
   usages!: BotUsage[];
 }
 
+/** One chat turn. `sender: "human"` marks an assistant message typed by a support agent. */
+export type ConversationMessage = {
+  role: "user" | "assistant" | "system";
+  content: string;
+  sender?: "human";
+};
+
 @Entity("conversations")
 export class Conversation {
   @PrimaryGeneratedColumn("uuid")
@@ -108,8 +115,8 @@ export class Conversation {
   @Column({ type: "int", name: "message_count", default: 0 })
   message_count!: number;
 
-  @Column({ type: "jsonb", default: "[]" })
-  messages!: string;
+  @Column({ type: "jsonb", default: () => "'[]'::jsonb" })
+  messages!: ConversationMessage[];
 
   @CreateDateColumn({ name: "created_at" })
   created_at!: Date;
@@ -205,6 +212,10 @@ export class ShopifyStore {
 
   @CreateDateColumn({ name: "installed_at" })
   installed_at!: Date;
+
+  /** ISO 4217 code, set at install and on each sync; product webhooks use it. */
+  @Column({ type: "varchar", length: 3, nullable: true })
+  currency!: string | null;
 
   /** Set on app/uninstalled (token wiped); the row is deleted on shop/redact. */
   @Column({ type: "timestamptz", name: "uninstalled_at", nullable: true })

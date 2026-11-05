@@ -1,12 +1,11 @@
 const secret = "test_shopify_webhook_secret_key";
 process.env.SHOPIFY_API_SECRET = secret;
-process.env.NEXT_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
-process.env.SUPABASE_SERVICE_ROLE_KEY = "service_role_key";
 
 import { POST } from "./route";
 import { NextRequest, after } from "next/server";
 import crypto from "crypto";
 import { markUninstalled, redactCustomer, redactShop, sendCustomerDataExport } from "../lib/compliance";
+import { applyProductWebhook, claimWebhook } from "../lib/productWebhooks";
 
 jest.mock("next/server", () => ({
   ...jest.requireActual("next/server"),
@@ -23,27 +22,19 @@ jest.mock("../lib/compliance", () => ({
   sendCustomerDataExport: jest.fn().mockResolvedValue(undefined),
 }));
 
-jest.mock("@supabase/supabase-js", () => {
-  const mockFrom = jest.fn();
-  return {
-    createClient: () => ({
-      from: mockFrom,
-    }),
-    __mockFrom: mockFrom,
-  };
-});
+jest.mock("../../lib/db", () => ({ getDb: jest.fn().mockResolvedValue({}) }));
+
+jest.mock("../lib/productWebhooks", () => ({
+  ...jest.requireActual("../lib/productWebhooks"),
+  applyProductWebhook: jest.fn(),
+  claimWebhook: jest.fn(),
+}));
 
 describe("POST /api/shopify/webhooks", () => {
-  let mockFrom: jest.Mock;
-
-  beforeAll(() => {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const supabaseMock = require("@supabase/supabase-js");
-    mockFrom = supabaseMock.__mockFrom;
-  });
-
   beforeEach(() => {
     jest.clearAllMocks();
+    (applyProductWebhook as jest.Mock).mockResolvedValue("saved");
+    (claimWebhook as jest.Mock).mockResolvedValue(true);
   });
 
   const createHmac = (body: string) => {
@@ -113,61 +104,67 @@ describe("POST /api/shopify/webhooks", () => {
     expect(data.error).toBe("Missing headers");
   });
 
-  it("should process products/create webhook and update bot ecommerce_products in database", async () => {
-    const mockStoreSelect = jest.fn().mockReturnValue({
-      eq: jest.fn().mockReturnValue({
-        single: jest.fn().mockResolvedValue({ data: { bot_id: "bot-123", access_token: "token" } }),
-      }),
-    });
-
-    const mockBotSelect = jest.fn().mockReturnValue({
-      eq: jest.fn().mockReturnValue({
-        single: jest.fn().mockResolvedValue({ data: { ecommerce_products: [] } }),
-      }),
-    });
-
-    const mockBotUpdate = jest.fn().mockReturnValue({
-      eq: jest.fn().mockResolvedValue({ error: null }),
-    });
-
-    mockFrom.mockImplementation((tableName: string) => {
-      if (tableName === "shopify_stores") {
-        return { select: mockStoreSelect };
-      }
-      if (tableName === "bots") {
-        return { select: mockBotSelect, update: mockBotUpdate };
-      }
-      return {};
-    });
-
+  describe("product webhooks", () => {
     const productPayload = {
       id: 999,
       title: "Shopify Hoodie",
       body_html: "<p>Warm cotton hoodie</p>",
       handle: "shopify-hoodie",
       variants: [{ price: "49.99", inventory_quantity: 10 }],
-      images: [{ src: "https://example.com/hoodie.jpg" }],
     };
 
-    const req = createWebhookRequest(productPayload, {
-      "x-shopify-topic": "products/create",
+    it.each(["products/create", "products/update", "products/delete"])(
+      "passes %s to the product handler with the shop and webhook ID",
+      async (topic) => {
+        const req = createWebhookRequest(productPayload, {
+          "x-shopify-topic": topic,
+          "x-shopify-webhook-id": "wh-123",
+        });
+
+        const res = await POST(req);
+        const data = await res.json();
+
+        expect(res.status).toBe(200);
+        expect(data).toEqual({ ok: true, result: "saved" });
+        expect(applyProductWebhook).toHaveBeenCalledWith({
+          shop: "test-store.myshopify.com",
+          topic,
+          webhookId: "wh-123",
+          payload: productPayload,
+        });
+      }
+    );
+
+    it("reports a duplicate delivery with 200 so Shopify stops retrying", async () => {
+      (applyProductWebhook as jest.Mock).mockResolvedValueOnce("duplicate");
+
+      const res = await POST(createWebhookRequest(productPayload, { "x-shopify-webhook-id": "wh-123" }));
+
+      expect(res.status).toBe(200);
+      expect(await res.json()).toEqual({ ok: true, result: "duplicate" });
     });
 
-    const res = await POST(req);
-    const data = await res.json();
+    it("returns 500 when the product update fails, so Shopify retries", async () => {
+      jest.spyOn(console, "error").mockImplementation(() => {});
+      (applyProductWebhook as jest.Mock).mockRejectedValueOnce(new Error("deadlock"));
 
-    expect(res.status).toBe(200);
-    expect(data.ok).toBe(true);
-    expect(mockBotUpdate).toHaveBeenCalledWith({
-      ecommerce_products: [
-        expect.objectContaining({
-          shopify_id: "gid://shopify/Product/999",
-          name: "Shopify Hoodie",
-          price: 49.99,
-          url: "https://test-store.myshopify.com/products/shopify-hoodie",
-          available: true,
-        }),
-      ],
+      const res = await POST(createWebhookRequest(productPayload));
+
+      expect(res.status).toBe(500);
+    });
+
+    it("rejects a product webhook without a product id", async () => {
+      const res = await POST(createWebhookRequest({ title: "no id" }));
+
+      expect(res.status).toBe(400);
+      expect(applyProductWebhook).not.toHaveBeenCalled();
+    });
+
+    it("ignores topics it doesn't handle", async () => {
+      const res = await POST(createWebhookRequest({ id: 1 }, { "x-shopify-topic": "orders/create" }));
+
+      expect(res.status).toBe(200);
+      expect(applyProductWebhook).not.toHaveBeenCalled();
     });
   });
 
@@ -198,6 +195,25 @@ describe("POST /api/shopify/webhooks", () => {
         { email: "customer@example.com", phone: "+15551234567" },
         9001
       );
+    });
+
+    it("customers/data_request sends the export only once per webhook ID", async () => {
+      (claimWebhook as jest.Mock).mockResolvedValueOnce(false);
+
+      const res = await POST(
+        createWebhookRequest(
+          { customer: { email: "a@b.com" } },
+          { "x-shopify-topic": "customers/data_request", "x-shopify-webhook-id": "wh-dr" }
+        )
+      );
+
+      expect(res.status).toBe(200);
+      expect(claimWebhook).toHaveBeenCalledWith(expect.anything(), {
+        webhookId: "wh-dr",
+        topic: "customers/data_request",
+        shop,
+      });
+      expect(sendCustomerDataExport).not.toHaveBeenCalled();
     });
 
     it("customers/data_request still replies 200 if the export fails later", async () => {

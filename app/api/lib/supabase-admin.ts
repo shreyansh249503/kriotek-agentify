@@ -1,19 +1,33 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
-  throw new Error("Missing env.NEXT_PUBLIC_SUPABASE_URL");
-}
-if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-  throw new Error("Missing env.SUPABASE_SERVICE_ROLE_KEY");
+/**
+ * The one service-role Supabase client for server code. It bypasses RLS, so it must never
+ * reach the browser.
+ *
+ * Created on first use rather than at import, so importing a route doesn't throw during
+ * `next build` (or in tests) when the env vars aren't set.
+ */
+let client: SupabaseClient | null = null;
+
+export function getSupabaseAdmin(): SupabaseClient {
+  if (client) return client;
+
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url) throw new Error("Missing env.NEXT_PUBLIC_SUPABASE_URL");
+  if (!serviceRoleKey) throw new Error("Missing env.SUPABASE_SERVICE_ROLE_KEY");
+
+  client = createClient(url, serviceRoleKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  return client;
 }
 
-export const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  }
-);
+/** Same client as getSupabaseAdmin(), usable as a plain import; it's created on first access. */
+export const supabaseAdmin: SupabaseClient = new Proxy({} as SupabaseClient, {
+  get(_target, prop) {
+    const real = getSupabaseAdmin();
+    const value = Reflect.get(real, prop, real);
+    return typeof value === "function" ? value.bind(real) : value;
+  },
+});

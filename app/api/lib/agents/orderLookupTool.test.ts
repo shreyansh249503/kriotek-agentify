@@ -1,8 +1,8 @@
-import { createClient } from "@supabase/supabase-js";
+import { supabaseAdmin } from "@/app/api/lib/supabase-admin";
 import { lookupVerifiedOrder } from "@/lib/shopify/orderLookup";
 import { createOrderLookupTool } from "./orderLookupTool";
 
-jest.mock("@supabase/supabase-js", () => ({ createClient: jest.fn() }));
+jest.mock("@/app/api/lib/supabase-admin");
 jest.mock("@/lib/shopify/orderLookup", () => ({
   ...jest.requireActual("@/lib/shopify/orderLookup"),
   lookupVerifiedOrder: jest.fn(),
@@ -21,9 +21,7 @@ describe("createOrderLookupTool", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.spyOn(console, "error").mockImplementation(() => {});
-    (createClient as jest.Mock).mockReturnValue({
-      from: () => ({ select: () => ({ eq: () => ({ single: mockSingle }) }) }),
-    });
+    (supabaseAdmin.from as jest.Mock).mockImplementation(() => ({ select: () => ({ eq: () => ({ single: mockSingle }) }) }));
     mockSingle.mockResolvedValue({ data: { shop: "s.myshopify.com", access_token: "enc" }, error: null });
   });
 

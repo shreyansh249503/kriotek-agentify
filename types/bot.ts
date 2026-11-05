@@ -70,6 +70,8 @@ export interface Product {
   available?: boolean;
   variants?: ProductVariant[];
   metadata?: ProductMetadata;
+  /** Shopify products: when the product last changed in Shopify (ISO), so older webhooks are ignored. */
+  updated_at?: string;
 }
 
 export interface CreateBotInput {

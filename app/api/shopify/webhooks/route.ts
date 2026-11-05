@@ -1,61 +1,8 @@
 import { NextRequest, NextResponse, after } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
+import { getDb } from "../../lib/db";
 import { markUninstalled, redactCustomer, redactShop, sendCustomerDataExport } from "../lib/compliance";
-
-interface ShopifyProduct {
-  shopify_id: string;
-  name: string;
-  description: string;
-  price: number;
-  currency: string;
-  image?: string;
-  image_url: string | null;
-  images?: string[];
-  url: string;
-  available: boolean;
-  category?: string;
-  brand?: string;
-  variants?: Array<{
-    id?: string | number;
-    title?: string;
-    price?: number;
-    sku?: string;
-    available?: boolean;
-    color?: string;
-    size?: string;
-    style?: string;
-    material?: string;
-  }>;
-  metadata?: Record<string, unknown>;
-}
-
-interface ShopifyWebhookProductPayload {
-  id: number | string;
-  title: string;
-  body_html: string | null;
-  handle: string;
-  product_type?: string;
-  vendor?: string;
-  tags?: string | string[];
-  options?: Array<{
-    name: string;
-    values: string[];
-  }>;
-  variants?: Array<{
-    id?: number | string;
-    title?: string;
-    price?: string;
-    sku?: string;
-    inventory_quantity?: number;
-    option1?: string | null;
-    option2?: string | null;
-    option3?: string | null;
-  }>;
-  images?: Array<{
-    src: string;
-  }>;
-}
+import { applyProductWebhook, claimWebhook, PRODUCT_TOPICS } from "../lib/productWebhooks";
 
 export async function POST(req: NextRequest) {
   try {
@@ -68,6 +15,7 @@ export async function POST(req: NextRequest) {
 
     const shop = req.headers.get("x-shopify-shop-domain");
     const topic = req.headers.get("x-shopify-topic");
+    const webhookId = req.headers.get("x-shopify-webhook-id");
 
     if (!shop || !topic) {
       return NextResponse.json({ error: "Missing headers" }, { status: 400 });
@@ -75,14 +23,13 @@ export async function POST(req: NextRequest) {
 
     const payload = JSON.parse(rawBody);
 
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
-
-    // 1. Mandatory privacy (GDPR) webhooks and uninstall
+    // 1. Mandatory privacy (GDPR) webhooks and uninstall. Redact and uninstall are safe to
+    //    repeat, so only the data request (which emails the merchant) is deduplicated.
     switch (topic) {
       case "customers/data_request": {
+        if (!(await claimWebhook(await getDb(), { webhookId, topic, shop }))) {
+          return NextResponse.json({ ok: true, duplicate: true });
+        }
         const identity = { email: payload?.customer?.email, phone: payload?.customer?.phone };
         // Emailing the merchant can be slow; Shopify only needs a fast 200.
         after(() =>
@@ -107,125 +54,21 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ ok: true });
     }
 
-    // 2. Product and inventory sync handlers
-    const { data: storeData } = await supabase
-      .from("shopify_stores")
-      .select("bot_id")
-      .eq("shop", shop)
-      .single();
-
-    if (!storeData?.bot_id) {
-      return NextResponse.json({ ok: true });
+    // 2. Product sync
+    if (!PRODUCT_TOPICS.has(topic)) {
+      return NextResponse.json({ ok: true, ignored: topic });
+    }
+    if (payload?.id == null) {
+      return NextResponse.json({ error: "Missing product id" }, { status: 400 });
     }
 
-    const { bot_id } = storeData;
-
-    const { data: botData } = await supabase
-      .from("bots")
-      .select("ecommerce_products")
-      .eq("id", bot_id)
-      .single();
-
-    let products: ShopifyProduct[] = (botData?.ecommerce_products as ShopifyProduct[]) ?? [];
-    const productPayload = payload as ShopifyWebhookProductPayload;
-    const shopifyGid = `gid://shopify/Product/${productPayload.id}`;
-
-    switch (topic) {
-      case "products/create":
-      case "products/update": {
-        const updated = mapWebhookProduct(productPayload, shop);
-        const existingIndex = products.findIndex(
-          (p) => p.shopify_id === shopifyGid
-        );
-
-        if (existingIndex >= 0) {
-          products[existingIndex] = updated; 
-        } else {
-          products.push(updated);            
-        }
-        break;
-      }
-
-      case "products/delete": {
-        products = products.filter((p) => p.shopify_id !== shopifyGid);
-        break;
-      }
-    }
-
-    await supabase
-      .from("bots")
-      .update({ ecommerce_products: products })
-      .eq("id", bot_id);
-
-    return NextResponse.json({ ok: true });
+    const result = await applyProductWebhook({ shop, topic, webhookId, payload });
+    return NextResponse.json({ ok: true, result });
   } catch (e) {
+    // A 500 makes Shopify retry; the failed attempt left nothing behind.
     console.error("Error handling Shopify webhook:", e);
     return NextResponse.json({ error: "Webhook handling failed" }, { status: 500 });
   }
-}
-
-function mapWebhookProduct(payload: ShopifyWebhookProductPayload, shop: string): ShopifyProduct {
-  const variant = payload.variants?.[0];
-  const image = payload.images?.[0];
-  const allImages = payload.images?.map((img) => img.src) || [];
-
-  const rawTags = payload.tags;
-  const tagsList = typeof rawTags === "string"
-    ? rawTags.split(",").map((t) => t.trim()).filter(Boolean)
-    : Array.isArray(rawTags)
-      ? rawTags
-      : [];
-
-  const colors = payload.options
-    ?.find((o) => /color|colour/i.test(o.name))
-    ?.values ?? [];
-  const sizes = payload.options
-    ?.find((o) => /size/i.test(o.name))
-    ?.values ?? [];
-  const materials = payload.options
-    ?.find((o) => /material/i.test(o.name))
-    ?.values ?? [];
-  const styles = payload.options
-    ?.find((o) => /style|fit/i.test(o.name))
-    ?.values ?? [];
-
-  const isAvailable = Array.isArray(payload.variants)
-    ? payload.variants.some((v) => typeof v.inventory_quantity === "number" ? v.inventory_quantity > 0 : true)
-    : typeof variant?.inventory_quantity === "number" ? variant.inventory_quantity > 0 : false;
-
-  const mappedVariants = payload.variants?.map((v) => ({
-    id: v.id,
-    title: v.title,
-    price: parseFloat(v.price ?? "0"),
-    sku: v.sku,
-    available: typeof v.inventory_quantity === "number" ? v.inventory_quantity > 0 : true,
-  }));
-
-  return {
-    shopify_id: `gid://shopify/Product/${payload.id}`,
-    name: payload.title,
-    description: payload.body_html?.replace(/<[^>]*>/g, "").trim() ?? "",
-    price: parseFloat(variant?.price ?? "0"),
-    currency: "USD", 
-    image: image?.src ?? "",
-    image_url: image?.src ?? null,
-    images: allImages.length > 0 ? allImages : undefined,
-    url: `https://${shop}/products/${payload.handle}`,
-    available: isAvailable,
-    category: payload.product_type || undefined,
-    brand: payload.vendor || undefined,
-    variants: mappedVariants,
-    metadata: {
-      brand: payload.vendor || undefined,
-      category: payload.product_type || undefined,
-      tags: tagsList.length > 0 ? tagsList : undefined,
-      color: colors.length > 0 ? (colors.length === 1 ? colors[0] : colors) : undefined,
-      size: sizes.length > 0 ? (sizes.length === 1 ? sizes[0] : sizes) : undefined,
-      material: materials.length > 0 ? (materials.length === 1 ? materials[0] : materials) : undefined,
-      style: styles.length > 0 ? (styles.length === 1 ? styles[0] : styles) : undefined,
-      inStock: isAvailable,
-    },
-  };
 }
 
 function isValidWebhookHmac(body: string, hmac: string | null): boolean {

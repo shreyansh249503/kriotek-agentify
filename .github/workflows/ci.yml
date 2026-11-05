@@ -18,7 +18,6 @@ env:
   # E2E dev server need values. Tests mock all network and database access; no secrets are used.
   NEXT_PUBLIC_SUPABASE_URL: https://ci-placeholder.supabase.co
   NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
-  SUPABASE_URL: https://ci-placeholder.supabase.co
   SUPABASE_SERVICE_ROLE_KEY: ci-placeholder-service-role-key
   GOOGLE_GENERATIVE_AI_API_KEY: ci-placeholder
 

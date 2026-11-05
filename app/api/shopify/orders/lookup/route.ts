@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { supabaseAdmin } from "@/app/api/lib/supabase-admin";
 import { lookupVerifiedOrder, MIN_PHONE_DIGITS } from "@/lib/shopify/orderLookup";
 import { checkRateLimit } from "@/app/api/lib/rateLimit";
 import { decryptToken } from "@/app/api/lib/crypto";
-
-const { NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = process.env;
 
 export async function POST(req: NextRequest) {
   try {
@@ -26,15 +24,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const supabase = createClient(
-      NEXT_PUBLIC_SUPABASE_URL!,
-      SUPABASE_SERVICE_ROLE_KEY!
-    );
-
     let targetBotId = bot_id;
 
     if (!targetBotId && public_key) {
-      const { data: bot } = await supabase
+      const { data: bot } = await supabaseAdmin
         .from("bots")
         .select("id")
         .eq("public_key", public_key)
@@ -51,7 +44,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { data: storeData, error: storeError } = await supabase
+    const { data: storeData, error: storeError } = await supabaseAdmin
       .from("shopify_stores")
       .select("shop, access_token")
       .eq("bot_id", targetBotId)

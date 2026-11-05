@@ -28,7 +28,11 @@ export function getSslConfig(env: NodeJS.ProcessEnv = process.env) {
     env.NODE_ENV === "production" || url.includes("supabase.co") || url.includes("supabase.com");
   if (!needsSsl) return undefined;
 
-  const ca = env.SUPABASE_DB_CA_CERT?.replace(/\\n/g, "\n").trim();
+  let ca = env.SUPABASE_DB_CA_CERT?.replace(/\\n/g, "\n").trim();
+  // Accept the bare base64 body too: Node ignores a CA without PEM armour and verification fails.
+  if (ca && !ca.includes("-----BEGIN")) {
+    ca = `-----BEGIN CERTIFICATE-----\n${ca.replace(/\s+/g, "").match(/.{1,64}/g)!.join("\n")}\n-----END CERTIFICATE-----`;
+  }
   if (ca) {
     return { ca, rejectUnauthorized: true };
   }

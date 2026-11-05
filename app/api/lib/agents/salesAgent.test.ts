@@ -179,6 +179,30 @@ describe("salesAgent", () => {
       expect(prompt).toContain("Oversized Heavyweight Hoodie");
       expect(prompt).toContain("<product-carousel>");
       expect(prompt).toContain("CONTACT COLLECTION: Contact collection is still pending (Still need: email)");
+      expect(prompt).not.toContain("MERCHANT SALES INSTRUCTIONS");
+    });
+
+    it("should include the merchant's ecommerce prompt as sales instructions", () => {
+      const prompt = buildSalesSystemPrompt(
+        {
+          companyName: "TrendWear",
+          companyDescription: "Modern streetwear boutique",
+          ecommercePrompt: "  Always mention free shipping over $50.  ",
+        },
+        { websiteContext: "" },
+      );
+
+      expect(prompt).toContain("MERCHANT SALES INSTRUCTIONS");
+      expect(prompt).toContain("Always mention free shipping over $50.");
+    });
+
+    it("should omit the merchant section when the ecommerce prompt is blank", () => {
+      const prompt = buildSalesSystemPrompt(
+        { companyName: "TrendWear", companyDescription: "", ecommercePrompt: "   " },
+        { websiteContext: "" },
+      );
+
+      expect(prompt).not.toContain("MERCHANT SALES INSTRUCTIONS");
     });
   });
 });

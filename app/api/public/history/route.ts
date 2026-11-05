@@ -1,12 +1,11 @@
 import { getDb } from "@/app/api/lib/db";
 import { Conversation, Bot } from "@/app/api/lib/entities";
+import { parseMessages } from "@/app/api/lib/conversations";
 import { In } from "typeorm";
 import { checkRateLimit } from "@/app/api/lib/rateLimit";
 
 const MAX_HISTORY_IDS = 50;
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-type Message = { role: string; content: string };
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -58,8 +57,8 @@ export async function POST(req: Request) {
     const summaries = conversations.map(c => {
       let firstMessage = "";
       try {
-        const msgs = (typeof c.messages === 'string' ? JSON.parse(c.messages) : c.messages) as Message[];
-        if (msgs && msgs.length > 0) {
+        const msgs = parseMessages(c.messages);
+        if (msgs.length > 0) {
           const userMsg = msgs.find((m) => m.role === 'user');
           firstMessage = userMsg ? userMsg.content : msgs[0].content;
         }

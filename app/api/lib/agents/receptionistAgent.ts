@@ -4,6 +4,7 @@ import { buildSystemPrompt, type ContactState } from "../agent";
 import type { LeadDecision } from "./leadAgent";
 import type { Bot } from "../entities";
 import { createOrderLookupTool } from "./orderLookupTool";
+import { getModelName } from "../model";
 
 type Message = { role: "user" | "assistant" | "system"; content: string };
 
@@ -55,7 +56,7 @@ export function runReceptionistAgent({
       }
     : undefined;
 
-  const modelName = process.env.GEMINI_MODEL || "gemini-2.5-flash-lite";
+  const modelName = getModelName();
 
   return streamText({
     model: google(modelName),

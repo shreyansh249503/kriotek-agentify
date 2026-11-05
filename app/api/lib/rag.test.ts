@@ -35,7 +35,7 @@ describe("retrieveWebsiteContext", () => {
 
     const result = await retrieveWebsiteContext("pk_123", "shipping policy");
 
-    expect(createEmbedding).toHaveBeenCalledWith("shipping policy");
+    expect(createEmbedding).toHaveBeenCalledWith("shipping policy", { timeoutMs: 5000 });
     expect(mockQueryBuilder.where).toHaveBeenCalledWith("doc.public_key = :publicKey", { publicKey: "pk_123" });
     expect(mockQueryBuilder.setParameter).toHaveBeenCalledWith("embedding", "[0.1,0.2,0.3]");
     expect(result).toBe("First relevant section.\nSecond relevant section.");
@@ -52,10 +52,19 @@ describe("retrieveWebsiteContext", () => {
     expect(result).toBe("Valid content");
   });
 
-  it("should log error and rethrow when database query fails", async () => {
-    jest.spyOn(console, "error").mockImplementationOnce(() => {});
+  it("should log error and return empty context when database query fails", async () => {
+    const errorSpy = jest.spyOn(console, "error").mockImplementationOnce(() => {});
     mockQueryBuilder.getMany.mockRejectedValueOnce(new Error("Vector DB connection error"));
 
-    await expect(retrieveWebsiteContext("pk_123", "help")).rejects.toThrow("Vector DB connection error");
+    await expect(retrieveWebsiteContext("pk_123", "help")).resolves.toBe("");
+    expect(errorSpy).toHaveBeenCalled();
+  });
+
+  it("should return empty context when the embedding call fails", async () => {
+    jest.spyOn(console, "error").mockImplementationOnce(() => {});
+    (createEmbedding as jest.Mock).mockRejectedValueOnce(new Error("Google Embedding API error: Invalid API key"));
+
+    await expect(retrieveWebsiteContext("pk_123", "help")).resolves.toBe("");
+    expect(mockRepo.createQueryBuilder).not.toHaveBeenCalled();
   });
 });

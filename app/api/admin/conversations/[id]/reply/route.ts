@@ -1,6 +1,7 @@
 import { getDb } from "@/app/api/lib/db";
 import { Conversation } from "@/app/api/lib/entities";
 import { getUserFromRequest } from "@/app/api/lib/auth";
+import { appendMessages } from "@/app/api/lib/conversations";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -54,23 +55,7 @@ export async function POST(
       });
     }
 
-    let history = [];
-    try {
-      history = typeof convo.messages === "string" ? JSON.parse(convo.messages) : convo.messages;
-    } catch {
-      history = [];
-    }
-
-    history.push({
-      role: "assistant",
-      sender: "human",
-      content: message,
-    });
-
-    convo.messages = JSON.stringify(history);
-    convo.message_count += 1;
-
-    await convoRepo.save(convo);
+    await appendMessages(convo.id, [{ role: "assistant", sender: "human", content: message }]);
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
