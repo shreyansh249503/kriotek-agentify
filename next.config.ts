@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs/config";
 
+const widgetCacheControl =
+  process.env.NODE_ENV === "development"
+    ? "no-store, max-age=0"
+    : "public, max-age=300, stale-while-revalidate=86400";
+
 const nextConfig: NextConfig = {
   compiler: {
     styledComponents: true,
@@ -79,15 +84,19 @@ const nextConfig: NextConfig = {
         headers: publicCorsHeaders,
       },
       {
+        // Loaded on every page view of every merchant store. Merchants embed this fixed URL, so the
+        // cache is short: browsers reuse it for 5 minutes, then refresh in the background, and a
+        // fix reaches every store within minutes. Not cached in development so edits show up.
         source: "/widget.js",
         headers: [
           { key: "Access-Control-Allow-Origin", value: "*" },
-          {
-            key: "Cache-Control",
-            value:
-              "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
-          },
+          { key: "Cache-Control", value: widgetCacheControl },
         ],
+      },
+      {
+        // The widget's default bot icon. Replace the file under a new name rather than editing it.
+        source: "/bot-icon.webp",
+        headers: [{ key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=604800" }],
       },
     ];
   },
