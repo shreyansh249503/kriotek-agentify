@@ -1,6 +1,8 @@
 import ReactQueryProvider from "@/lib/react-query-provider";
 import { StyledComponentsRegistry } from "@/styles/registry";
 
+// Root layout for the marketing site and the dashboard. The embedded Shopify admin has its own
+// root layout in app/(shopify) so that only it loads Shopify App Bridge.
 export default function RootLayout({
   children,
 }: {
@@ -8,10 +10,6 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning data-scroll-behavior="smooth">
-      <head>
-        <meta name="shopify-api-key" content={process.env.NEXT_PUBLIC_SHOPIFY_API_KEY} />
-        <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js" async={false}></script>
-      </head>
       <body suppressHydrationWarning>
         <ReactQueryProvider>
           <StyledComponentsRegistry>{children}</StyledComponentsRegistry>

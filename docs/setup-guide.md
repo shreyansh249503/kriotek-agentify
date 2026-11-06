@@ -325,7 +325,7 @@ the server refuses to start and the Vercel function logs list what's wrong.
 | `.env.example` → `CRON_SECRET` | (cleared) | The old value is still in git history: never use it, always generate a new one |
 | `extensions/theme-extension/shopify.extension.toml` | `api_version = "2024-01"` | Consider `2026-04` to match the app |
 
-The marketing site's widget (`app/(landing)/layout.tsx`) now uses `NEXT_PUBLIC_WIDGET_URL` and
+The marketing site's widget (`app/(main)/(landing)/layout.tsx`) now uses `NEXT_PUBLIC_WIDGET_URL` and
 `NEXT_PUBLIC_LANDING_BOT_KEY`, so it needs no code change.
 
 ---

@@ -14,11 +14,6 @@ export default function AdminLayout({
 }) {
   const pathname = usePathname();
   const isAgentCreation = pathname?.startsWith("/admin/agent-creation");
-  const isShopify = pathname?.startsWith("/admin/shopify");
-
-  if (isShopify) {
-    return <>{children}</>;
-  }
 
   if (isAgentCreation) {
     return (

@@ -1,5 +1,5 @@
 import { Page, BrowserContext } from "@playwright/test";
-import { BotConfig } from "@/app/(auth)/admin/shopify/bot/type";
+import { BotConfig } from "@/app/(shopify)/admin/shopify/bot/type";
 
 export interface ShopifyLead {
   id: string;

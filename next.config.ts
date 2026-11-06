@@ -10,6 +10,11 @@ const nextConfig: NextConfig = {
   compiler: {
     styledComponents: true,
   },
+  experimental: {
+    // The site has two root layouts (app/(main) and app/(shopify)), so unknown URLs are answered
+    // by app/global-not-found.tsx.
+    globalNotFound: true,
+  },
   images: {
     remotePatterns: [
       {

@@ -8,9 +8,9 @@ questions, recommends products, captures leads, looks up orders, and hands off t
 
 | Area | Path | Notes |
 |---|---|---|
-| Marketing site | `app/(landing)`, `app/(others)` | Public pages |
-| Dashboard | `app/(auth)/admin` | Bots, inbox (live support), leads, analytics, settings |
-| Embedded Shopify admin | `app/(auth)/admin/shopify` | Loaded inside Shopify admin; framing rules in `proxy.ts` |
+| Marketing site | `app/(main)/(landing)`, `app/(main)/(others)` | Public pages |
+| Dashboard | `app/(main)/(auth)/admin` | Bots, inbox (live support), leads, analytics, settings |
+| Embedded Shopify admin | `app/(shopify)/admin/shopify` | Loaded inside Shopify admin; has its own root layout (loads App Bridge); framing rules in `proxy.ts` |
 | API | `app/api` | Next.js route handlers |
 | Chat agents | `app/api/lib/agents` | Router, receptionist, sales and lead agents (Gemini via AI SDK) |
 | Chat widget | `public/widget.js` | Embedded on merchant sites; talks only to `/api/public/*` and `/api/chat*` |
