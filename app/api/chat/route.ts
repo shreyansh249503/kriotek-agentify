@@ -5,6 +5,7 @@ interface StreamError {
   message?: string;
 }
 import { z } from "zod";
+import * as Sentry from "@sentry/nextjs";
 import type { LanguageModelUsage } from "ai";
 import { getBotByPublicKey } from "../lib/bot";
 import { retrieveWebsiteContext } from "../lib/rag";
@@ -342,6 +343,9 @@ export async function POST(req: Request) {
   } catch (err) {
     // The helper calls already ran, so their tokens still count against the budget.
     recordBotTokenUsage(bot.id, { ...helperUsage, messageCount: 0 }).catch(console.error);
+
+    console.error("[chat] Reply agent failed:", err);
+    Sentry.captureException(err, { tags: { area: "chat_agent" }, extra: { botId: bot.id } });
 
     const error = err as StreamError;
     const isQuota =

@@ -3,6 +3,9 @@
 How to set up, deploy and operate Agentify in production. Steps marked **[account]** need access
 to a third-party dashboard; everything else is in this repo.
 
+For a click-by-click first setup (Supabase, Shopify, Vercel and every environment variable), see
+[setup-guide.md](setup-guide.md).
+
 ## 1. Environments
 
 | | Development | Staging | Production |

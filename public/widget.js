@@ -1,3 +1,173 @@
+(function () {
+  // Safe rendering. Everything the widget shows as HTML goes through escapeHtml or
+  // renderMarkdown, which escape all markup first, so bot replies, agent replies and product
+  // or order data can't inject HTML or scripts into the store's page. No third-party code is
+  // loaded: the widget runs on merchants' storefronts.
+  const WidgetRender = (function () {
+    const HTML_ESCAPES = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+    const HTML_UNESCAPES = { "&amp;": "&", "&lt;": "<", "&gt;": ">", "&quot;": '"', "&#39;": "'" };
+
+    function escapeHtml(value) {
+      return String(value == null ? "" : value).replace(/[&<>"']/g, (c) => HTML_ESCAPES[c]);
+    }
+
+    function unescapeHtml(value) {
+      return String(value).replace(/&(amp|lt|gt|quot|#39);/g, (e) => HTML_UNESCAPES[e]);
+    }
+
+    // http(s) and same-site paths only; javascript:, data:text/html and the like become the fallback.
+    // Images may also use inline data:image URLs, which can't run scripts inside <img>.
+    function safeUrl(value, fallback, options) {
+      const url = String(value == null ? "" : value).trim();
+      if (/^https?:\/\//i.test(url) || /^\/(?!\/)/.test(url)) return url;
+      if (options && options.allowDataImage && /^data:image\/(png|jpe?g|gif|webp|svg\+xml)[;,]/i.test(url)) {
+        return url;
+      }
+      return fallback === undefined ? "#" : fallback;
+    }
+
+    // Colours are interpolated into style attributes, so only plain colour values are allowed.
+    function safeColor(value, fallback) {
+      const color = String(value || "").trim();
+      return /^#[0-9a-f]{3,8}$/i.test(color) ||
+        /^(rgb|hsl)a?\([\d\s.,%]+\)$/i.test(color) ||
+        /^[a-z]{3,20}$/i.test(color)
+        ? color
+        : fallback;
+    }
+
+    // Inline markdown on text that is already escaped: `code`, [links](https://…), bare
+    // URLs, **bold** and *italic*. Generated tags are parked in `slots` so later rules can't
+    // touch them.
+    function renderInline(escaped) {
+      const slots = [];
+      const park = (html) => `\u0000${slots.push(html) - 1}\u0000`;
+
+      let s = escaped.replace(/`([^`\n]+)`/g, (_, code) => park(`<code>${code}</code>`));
+
+      // The URL may contain one level of balanced parentheses, e.g. …/Wiki_(disambiguation).
+      s = s.replace(/\[([^\]\n]+)\]\(((?:[^()\s]|\([^()\s]*\))+)\)/g, (match, label, href) => {
+        const url = safeUrl(unescapeHtml(href), null);
+        if (!url || url.startsWith("/")) return label;
+        return park(`<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${label}</a>`);
+      });
+
+      s = s.replace(/https?:\/\/[^\s<\u0000]+/g, (match) => {
+        let url = match;
+        let tail = "";
+        for (;;) {
+          const trailing = url.match(/(&quot;|&#39;|&gt;|[.,;:!?)\]])$/);
+          if (!trailing) break;
+          tail = trailing[0] + tail;
+          url = url.slice(0, -trailing[0].length);
+        }
+        if (!url) return match;
+        return park(`<a href="${escapeHtml(unescapeHtml(url))}" target="_blank" rel="noopener noreferrer">${url}</a>`) + tail;
+      });
+
+      s = s.replace(/[\w.+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}/g, (email) =>
+        park(`<a href="mailto:${email}">${email}</a>`),
+      );
+
+      s = s
+        .replace(/\*\*([^*\n]+?)\*\*/g, "<strong>$1</strong>")
+        .replace(/__([^_\n]+?)__/g, "<strong>$1</strong>")
+        .replace(/(^|[^\w*])\*([^*\n]+?)\*(?![\w*])/g, "$1<em>$2</em>")
+        .replace(/(^|[^\w_])_([^_\n]+?)_(?![\w_])/g, "$1<em>$2</em>");
+
+      return s.replace(/\u0000(\d+)\u0000/g, (_, i) => slots[Number(i)]);
+    }
+
+    // Block markdown: paragraphs, line breaks, lists, headings, rules and fenced code.
+    // Raw HTML in the text is shown as text, never rendered.
+    function renderMarkdown(text) {
+      const lines = String(text == null ? "" : text).replace(/\r\n?/g, "\n").split("\n");
+      const out = [];
+      let paragraph = [];
+      let list = null;
+
+      const inline = (line) => renderInline(escapeHtml(line));
+      const flushParagraph = () => {
+        if (paragraph.length) out.push(`<p>${paragraph.map(inline).join("<br>")}</p>`);
+        paragraph = [];
+      };
+      const flushList = () => {
+        if (list) {
+          out.push(`<${list.type}>${list.items.map((item) => `<li>${inline(item)}</li>`).join("")}</${list.type}>`);
+        }
+        list = null;
+      };
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+
+        if (/^\s*```/.test(line)) {
+          flushParagraph();
+          flushList();
+          const code = [];
+          while (++i < lines.length && !/^\s*```/.test(lines[i])) code.push(lines[i]);
+          out.push(`<pre><code>${escapeHtml(code.join("\n"))}</code></pre>`);
+          continue;
+        }
+
+        if (!line.trim()) {
+          flushParagraph();
+          flushList();
+          continue;
+        }
+
+        const heading = line.match(/^\s*#{1,6}\s+(.*)$/);
+        if (heading) {
+          flushParagraph();
+          flushList();
+          out.push(`<p><strong>${inline(heading[1])}</strong></p>`);
+          continue;
+        }
+
+        if (/^\s*([-*_])(\s*\1){2,}\s*$/.test(line)) {
+          flushParagraph();
+          flushList();
+          out.push("<hr>");
+          continue;
+        }
+
+        const bullet = line.match(/^\s*[-*+]\s+(.*)$/);
+        const numbered = line.match(/^\s*\d+[.)]\s+(.*)$/);
+        if (bullet || numbered) {
+          flushParagraph();
+          const type = bullet ? "ul" : "ol";
+          if (!list || list.type !== type) {
+            flushList();
+            list = { type, items: [] };
+          }
+          list.items.push((bullet || numbered)[1]);
+          continue;
+        }
+
+        if (list && /^\s{2,}\S/.test(line)) {
+          list.items[list.items.length - 1] += " " + line.trim();
+          continue;
+        }
+
+        flushList();
+        paragraph.push(line);
+      }
+
+      flushParagraph();
+      flushList();
+      return out.join("");
+    }
+
+    return { escapeHtml, safeUrl, safeColor, renderMarkdown };
+  })();
+
+  // Tests load this file with a hook to get the helpers without starting the widget.
+  if (typeof __agentifyWidgetTestHook === "function") {
+    __agentifyWidgetTestHook(WidgetRender);
+    return;
+  }
+  const { escapeHtml, safeUrl, safeColor, renderMarkdown } = WidgetRender;
+
 (async function () {
   const scriptTag =
     document.currentScript ||
@@ -225,7 +395,7 @@
       color: #111827;
       margin-bottom: 6px;
     `;
-    title.innerHTML = `Hello! 👋 I'm <span style="color: ${THEME.color}">${botName}</span>`;
+    title.innerHTML = `Hello! 👋 I'm <span style="color: ${THEME.color}">${escapeHtml(botName)}</span>`;
     wrapper.appendChild(title);
 
     const subtitle = document.createElement("div");
@@ -297,7 +467,7 @@
         width: 100%;
         outline: none;
       `;
-      chip.innerHTML = item.text;
+      chip.textContent = item.text;
 
       chip.onmouseover = () => {
         chip.style.background = `${THEME.color}08`;
@@ -433,15 +603,25 @@
     return null;
   }
 
+  // Cards are swapped for \u0001N\u0001 placeholders so the reply text around them can be
+  // rendered as markdown separately; the card HTML is built only from escaped values.
+  const CARD_PLACEHOLDER = /\u0001(\d+)\u0001/;
+  const NOTE_STYLE = {
+    carousel: "color: #666; font-style: italic; font-size: 12px; padding: 10px;",
+    order: "font-size: 13px; color: #6b7280; font-style: italic; padding: 10px 14px; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 10px; margin: 8px 0;",
+  };
+
   function processAnswerText(rawText) {
-    let text = rawText;
+    let text = String(rawText == null ? "" : rawText).replace(/\u0001/g, "");
+    const cards = [];
+    const addCard = (html) => `\u0001${cards.push(html) - 1}\u0001`;
     if (text.includes("[SHOW_SUPPORT_BUTTON]")) {
       showSupportButtonGlobal = true;
       text = text.replace("[SHOW_SUPPORT_BUTTON]", "");
     }
     text = text.replace(
       /<product-carousel>(?![\s\S]*<\/product-carousel>)[\s\S]*/i,
-      '<div style="color: #666; font-style: italic; font-size: 12px; padding: 10px;">Generating product recommendations...</div>',
+      () => addCard(`<div style="${NOTE_STYLE.carousel}">Generating product recommendations...</div>`),
     );
     text = text.replace(
       /<product-carousel>([\s\S]*?)<\/product-carousel>/gi,
@@ -454,36 +634,38 @@
           const fallbackSvg =
             "data:image/svg+xml;utf8,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20width=%22100%25%22%20height=%22100%25%22%20viewBox=%220%200%2024%2024%22%20fill=%22none%22%20stroke=%22%23ccc%22%20stroke-width=%221%22%20stroke-linecap=%22round%22%20stroke-linejoin=%22round%22%3E%3Crect%20x=%223%22%20y=%223%22%20width=%2218%22%20height=%2218%22%20rx=%222%22%20ry=%222%22%3E%3C/rect%3E%3Ccircle%20cx=%228.5%22%20cy=%228.5%22%20r=%221.5%22%3E%3C/circle%3E%3Cpolyline%20points=%2221%2015%2016%2010%205%2021%22%3E%3C/polyline%3E%3C/svg%3E";
 
+          const navButton = (dir, label, points) =>
+            `<button type="button" class="carousel-nav-btn ${dir}" data-carousel-target="${carouselId}" data-scroll-by="${dir === "prev" ? -220 : 220}" aria-label="${label}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="${points}"></polyline></svg></button>`;
           const showArrows = products.length > 1;
           const isSingle = products.length === 1;
 
           let html = `<div class="carousel-wrapper ${isSingle ? "single-wrapper" : ""}">`;
           if (showArrows) {
-            html += `<button class="carousel-nav-btn prev" onclick="document.getElementById('${carouselId}').scrollBy({left: -220, behavior: 'smooth'})" aria-label="Previous"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg></button>`;
+            html += navButton("prev", "Previous", "15 18 9 12 15 6");
           }
           html += `<div id="${carouselId}" class="product-carousel ${isSingle ? "single-product" : ""}">`;
           products.forEach((p) => {
-            const imgUrl = p.image || p.image_url || fallbackSvg;
-            const safeName = (p.name || "Product").replace(/"/g, "&quot;");
+            const imgUrl = escapeHtml(safeUrl(p.image || p.image_url, fallbackSvg, { allowDataImage: true }));
+            const safeName = escapeHtml(p.name || "Product");
             html += `
             <div class="product-card">
               <div class="product-image-container">
-                <img src="${imgUrl}" class="product-image" alt="${safeName}" onerror="this.src='${fallbackSvg}'"/>
+                <img src="${imgUrl}" class="product-image" alt="${safeName}" data-fallback-src="${fallbackSvg}"/>
               </div>
               <div class="product-info">
-                <div class="product-name" title="${safeName}">${p.name || "Unnamed Product"}</div>
-                <div class="product-price">${p.price || ""}</div>
-                <a class="product-action" href="${p.url || "#"}" target="_blank" rel="noopener noreferrer">View Details</a>
+                <div class="product-name" title="${safeName}">${escapeHtml(p.name || "Unnamed Product")}</div>
+                <div class="product-price">${escapeHtml(p.price || "")}</div>
+                <a class="product-action" href="${escapeHtml(safeUrl(p.url))}" target="_blank" rel="noopener noreferrer">View Details</a>
               </div>
             </div>
           `;
           });
           html += `</div>`;
           if (showArrows) {
-            html += `<button class="carousel-nav-btn next" onclick="document.getElementById('${carouselId}').scrollBy({left: 220, behavior: 'smooth'})" aria-label="Next"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg></button>`;
+            html += navButton("next", "Next", "9 18 15 12 9 6");
           }
           html += `</div>`;
-          return html.replace(/\n\s*/g, "");
+          return addCard(html.replace(/\n\s*/g, ""));
         } catch (e) {
           console.error("Failed to parse product carousel JSON", e);
           return "";
@@ -496,12 +678,12 @@
       if (extracted.isStreaming) {
         text = text.replace(
           extracted.rawTag,
-          '<div style="font-size: 13px; color: #6b7280; font-style: italic; padding: 10px 14px; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 10px; margin: 8px 0;">📦 Loading order details...</div>'
+          () => addCard(`<div style="${NOTE_STYLE.order}">📦 Loading order details...</div>`)
         );
         break;
       } else if (extracted.journey) {
         const cardHtml = renderOrderJourneyHTML(extracted.journey);
-        text = text.replace(extracted.rawTag, cardHtml);
+        text = text.replace(extracted.rawTag, () => addCard(cardHtml));
       } else {
         text = text.replace(extracted.rawTag, "");
       }
@@ -512,74 +694,68 @@
       text = text.replace(/,\s*"items":[\s\S]*/i, "").replace(/,\s*"tracking":[\s\S]*/i, "").replace(/,\s*"shippingAddress":[\s\S]*/i, "").replace(/,\s*"isCancelled":[\s\S]*/i, "").trim();
     }
 
-    return text;
+    return { text, cards };
+  }
+
+  // Wires up card behaviour that used to be inline onclick/onerror attributes.
+  function wireCards(bubble) {
+    bubble.querySelectorAll("[data-carousel-target]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const carousel = document.getElementById(btn.getAttribute("data-carousel-target"));
+        if (carousel) carousel.scrollBy({ left: Number(btn.getAttribute("data-scroll-by")) || 0, behavior: "smooth" });
+      });
+    });
+    bubble.querySelectorAll("img[data-fallback-src]").forEach((img) => {
+      img.addEventListener(
+        "error",
+        () => {
+          img.src = img.getAttribute("data-fallback-src");
+        },
+        { once: true },
+      );
+    });
   }
 
   function updateBubbleHTML(bubble, rawContent) {
     showSupportButtonGlobal = false;
-    const processed = processAnswerText(rawContent);
+    const { text, cards } = processAnswerText(rawContent);
 
-    if (!processed || !processed.trim()) {
+    if (!text.trim()) {
       bubble.style.display = "none";
       return;
     }
     bubble.style.display = "block";
 
-    const hasJourneyCard = processed.includes('class="order-journey-card-container"');
-    const hasCarouselCard = processed.includes('class="carousel-wrapper');
-
-    if (hasJourneyCard || hasCarouselCard) {
+    if (cards.length > 0) {
       bubble.style.background = "transparent";
       bubble.style.padding = "0";
       bubble.style.maxWidth = "95%";
 
-      const cardMarker = hasJourneyCard
-        ? '<div class="order-journey-card-container"'
-        : '<div class="carousel-wrapper';
-
-      const startIndex = processed.indexOf(cardMarker);
-      let textContent = "";
-      let cardHtml = "";
-
-      if (startIndex !== -1) {
-        const textBefore = processed.substring(0, startIndex).trim();
-        const cardAndAfter = processed.substring(startIndex);
-        const cardEndIndex = cardAndAfter.lastIndexOf('</div>');
-
-        if (cardEndIndex !== -1) {
-          cardHtml = cardAndAfter.substring(0, cardEndIndex + 6);
-          const textAfter = cardAndAfter.substring(cardEndIndex + 6).trim();
-          textContent = [textBefore, textAfter].filter(Boolean).join("\n\n");
-        } else {
-          cardHtml = cardAndAfter;
-          textContent = textBefore;
-        }
-      } else {
-        cardHtml = processed;
-      }
-
-      let htmlOut = "";
-      if (textContent) {
-        const textParsed = window.marked ? window.marked.parse(textContent) : textContent;
-        htmlOut += `<div style="background:#f3f4f6; color:#111; padding:10px 14px; border-radius:14px 14px 14px 2px; margin-bottom:8px; display:inline-block; max-width:85%; width:fit-content; font-size:14px; line-height:1.5;">${textParsed}</div>`;
-      }
-      htmlOut += cardHtml;
-      bubble.innerHTML = htmlOut;
+      // split() with a capture group alternates text, card index, text, …
+      bubble.innerHTML = text
+        .split(CARD_PLACEHOLDER)
+        .map((part, i) => {
+          if (i % 2 === 1) return cards[Number(part)] || "";
+          const segment = part.trim();
+          return segment
+            ? `<div style="background:#f3f4f6; color:#111; padding:10px 14px; border-radius:14px 14px 14px 2px; margin-bottom:8px; display:inline-block; max-width:85%; width:fit-content; font-size:14px; line-height:1.5;">${renderMarkdown(segment)}</div>`
+            : "";
+        })
+        .join("");
+      wireCards(bubble);
     } else {
       bubble.style.background = "#f3f4f6";
       bubble.style.padding = "10px 12px";
       bubble.style.maxWidth = "80%";
-      if (window.marked) {
-        bubble.innerHTML = window.marked.parse(processed);
-      } else {
-        bubble.innerHTML = processed;
-      }
+      bubble.innerHTML = renderMarkdown(text);
     }
   }
 
   function renderOrderJourneyHTML(journey) {
     if (!journey || !journey.orderNumber) return "";
-    const items = journey.items || [];
+    const esc = escapeHtml;
+    const items = Array.isArray(journey.items) ? journey.items : [];
+    const currency = esc(journey.currency || "$");
     const tracking = journey.tracking;
 
     let badgeColor = "#10B981";
@@ -605,14 +781,14 @@
       <div class="order-journey-card-container" style="background:#ffffff; border:1px solid #e5e7eb; border-radius:14px; padding:16px; margin:12px 0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; box-shadow:0 4px 16px rgba(0,0,0,0.06); text-align:left; box-sizing:border-box; width:100%;">
         <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px; gap:8px;">
           <div>
-            <div style="font-weight:700; font-size:16px; color:#111827;">Order ${journey.orderNumber}</div>
+            <div style="font-weight:700; font-size:16px; color:#111827;">Order ${esc(journey.orderNumber)}</div>
             <div style="font-size:12px; color:#6b7280; margin-top:2px; font-weight:500;">
-              ${journey.orderDate ? `Placed on ${journey.orderDate}` : ""}
-              ${journey.email ? ` • ${journey.email}` : ""}
+              ${journey.orderDate ? `Placed on ${esc(journey.orderDate)}` : ""}
+              ${journey.email ? ` • ${esc(journey.email)}` : ""}
             </div>
           </div>
           <span style="padding:4px 10px; border-radius:20px; font-size:12px; font-weight:600; color:${badgeColor}; background:${badgeBg}; border:1px solid ${badgeBorder}; white-space:nowrap;">
-            ${journey.statusBadge || "Active"}
+            ${esc(journey.statusBadge || "Active")}
           </span>
         </div>
 
@@ -667,18 +843,18 @@
 
     html += `
       <div style="background:#f9fafb; border-radius:10px; padding:12px 14px; margin-top:12px; border:1px solid #f3f4f6;">
-        <div style="font-size:13px; color:#374151; line-height:1.5; font-weight:500;">${journey.statusDescription || ""}</div>
-        ${journey.shippingAddress ? `<div style="font-size:12px; color:#4b5563; margin-top:6px; display:flex; align-items:center; gap:4px;">📍 <strong>Deliver to:</strong> ${journey.shippingAddress}</div>` : ""}
+        <div style="font-size:13px; color:#374151; line-height:1.5; font-weight:500;">${esc(journey.statusDescription || "")}</div>
+        ${journey.shippingAddress ? `<div style="font-size:12px; color:#4b5563; margin-top:6px; display:flex; align-items:center; gap:4px;">📍 <strong>Deliver to:</strong> ${esc(journey.shippingAddress)}</div>` : ""}
       </div>
     `;
 
     if (tracking && (tracking.url || tracking.number)) {
-      const trackUrl = tracking.url || "#";
-      const carrier = tracking.company || "Carrier";
+      const trackUrl = esc(safeUrl(tracking.url));
+      const carrier = esc(tracking.company || "Carrier");
       html += `
         <a href="${trackUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-flex; align-items:center; gap:8px; margin-top:12px; padding:9px 16px; background:#111827; color:#ffffff !important; border-radius:8px; font-size:13px; font-weight:600; text-decoration:none; box-shadow:0 2px 4px rgba(0,0,0,0.08); transition:background 0.2s;">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-          Track Package (${carrier}${tracking.number ? ` #${tracking.number}` : ""})
+          Track Package (${carrier}${tracking.number ? ` #${esc(tracking.number)}` : ""})
         </a>
       `;
     }
@@ -688,21 +864,23 @@
         <div style="margin-top:16px; border-top:1px solid #f3f4f6; padding-top:12px;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
             <div style="font-size:12px; font-weight:700; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px;">Items in Order (${items.length})</div>
-            ${journey.totalPrice ? `<div style="font-size:12px; font-weight:700; color:#111827;">Total: ${journey.currency || "$"} ${journey.totalPrice}</div>` : ""}
+            ${journey.totalPrice ? `<div style="font-size:12px; font-weight:700; color:#111827;">Total: ${currency} ${esc(journey.totalPrice)}</div>` : ""}
           </div>
           <div style="display:flex; flex-direction:column; gap:8px;">
       `;
       items.forEach((item) => {
-        const img = item.image || "data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44'%3E%3Crect width='44' height='44' fill='%23eee'/%3E%3C/svg%3E";
-        const itemSubtotal = item.price ? (parseFloat(item.price) * item.quantity).toFixed(2) : null;
+        const img = esc(safeUrl(item.image, "data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44'%3E%3Crect width='44' height='44' fill='%23eee'/%3E%3C/svg%3E", { allowDataImage: true }));
+        const subtotal = parseFloat(item.price) * Number(item.quantity);
+        const itemSubtotal = item.price && Number.isFinite(subtotal) ? subtotal.toFixed(2) : null;
+        const itemCurrency = esc(item.currency || "$");
         html += `
           <div style="display:flex; align-items:center; gap:12px; padding:6px 0; border-bottom:1px solid #f9fafb;">
-            <img src="${img}" style="width:44px; height:44px; border-radius:8px; object-fit:cover; background:#f3f4f6; border:1px solid #e5e7eb; flex-shrink:0;" alt="${item.name}" />
+            <img src="${img}" style="width:44px; height:44px; border-radius:8px; object-fit:cover; background:#f3f4f6; border:1px solid #e5e7eb; flex-shrink:0;" alt="${esc(item.name)}" />
             <div style="flex:1; min-width:0;">
-              <div style="font-size:13px; font-weight:600; color:#111827; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.name}</div>
-              <div style="font-size:12px; color:#6b7280; margin-top:2px;">Qty: ${item.quantity} × ${item.currency || "$"} ${item.price || ""}</div>
+              <div style="font-size:13px; font-weight:600; color:#111827; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${esc(item.name)}</div>
+              <div style="font-size:12px; color:#6b7280; margin-top:2px;">Qty: ${esc(item.quantity)} × ${itemCurrency} ${esc(item.price || "")}</div>
             </div>
-            ${itemSubtotal ? `<div style="font-size:13px; font-weight:600; color:#111827; text-align:right; flex-shrink:0;">${item.currency || "$"}${itemSubtotal}</div>` : ""}
+            ${itemSubtotal ? `<div style="font-size:13px; font-weight:600; color:#111827; text-align:right; flex-shrink:0;">${itemCurrency}${itemSubtotal}</div>` : ""}
           </div>
         `;
       });
@@ -713,20 +891,13 @@
       html += `
         <div style="display:flex; justify-content:space-between; align-items:center; margin-top:14px; padding-top:12px; border-top:1px dashed #e5e7eb; font-size:14px; font-weight:700; color:#111827;">
           <span>Order Total</span>
-          <span>${journey.currency || "$"} ${journey.totalPrice}</span>
+          <span>${currency} ${esc(journey.totalPrice)}</span>
         </div>
       `;
     }
 
     html += `</div>`;
     return html;
-  }
-
-  if (!window.marked) {
-    const script = document.createElement("script");
-    script.src = "https://cdn.jsdelivr.net/npm/marked/marked.min.js";
-    script.async = true;
-    document.head.appendChild(script);
   }
 
   function generateUUID() {
@@ -763,13 +934,17 @@
   const bot = resolvedBotConfig || (await fetchBotConfig(publicKey));
   console.log("Agentify Widget: Loaded bot configuration:", bot);
   const THEME = {
-    color: bot.primary_color || "#4f46e5",
+    color: safeColor(bot.primary_color, "#4f46e5"),
     botName: bot.name || "AI Assistant",
-    logoUrl: bot.logo_url
-      ? bot.logo_url.trim().startsWith("http")
-        ? bot.logo_url.trim()
-        : `${API_BASE_URL}${bot.logo_url.trim()}`
-      : DEFAULT_BOT_ICON,
+    logoUrl: safeUrl(
+      bot.logo_url
+        ? bot.logo_url.trim().startsWith("http")
+          ? bot.logo_url.trim()
+          : `${API_BASE_URL}${bot.logo_url.trim()}`
+        : DEFAULT_BOT_ICON,
+      DEFAULT_BOT_ICON,
+      { allowDataImage: true },
+    ),
     ecommerceEnabled: !!bot.ecommerce_enabled,
   };
 
@@ -793,7 +968,7 @@
   const launcher = document.createElement("button");
   launcher.innerHTML = `
     <img 
-      src="${THEME.logoUrl}"
+      src="${escapeHtml(THEME.logoUrl)}"
       alt="chat"
       style="
         width: 100%;
@@ -857,7 +1032,7 @@
       position: relative;">
       <div style="display: flex; align-items: center; gap: 8px;">
         <img 
-          src="${THEME.logoUrl}"
+          src="${escapeHtml(THEME.logoUrl)}"
           class="bot-logo"
           alt="chat"
           style="
@@ -869,7 +1044,7 @@
             background-color: white;
           "
         />
-        <span id="bot-name">${THEME.botName}</span>
+        <span id="bot-name">${escapeHtml(THEME.botName)}</span>
       </div>
       <div style="display: flex; align-items: center; gap: 8px;">
         <button id="ai-menu-btn" style="background:none; border:none; color:white; font-size:24px; font-weight: 700; cursor:pointer; padding: 4px 4px 10px 4px; display: flex; align-items: center; justify-content: center; align-content: center;">...</button>
@@ -1147,7 +1322,8 @@
     }
     #ai-messages::-webkit-scrollbar, #ai-history-list::-webkit-scrollbar { width: 6px; }
     #ai-messages::-webkit-scrollbar-thumb, #ai-history-list::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 10px; }
-    #ai-messages p { margin: 0; display: inline; }
+    #ai-messages p { margin: 0; }
+    #ai-messages p:not(:first-child) { margin-top: 8px; }
     
     .menu-item {
       display: flex;
@@ -1706,7 +1882,7 @@
           });
           item.innerHTML = `
             <div style="font-size: 13px; font-weight: 600; color: ${THEME.color}; margin-bottom: 4px;">${date}</div>
-            <div style="font-size: 13px; color: #4b5563; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${chat.snippet || "(Empty chat)"}</div>
+            <div style="font-size: 13px; color: #4b5563; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(chat.snippet || "(Empty chat)")}</div>
           `;
           item.onclick = () => loadConversation(chat.id);
           historyList.appendChild(item);
@@ -2005,4 +2181,5 @@
   setTimeout(() => {
     openWidget();
   }, 1000);
+})();
 })();

@@ -11,6 +11,9 @@ so they are safe to run against a database that already has data.
 | `20261027000000_init_schema.sql` | Tables, columns, indexes |
 | `20261028000000_lockdown_rls_realtime.sql` | RLS on every table, no Data API access for `anon`, inbox Realtime policy |
 | `20261029000000_shopify_uninstall_tracking.sql` | `shopify_stores.uninstalled_at` (app/uninstalled keeps the row until shop/redact) |
+| `20261104000000_bot_usages_unique.sql` | Merges duplicate usage rows, then `UNIQUE (bot_id, billing_period)` for the token-usage upsert |
+| `20261105000000_conversations_messages_array.sql` | Converts `conversations.messages` stored as JSON text into real arrays; `NOT NULL DEFAULT []` |
+| `20261106000000_shopify_product_webhooks.sql` | `shopify_stores.currency`, webhook dedupe and product-removal tables. **Must be applied before deploying the code that uses it** |
 
 ## Apply migrations
 
@@ -32,6 +35,9 @@ Use the **session** connection string (port 5432), not the transaction pooler (6
 psql "$SESSION_DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261027000000_init_schema.sql
 psql "$SESSION_DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261028000000_lockdown_rls_realtime.sql
 psql "$SESSION_DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261029000000_shopify_uninstall_tracking.sql
+psql "$SESSION_DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261104000000_bot_usages_unique.sql
+psql "$SESSION_DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261105000000_conversations_messages_array.sql
+psql "$SESSION_DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261106000000_shopify_product_webhooks.sql
 ```
 
 ## Adding a migration
