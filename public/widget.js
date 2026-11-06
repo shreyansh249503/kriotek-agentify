@@ -1,4 +1,18 @@
 (function () {
+  // The widget runs on merchants' storefronts, so it stays quiet in their browser console.
+  // Add ?agentify_debug=1 to the page URL to see its errors while debugging.
+  const AGENTIFY_DEBUG = (function () {
+    try {
+      return /[?&]agentify_debug=1(&|$)/.test(window.location.search);
+    } catch {
+      return false;
+    }
+  })();
+
+  function logError() {
+    if (AGENTIFY_DEBUG) console.error.apply(console, arguments);
+  }
+
   // Safe rendering. Everything the widget shows as HTML goes through escapeHtml or
   // renderMarkdown, which escape all markup first, so bot replies, agent replies and product
   // or order data can't inject HTML or scripts into the store's page. No third-party code is
@@ -190,7 +204,7 @@
     ? ASSET_BASE_URL.replace("/public", "")
     : "";
   const DEFAULT_BOT_ICON = ASSET_BASE_URL
-    ? `${ASSET_BASE_URL}/2-bot-icon.png`
+    ? `${ASSET_BASE_URL}/bot-icon.webp`
     : "";
 
   async function fetchBotConfig(pubKey) {
@@ -203,7 +217,7 @@
       if (!res.ok) throw new Error("Bot config not found");
       return await res.json();
     } catch (e) {
-      console.error("Failed to load bot config", e);
+      logError("Failed to load bot config", e);
       return {
         name: "AI Assistant",
         primary_color: "#4f46e5",
@@ -224,7 +238,7 @@
       if (!res.ok) throw new Error("Bot config by shop not found");
       return await res.json();
     } catch (e) {
-      console.error("Failed to load bot config by shop", e);
+      logError("Failed to load bot config by shop", e);
       return null;
     }
   }
@@ -240,7 +254,7 @@
   } else if (shopDomain) {
     const botByShop = await fetchBotConfigByShop(shopDomain);
     if (!botByShop || !botByShop.publicKey) {
-      console.error(
+      logError(
         "Agentify: Could not retrieve bot configuration for shop domain:",
         shopDomain,
       );
@@ -543,7 +557,7 @@
             return { journey, rawTag, isStreaming: false };
           }
         } catch (e) {
-          console.error("Failed to parse order journey JSON:", e);
+          logError("Failed to parse order journey JSON:", e);
         }
       } else {
         const rawTag = text.substring(tagIndex);
@@ -594,7 +608,7 @@
               return { journey, rawTag: rawMatch, isStreaming: false };
             }
           } catch (e) {
-            console.error("Failed to parse order journey JSON:", e);
+            logError("Failed to parse order journey JSON:", e);
           }
         }
       }
@@ -667,7 +681,7 @@
           html += `</div>`;
           return addCard(html.replace(/\n\s*/g, ""));
         } catch (e) {
-          console.error("Failed to parse product carousel JSON", e);
+          logError("Failed to parse product carousel JSON", e);
           return "";
         }
       },
@@ -932,19 +946,17 @@
   }
 
   const bot = resolvedBotConfig || (await fetchBotConfig(publicKey));
-  console.log("Agentify Widget: Loaded bot configuration:", bot);
   const THEME = {
     color: safeColor(bot.primary_color, "#4f46e5"),
     botName: bot.name || "AI Assistant",
-    logoUrl: safeUrl(
-      bot.logo_url
-        ? bot.logo_url.trim().startsWith("http")
-          ? bot.logo_url.trim()
-          : `${API_BASE_URL}${bot.logo_url.trim()}`
-        : DEFAULT_BOT_ICON,
-      DEFAULT_BOT_ICON,
-      { allowDataImage: true },
-    ),
+    // Uploaded logos may be stored as a path on this app ("/uploads/…"); anything else that
+    // isn't an http(s) or data:image URL falls back to the default icon.
+    logoUrl: (function () {
+      const logo = typeof bot.logo_url === "string" ? bot.logo_url.trim() : "";
+      if (!logo) return DEFAULT_BOT_ICON;
+      const absolute = /^\/(?!\/)/.test(logo) ? `${API_BASE_URL}${logo}` : logo;
+      return safeUrl(absolute, DEFAULT_BOT_ICON, { allowDataImage: true });
+    })(),
     ecommerceEnabled: !!bot.ecommerce_enabled,
   };
 
@@ -1588,7 +1600,6 @@
   }
 
   function stopPolling() {
-    console.log("Agentify: stopPolling() called. Stopping subscription/polling timers...");
     if (pollInterval) {
       clearInterval(pollInterval);
       pollInterval = null;
@@ -1678,7 +1689,7 @@
           btn.textContent = "💬 Talk to customer support";
         }
       } catch (err) {
-        console.error("Failed to transition to customer support", err);
+        logError("Failed to transition to customer support", err);
         btn.disabled = false;
         btn.textContent = "💬 Talk to customer support";
       }
@@ -1727,7 +1738,7 @@
         input.placeholder = "Type your message...";
       }
     } catch (e) {
-      console.error("Polling error:", e);
+      logError("Polling error:", e);
     }
   }
 
@@ -1889,7 +1900,7 @@
         });
       }
     } catch (e) {
-      console.error(e);
+      logError(e);
       historyList.innerHTML = `<div style="padding: 20px; text-align: center; color: #ef4444;">Failed to load history.</div>`;
     }
   };
@@ -1972,7 +1983,7 @@
       messages.scrollTop = messages.scrollHeight;
       updateEndChatStatus();
     } catch (e) {
-      console.error(e);
+      logError(e);
       messages.innerHTML = "";
       renderedCount = 0;
       showGreeting();
@@ -2089,7 +2100,7 @@
           }),
         });
       } catch (error) {
-        console.error("Chat error:", error);
+        logError("Chat error:", error);
       }
       return;
     }
@@ -2162,7 +2173,7 @@
 
       updateEndChatStatus();
     } catch (error) {
-      console.error("Chat error:", error);
+      logError("Chat error:", error);
       typing.remove();
       const errType = error && error.message ? error.message : "SERVER_ERROR";
       createErrorCard(messages, errType, () => sendMessageText(text, true));

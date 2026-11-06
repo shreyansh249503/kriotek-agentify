@@ -45,6 +45,13 @@ describe("widget.js", () => {
     expect(source).not.toMatch(/\son(click|error|load|mouseover)=/);
   });
 
+  it("only writes to the console through the debug-only logError helper", () => {
+    const uses = source.match(/console\.\w+/g) ?? [];
+    expect(uses).toEqual(["console.error"]);
+    expect(source).toMatch(/if \(AGENTIFY_DEBUG\) console\.error\.apply\(console, arguments\);/);
+    expect(source).toMatch(/agentify_debug=1/);
+  });
+
   describe("renderMarkdown", () => {
     const { renderMarkdown } = loadHelpers();
 
@@ -124,8 +131,17 @@ describe("widget.js", () => {
 
   describe("running in a page", () => {
     const attack = "<img src=x onerror=\"window.__pwned = true\">";
+    let consoleLog: jest.SpyInstance;
+    let consoleError: jest.SpyInstance;
+
+    afterAll(() => {
+      consoleLog.mockRestore();
+      consoleError.mockRestore();
+    });
 
     beforeAll(async () => {
+      consoleLog = jest.spyOn(console, "log").mockImplementation(() => {});
+      consoleError = jest.spyOn(console, "error").mockImplementation(() => {});
       document.body.innerHTML = '<script bot-id="pk_test" src="https://app.example.com/widget.js"></script>';
       const carousel = JSON.stringify([
         { name: attack, price: "<b>9</b>", url: "javascript:alert(1)", image: "javascript:alert(1)" },
@@ -168,6 +184,20 @@ describe("widget.js", () => {
       expect(document.body.textContent).toContain("Here you go");
       expect(document.querySelector(".product-card")).not.toBeNull();
       expect(document.querySelector(".order-journey-card-container")).not.toBeNull();
+    });
+
+    it("uses the small default bot icon when the bot has no valid logo", () => {
+      const launcherIcon = document.querySelector<HTMLImageElement>('img[alt="chat"]')!;
+      expect(launcherIcon.getAttribute("src")).toBe("https://app.example.com/bot-icon.webp");
+    });
+
+    it("keeps the store's browser console quiet", () => {
+      expect(consoleLog).not.toHaveBeenCalled();
+      // jsdom reports its own unimplemented APIs through console.error; the widget must not.
+      const widgetErrors = consoleError.mock.calls.filter(
+        ([first]) => !(first instanceof Error && /Not implemented/.test(first.message)),
+      );
+      expect(widgetErrors).toEqual([]);
     });
 
     it("never turns bot settings, messages, products or orders into markup", () => {
