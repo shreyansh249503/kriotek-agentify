@@ -1,6 +1,8 @@
 import { getDb } from "../../lib/db";
 import { getUserFromRequest } from "../../lib/auth";
 import { Bot } from "../../lib/entities";
+import { logger } from "../../../../lib/logger";
+import * as Sentry from "@sentry/nextjs";
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -126,18 +128,38 @@ export async function DELETE(
     return Response.json({ error: "Bot not found" }, { status: 404 });
   }
 
-  const botId = bot.id;
-  const publicKey = bot.public_key;
+  // All or nothing: if any step fails the transaction rolls back and the bot stays intact.
+  // The bot row is locked first, so a Shopify sync or URL training writing products waits,
+  // and a bot deleted by a concurrent request is reported as not found.
+  let deleted: boolean;
+  try {
+    deleted = await db.transaction(async (m) => {
+      const locked = await m.query(`SELECT id FROM bots WHERE id = $1 AND user_id = $2 FOR UPDATE`, [
+        bot.id,
+        user.id,
+      ]);
+      if (!Array.isArray(locked) || locked.length === 0) return false;
 
-  if (publicKey) {
-    await db.query(`DELETE FROM bot_documents WHERE public_key = $1`, [publicKey]).catch(() => {});
-    await db.query(`DELETE FROM crawled_pages WHERE bot_public_key = $1`, [publicKey]).catch(() => {});
+      // Knowledge base rows are keyed by public_key, which has no foreign key to bots.
+      if (bot.public_key) {
+        await m.query(`DELETE FROM bot_documents WHERE public_key = $1`, [bot.public_key]);
+        await m.query(`DELETE FROM crawled_pages WHERE bot_public_key = $1`, [bot.public_key]);
+      }
+      // These also cascade from bots; deleted explicitly so the result doesn't depend on the FKs.
+      await m.query(`DELETE FROM leads WHERE bot_id = $1`, [bot.id]);
+      await m.query(`DELETE FROM conversations WHERE bot_id = $1`, [bot.id]);
+      await m.query(`UPDATE shopify_stores SET bot_id = NULL WHERE bot_id = $1`, [bot.id]);
+      await m.query(`DELETE FROM bots WHERE id = $1`, [bot.id]);
+      return true;
+    });
+  } catch (err) {
+    logger.error("[bots] Delete failed, rolled back", err, { botId: bot.id });
+    Sentry.captureException(err, { tags: { area: "bot_delete" }, extra: { botId: bot.id } });
+    return Response.json({ error: "Could not delete bot. Nothing was deleted; please try again." }, { status: 500 });
   }
-  if (botId) {
-    await db.query(`DELETE FROM leads WHERE bot_id = $1`, [botId]).catch(() => {});
-    await db.query(`DELETE FROM conversations WHERE bot_id = $1`, [botId]).catch(() => {});
-    await db.query(`UPDATE shopify_stores SET bot_id = NULL WHERE bot_id = $1`, [botId]).catch(() => {});
-    await db.query(`DELETE FROM bots WHERE id = $1`, [botId]).catch(() => {});
+
+  if (!deleted) {
+    return Response.json({ error: "Bot not found" }, { status: 404 });
   }
 
   return Response.json({ status: "ok", message: "Bot deleted successfully" });
