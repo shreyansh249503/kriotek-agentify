@@ -1,5 +1,6 @@
 import type { EntityManager } from "typeorm";
 import { getDb } from "../../lib/db";
+import { parseProducts } from "../../lib/botProducts";
 import type { Product } from "@/types/bot";
 import {
   fromWebhookProduct,
@@ -47,18 +48,6 @@ export async function claimWebhook(
   return Array.isArray(rows) && rows.length > 0;
 }
 
-function parseProducts(value: unknown): Product[] {
-  if (Array.isArray(value)) return value as Product[];
-  if (typeof value === "string") {
-    try {
-      const parsed = JSON.parse(value);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      return [];
-    }
-  }
-  return [];
-}
 
 function toIso(value: unknown): string | null {
   if (value instanceof Date) return value.toISOString();

@@ -2,19 +2,20 @@ import { getUserFromRequest } from "../lib/auth";
 import { chunkText } from "../lib/chunker";
 import { crawlWebsite } from "../lib/crawler";
 import { getDb } from "../lib/db";
+import { appendCrawledProducts } from "../lib/botProducts";
 import { Bot, CrawledPage } from "../lib/entities";
 import { ingestDocument } from "../lib/ingest";
 import { setupCollection } from "../lib/vector-db-setup";
 import { logger } from "../../../lib/logger";
 
 export async function POST(req: Request) {
-  await setupCollection();
-
   const user = await getUserFromRequest(req);
 
   if (!user) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  await setupCollection();
 
   const { publicKey, url, extractProducts } = await req.json();
 
@@ -62,24 +63,16 @@ export async function POST(req: Request) {
     );
   }
 
+  // The crawl can take minutes. Products are merged into the bot's current list under the bot
+  // row lock rather than saving the bot loaded above, which would overwrite any settings or
+  // products changed in the meantime.
   let productsExtractedCount = 0;
   if (extractProducts && products && products.length > 0) {
-    const existingProducts = bot.ecommerce_products || [];
-    const mergedProducts = [...existingProducts];
-    for (const newProduct of products) {
-      const isDup = mergedProducts.some(
-        (p) =>
-          (p.url && p.url === newProduct.url) ||
-          p.name.toLowerCase() === newProduct.name.toLowerCase(),
-      );
-      if (!isDup) {
-        mergedProducts.push(newProduct);
-        productsExtractedCount++;
-      }
+    const result = await appendCrawledProducts(bot.id, products);
+    if (!result) {
+      return Response.json({ error: "This bot was deleted while the page was being crawled" }, { status: 404 });
     }
-    bot.ecommerce_products = mergedProducts;
-    bot.ecommerce_enabled = true;
-    await db.getRepository("Bot").save(bot);
+    productsExtractedCount = result.added;
   }
 
   const chunks = chunkText(collectedText);

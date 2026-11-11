@@ -3,6 +3,8 @@ import { getUserFromRequest } from "../lib/auth";
 import { crawlWebsite } from "../lib/crawler";
 import { getDb } from "../lib/db";
 import { ingestDocument } from "../lib/ingest";
+import { appendCrawledProducts } from "../lib/botProducts";
+import { setupCollection } from "../lib/vector-db-setup";
 
 if (typeof Request === "undefined") {
   (global as unknown as Record<string, unknown>).Request = class MockRequest {
@@ -47,10 +49,15 @@ jest.mock("../lib/ingest", () => ({
   ingestDocument: jest.fn().mockResolvedValue(undefined),
 }));
 
+jest.mock("../lib/botProducts", () => ({
+  appendCrawledProducts: jest.fn(),
+}));
+
 describe("POST /api/ingest-url", () => {
   const mockedGetUser = getUserFromRequest as jest.Mock;
   const mockedCrawl = crawlWebsite as jest.Mock;
   const mockedGetDb = getDb as jest.Mock;
+  const mockedAppend = appendCrawledProducts as jest.Mock;
 
   const mockFindOne = jest.fn();
   const mockExists = jest.fn();
@@ -58,6 +65,7 @@ describe("POST /api/ingest-url", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockedAppend.mockResolvedValue({ added: 1 });
     mockedGetDb.mockResolvedValue({
       getRepository: (entityName: string) => {
         if (entityName === "Bot") {
@@ -171,8 +179,49 @@ describe("POST /api/ingest-url", () => {
     expect(data.success).toBe(true);
     expect(data.chunksIngested).toBe(2);
     expect(data.productsExtractedCount).toBe(1);
-    expect(mockSave).toHaveBeenCalledTimes(1);
+    // Products go through the locked merge, never a save of the bot loaded before the crawl.
+    expect(mockedAppend).toHaveBeenCalledWith("bot-1", [newProduct]);
+    expect(mockSave).not.toHaveBeenCalled();
     expect(ingestDocument).toHaveBeenCalledTimes(2);
+  });
+
+  it("doesn't touch products when extraction is off", async () => {
+    mockedGetUser.mockResolvedValueOnce({ id: "user-1" });
+    mockFindOne.mockResolvedValueOnce({ id: "bot-1", public_key: "pk_123" });
+    mockExists.mockResolvedValueOnce(false);
+    mockedCrawl.mockResolvedValueOnce({ collectedText: "A".repeat(300), products: [] });
+
+    const req = createRequest({ publicKey: "pk_123", url: "https://example.com" });
+    const res = (await POST(req as unknown as Request)) as unknown as { status: number; json: () => Promise<Record<string, unknown>> };
+
+    expect(res.status).toBe(200);
+    expect(mockedAppend).not.toHaveBeenCalled();
+    expect(mockSave).not.toHaveBeenCalled();
+  });
+
+  it("returns 404 without ingesting when the bot was deleted during the crawl", async () => {
+    mockedGetUser.mockResolvedValueOnce({ id: "user-1" });
+    mockFindOne.mockResolvedValueOnce({ id: "bot-1", public_key: "pk_123" });
+    mockExists.mockResolvedValueOnce(false);
+    mockedCrawl.mockResolvedValueOnce({
+      collectedText: "A".repeat(300),
+      products: [{ name: "P", price: "1", url: "https://example.com/p", image: "" }],
+    });
+    mockedAppend.mockResolvedValueOnce(null);
+
+    const req = createRequest({ publicKey: "pk_123", url: "https://example.com", extractProducts: true });
+    const res = (await POST(req as unknown as Request)) as unknown as { status: number; json: () => Promise<Record<string, unknown>> };
+
+    expect(res.status).toBe(404);
+    expect(ingestDocument).not.toHaveBeenCalled();
+  });
+
+  it("checks login before running database setup", async () => {
+    mockedGetUser.mockResolvedValueOnce(null);
+
+    await POST(createRequest({ publicKey: "pk_123", url: "https://example.com" }) as unknown as Request);
+
+    expect(setupCollection).not.toHaveBeenCalled();
   });
 
   it("should return 400 Bad Request if publicKey is missing", async () => {
@@ -186,7 +235,7 @@ describe("POST /api/ingest-url", () => {
     expect(data.error).toBe("publicKey and url required");
   });
 
-  it("should deduplicate extracted products against existing bot products", async () => {
+  it("reports how many new products the merge added", async () => {
     mockedGetUser.mockResolvedValueOnce({ id: "user-1" });
 
     const existingProduct = { name: "Test Product", price: "29.99", url: "https://example.com/p1", image: "" };
@@ -219,6 +268,9 @@ describe("POST /api/ingest-url", () => {
     expect(res.status).toBe(200);
     expect(data.success).toBe(true);
     expect(data.productsExtractedCount).toBe(1);
-    expect(mockBotObj.ecommerce_products).toHaveLength(2);
+    expect(mockedAppend).toHaveBeenCalledWith("bot-1", [duplicateProduct, brandNewProduct]);
+    // The bot object loaded before the crawl is never modified or saved.
+    expect(mockBotObj.ecommerce_products).toHaveLength(1);
+    expect(mockSave).not.toHaveBeenCalled();
   });
 });
