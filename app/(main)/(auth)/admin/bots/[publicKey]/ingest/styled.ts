@@ -345,3 +345,10 @@ export const ToggleSwitch = styled.div<{ checked: boolean }>`
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   }
 `;
+
+export const FieldError = styled.p`
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #dc2626;
+`;

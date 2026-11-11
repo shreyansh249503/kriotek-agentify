@@ -18,6 +18,7 @@ import {
   List,
 } from "@shopify/polaris";
 import { useSessionToken } from "../lib/useSessionToken";
+import { checkPdfFile, formatFileSize, MAX_PDF_MB } from "@/lib/pdfLimits";
 
 interface CrawledPage {
   id: string;
@@ -98,16 +99,29 @@ export default function TrainingPage() {
   }
 
   const handleDropZoneDrop = useCallback(
-    (_dropFiles: File[], acceptedFiles: File[], _rejectedFiles: File[]) => {
-      if (acceptedFiles.length > 0) {
-        setFile(acceptedFiles[0]);
+    (_dropFiles: File[], acceptedFiles: File[], rejectedFiles: File[]) => {
+      const dropped = acceptedFiles[0] ?? rejectedFiles[0];
+      if (!dropped) return;
+      // Checked on drop, so an oversized PDF is never kept or sent.
+      const problem = checkPdfFile(dropped);
+      if (problem) {
+        setFile(null);
+        setBanner({ tone: "critical", message: problem });
+        return;
       }
+      setBanner(null);
+      setFile(dropped);
     },
     []
   );
 
   async function handlePdfUpload() {
     if (!file || !publicKey) return;
+    const problem = checkPdfFile(file);
+    if (problem) {
+      setBanner({ tone: "critical", message: problem });
+      return;
+    }
     setUploading(true);
     setBanner(null);
 
@@ -178,7 +192,7 @@ export default function TrainingPage() {
         <Text as="p" variant="bodyMd">
           {file.name}{" "}
           <Text as="span" variant="bodySm" tone="subdued">
-            ({Math.round(file.size / 1024)} KB)
+            ({formatFileSize(file.size)})
           </Text>
         </Text>
         <Button variant="plain" tone="critical" onClick={() => setFile(null)}>
@@ -195,7 +209,7 @@ export default function TrainingPage() {
     </BlockStack>
   ) : (
     <DropZone accept="application/pdf" type="file" onDrop={handleDropZoneDrop}>
-      <DropZone.FileUpload actionHint="Accepts .pdf files only" />
+      <DropZone.FileUpload actionHint={`PDF only, up to ${MAX_PDF_MB} MB`} />
     </DropZone>
   );
 

@@ -7,15 +7,12 @@ import { getUserFromRequest } from "../lib/auth";
 import { verifySessionToken, getShopFromSession } from "../shopify/lib/verifySessionToken";
 import { logger } from "../../../lib/logger";
 import PDFParser from "pdf2json";
+// Vercel caps request bodies at 4.5 MB; the upload screens check the same limit before sending.
+import { MAX_PDF_BYTES, PDF_TOO_LARGE_MESSAGE } from "../../../lib/pdfLimits";
 
 // Embedding up to MAX_CHUNKS chunks, 10 at a time, takes well under a minute; this leaves headroom.
 export const maxDuration = 120;
 
-/**
- * Vercel functions accept request bodies up to 4.5 MB, so larger uploads never reach this code.
- * 4 MB leaves room for the multipart form overhead.
- */
-const MAX_PDF_BYTES = 4 * 1024 * 1024;
 const CHUNK_SIZE = 800;
 /** About 160,000 characters of text (roughly 55–80 pages). Longer PDFs are rejected, not cut short. */
 const MAX_CHUNKS = 200;
@@ -115,7 +112,7 @@ export async function POST(req: Request) {
   // Reject oversized uploads before reading the body, when the client says how big it is.
   const declaredLength = Number(req.headers?.get?.("content-length") ?? 0);
   if (declaredLength > MAX_PDF_BYTES + 64 * 1024) {
-    return error(`PDF is too large. The limit is ${MAX_PDF_BYTES / 1024 / 1024} MB.`, 413);
+    return error(PDF_TOO_LARGE_MESSAGE, 413);
   }
 
   let formData: FormData;
@@ -136,12 +133,12 @@ export async function POST(req: Request) {
   }
 
   if (typeof file.size === "number" && file.size > MAX_PDF_BYTES) {
-    return error(`PDF is too large. The limit is ${MAX_PDF_BYTES / 1024 / 1024} MB.`, 413);
+    return error(PDF_TOO_LARGE_MESSAGE, 413);
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
   if (buffer.length > MAX_PDF_BYTES) {
-    return error(`PDF is too large. The limit is ${MAX_PDF_BYTES / 1024 / 1024} MB.`, 413);
+    return error(PDF_TOO_LARGE_MESSAGE, 413);
   }
   // Every PDF starts with "%PDF-"; checking the bytes works whatever the browser says the type is.
   if (buffer.subarray(0, 5).toString("latin1") !== "%PDF-") {

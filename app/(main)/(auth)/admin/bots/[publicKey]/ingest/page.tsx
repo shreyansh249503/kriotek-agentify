@@ -28,7 +28,9 @@ import {
   SourceSectionWrapper,
   ToggleContainer,
   ToggleSwitch,
+  FieldError,
 } from "./styled";
+import { checkPdfFile, formatFileSize, MAX_PDF_MB } from "@/lib/pdfLimits";
 import {
   CloudArrowUpIcon,
   GlobeIcon,
@@ -49,6 +51,7 @@ export default function IngestPage() {
   const [url, setUrl] = useState("");
   const [extractProducts, setExtractProducts] = useState(false);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [pdfError, setPdfError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -60,9 +63,29 @@ export default function IngestPage() {
     pdf?: { success: boolean; chunks?: number; error?: string };
   }>({});
 
+  // Checked when the file is picked, so an oversized PDF is never kept or sent.
+  function handlePdfChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0] ?? null;
+    // Clear the input so picking the same file again still fires onChange.
+    e.target.value = "";
+    if (!file) return;
+    const problem = checkPdfFile(file);
+    setPdfError(problem);
+    setPdfFile(problem ? null : file);
+    if (problem) setError(problem);
+  }
+
   async function ingest() {
     if (!content && !url && !pdfFile) {
-      setError("Please provide at least one source (Text, URL, or PDF)");
+      setError(pdfError ?? "Please provide at least one source (Text, URL, or PDF)");
+      return;
+    }
+
+    // Check every source before starting any of them, so nothing is ingested when one is invalid.
+    const pdfProblem = pdfFile ? checkPdfFile(pdfFile) : null;
+    if (pdfProblem) {
+      setPdfError(pdfProblem);
+      setError(pdfProblem);
       return;
     }
 
@@ -283,18 +306,22 @@ export default function IngestPage() {
                   <input
                     type="file"
                     accept="application/pdf"
-                    onChange={(e) => setPdfFile(e.target.files?.[0] || null)}
+                    onChange={handlePdfChange}
                     style={{ display: "none" }}
                   />
                   {pdfFile ? (
-                    <strong>{pdfFile.name}</strong>
+                    <>
+                      <strong>{pdfFile.name}</strong>
+                      <span>{formatFileSize(pdfFile.size)}</span>
+                    </>
                   ) : (
                     <>
                       <strong>Choose a PDF file</strong>
-                      <span>or drag and drop here</span>
+                      <span>PDF only, up to {MAX_PDF_MB} MB</span>
                     </>
                   )}
                 </FileUploadZone>
+                {pdfError && <FieldError role="alert">{pdfError}</FieldError>}
               </SourceSection>
           </SourceSectionWrapper>
 
