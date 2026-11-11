@@ -5,4 +5,6 @@ export interface BotFormProps {
   onSubmit: (data: CreateBotInput | UpdateBotInput) => void;
   submitLabel: string;
   loading?: boolean;
+  /** Shown above the submit button, e.g. when the API rejects the settings. */
+  error?: string | null;
 }

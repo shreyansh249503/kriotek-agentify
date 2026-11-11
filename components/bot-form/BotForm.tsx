@@ -16,6 +16,7 @@ import {
   FormContainer,
   SideContainer,
   LeftContainer,
+  FormError,
 } from "./styled";
 import { PrimaryButton } from "../buttons";
 
@@ -24,6 +25,7 @@ export const BotForm = ({
   onSubmit,
   submitLabel,
   loading = false,
+  error = null,
 }: BotFormProps) => {
   const defaultValues: CreateBotInput = {
     name: "",
@@ -130,6 +132,7 @@ export const BotForm = ({
             />
           </FormGrid>
 
+          {error && <FormError role="alert">{error}</FormError>}
           <PrimaryButton type="submit" disabled={loading}>
             {loading ? "Saving..." : submitLabel}
           </PrimaryButton>

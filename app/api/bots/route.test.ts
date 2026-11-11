@@ -109,5 +109,56 @@ describe("API: /api/bots", () => {
         })
       );
     });
+
+    describe("validation", () => {
+      const post = (body: string) => POST(new Request("http://localhost/api/bots", { method: "POST", body }));
+
+      beforeEach(() => {
+        (getUserFromRequest as jest.Mock).mockResolvedValueOnce(mockUser);
+      });
+
+      it("returns 400 for a body that isn't JSON", async () => {
+        const res = await post("not json");
+
+        expect(res.status).toBe(400);
+        expect(mockBotRepo.save).not.toHaveBeenCalled();
+      });
+
+      it("returns 400 with the list of problems and saves nothing", async () => {
+        const res = await post(
+          JSON.stringify({
+            name: "",
+            logoUrl: "javascript:alert(1)",
+            ecommerceProducts: Array.from({ length: 5001 }, () => ({ name: "P", price: 1, url: "https://s.test" })),
+          }),
+        );
+        const data = await res.json();
+
+        expect(res.status).toBe(400);
+        expect(data.error).toBe("Some bot settings are invalid");
+        expect(data.details).toEqual([
+          expect.stringMatching(/^name:/),
+          expect.stringMatching(/^logoUrl:/),
+          expect.stringMatching(/^ecommerceProducts:/),
+        ]);
+        expect(mockBotRepo.save).not.toHaveBeenCalled();
+      });
+
+      it("applies defaults and never takes the owner from the body", async () => {
+        const res = await post(JSON.stringify({ name: "Defaults", user_id: "someone-else" }));
+
+        expect(res.status).toBe(200);
+        expect(mockBotRepo.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            name: "Defaults",
+            tone: "friendly",
+            primary_color: "#000000",
+            contact_enabled: false,
+            ecommerce_products: [],
+            user_id: mockUser.id,
+          }),
+        );
+      });
+    });
   });
 });

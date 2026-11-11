@@ -6,6 +6,7 @@ import { NewBotContainer } from "./styled";
 import { useBot, useUpdateBot } from "@/hooks/useBot";
 import { useEffect } from "react";
 import { useBreadcrumb } from "@/context/BreadcrumbContext";
+import { getApiErrorMessage } from "@/lib/apiError";
 
 export default function EditBotPage() {
   const { id } = useParams<{ id: string }>();
@@ -13,7 +14,7 @@ export default function EditBotPage() {
   const { setBreadcrumbMeta } = useBreadcrumb();
 
   const { data: bot, isLoading } = useBot(id);
-  const { mutate, isPending } = useUpdateBot();
+  const { mutate, isPending, error } = useUpdateBot();
 
   const handleSubmit = async (data: UpdateBotInput) => {
     mutate(
@@ -43,6 +44,7 @@ export default function EditBotPage() {
         initialData={bot}
         submitLabel="Update Bot"
         loading={isPending}
+        error={error ? getApiErrorMessage(error, "Couldn't save the bot. Please try again.") : null}
         onSubmit={async (data) => {
           if (bot?.id) {
             await handleSubmit({ ...data, id: bot.id });

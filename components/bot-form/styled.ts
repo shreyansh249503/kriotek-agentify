@@ -202,6 +202,17 @@ export const HelperText = styled.p`
   margin-bottom: 0;
 `;
 
+export const FormError = styled.p`
+  font-size: 14px;
+  color: #b91c1c;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin: 0 0 12px;
+  overflow-wrap: anywhere;
+`;
+
 export const ToggleContainer = styled.label`
   display: flex;
   align-items: center;

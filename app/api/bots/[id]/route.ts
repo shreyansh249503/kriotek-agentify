@@ -1,6 +1,7 @@
 import { getDb } from "../../lib/db";
 import { getUserFromRequest } from "../../lib/auth";
 import { Bot } from "../../lib/entities";
+import { BOT_COLUMNS, UpdateBotSchema, describeIssues, readJson, type UpdateBotData } from "../../lib/botInput";
 import { logger } from "../../../../lib/logger";
 import * as Sentry from "@sentry/nextjs";
 
@@ -60,48 +61,29 @@ export async function PUT(
     return Response.json({ error: "Bot not found" }, { status: 404 });
   }
 
-  const body = await req.json();
-
-  const {
-    name,
-    description,
-    tone,
-    primaryColor,
-    contactEnabled,
-    contactEmail,
-    contactPrompt,
-    contactEmailMessage,
-    logoUrl,
-    ecommerceEnabled,
-    ecommercePrompt,
-    ecommerceProducts,
-    companyName,
-    lastTrainedAt,
-  } = body;
-
-  const updateData: Record<string, unknown> = {
-    name,
-    description,
-    tone,
-    primary_color: primaryColor,
-    contact_enabled: contactEnabled,
-    contact_email: contactEmail,
-    contact_prompt: contactPrompt,
-    contact_email_message: contactEmailMessage,
-    logo_url: logoUrl,
-    ecommerce_enabled: ecommerceEnabled,
-    ecommerce_prompt: ecommercePrompt,
-    ecommerce_products: ecommerceProducts,
-  };
-
-  if (companyName !== undefined) {
-    updateData.company_name = companyName;
+  const body = await readJson(req);
+  if (body === null) {
+    return Response.json({ error: "Request body must be JSON" }, { status: 400 });
   }
-  if (lastTrainedAt !== undefined) {
-    updateData.last_trained_at = lastTrainedAt ? new Date(lastTrainedAt) : new Date();
+  const parsed = UpdateBotSchema.safeParse(body);
+  if (!parsed.success) {
+    return Response.json(
+      { error: "Some bot settings are invalid", details: describeIssues(parsed.error) },
+      { status: 400 },
+    );
   }
 
-  await botRepo.update(bot.id, updateData);
+  // Only the fields that were sent are written.
+  const updateData: Record<string, unknown> = {};
+  for (const [field, column] of Object.entries(BOT_COLUMNS) as [keyof UpdateBotData, string][]) {
+    const value = parsed.data[field];
+    if (value === undefined) continue;
+    updateData[column] = field === "lastTrainedAt" ? (value ? new Date(value as string) : new Date()) : value;
+  }
+
+  if (Object.keys(updateData).length > 0) {
+    await botRepo.update(bot.id, updateData);
+  }
 
   return Response.json({ status: "ok" });
 }

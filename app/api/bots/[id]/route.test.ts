@@ -128,22 +128,85 @@ describe("API: /api/bots/[id]", () => {
       const data = await res.json();
 
       expect(res.status).toBe(200);
-      expect(mockBotRepo.update).toHaveBeenCalledWith(botId, {
-        name: "Updated Bot Name",
-        description: "Updated description",
-        tone: "friendly",
-        primary_color: "#FF0000",
-        contact_enabled: undefined,
-        contact_email: undefined,
-        contact_prompt: undefined,
-        contact_email_message: undefined,
-        logo_url: undefined,
-        ecommerce_enabled: undefined,
-        ecommerce_prompt: undefined,
-        ecommerce_products: undefined,
-      });
+      // Only the fields that were sent are written.
+      expect(mockBotRepo.update.mock.calls[0]).toStrictEqual([
+        botId,
+        {
+          name: "Updated Bot Name",
+          description: "Updated description",
+          tone: "friendly",
+          primary_color: "#FF0000",
+        },
+      ]);
       expect(mockBotRepo.findOne).toHaveBeenCalledWith({ where: { id: botId, user_id: "user_123" } });
       expect(data).toEqual({ status: "ok" });
+    });
+
+    describe("validation", () => {
+      const botId = "123e4567-e89b-12d3-a456-426614174000";
+      const put = (body: string) =>
+        PUT(new Request(`http://localhost/api/bots/${botId}`, { method: "PUT", body }), {
+          params: Promise.resolve({ id: botId }),
+        });
+
+      beforeEach(() => {
+        mockBotRepo.findOne.mockResolvedValueOnce({ id: botId, user_id: "user_123" });
+      });
+
+      it("returns 400 for a body that isn't JSON", async () => {
+        const res = await put("{oops");
+
+        expect(res.status).toBe(400);
+        expect(mockBotRepo.update).not.toHaveBeenCalled();
+      });
+
+      it("returns 400 with the list of problems and updates nothing", async () => {
+        const res = await put(JSON.stringify({ name: "x".repeat(101), primaryColor: "red", tone: "pirate" }));
+        const data = await res.json();
+
+        expect(res.status).toBe(400);
+        expect(data.error).toBe("Some bot settings are invalid");
+        expect(data.details).toEqual([
+          expect.stringMatching(/^name:/),
+          expect.stringMatching(/^tone:/),
+          expect.stringMatching(/^primaryColor:/),
+        ]);
+        expect(mockBotRepo.update).not.toHaveBeenCalled();
+      });
+
+      it("maps every field to its column and ignores unknown ones", async () => {
+        const res = await put(
+          JSON.stringify({
+            contactEnabled: true,
+            contactEmail: "team@store.test",
+            logoUrl: "https://cdn.test/logo.png",
+            ecommerceProducts: [{ name: "Mug", price: 5, url: "https://s.test/mug" }],
+            companyName: "Store Ltd",
+            lastTrainedAt: "2026-11-11T10:00:00.000Z",
+            user_id: "someone-else",
+          }),
+        );
+
+        expect(res.status).toBe(200);
+        expect(mockBotRepo.update.mock.calls[0]).toStrictEqual([
+          botId,
+          {
+            contact_enabled: true,
+            contact_email: "team@store.test",
+            logo_url: "https://cdn.test/logo.png",
+            ecommerce_products: [{ name: "Mug", price: 5, url: "https://s.test/mug" }],
+            company_name: "Store Ltd",
+            last_trained_at: new Date("2026-11-11T10:00:00.000Z"),
+          },
+        ]);
+      });
+
+      it("skips the database write when nothing was sent", async () => {
+        const res = await put("{}");
+
+        expect(res.status).toBe(200);
+        expect(mockBotRepo.update).not.toHaveBeenCalled();
+      });
     });
 
     it("should return 401 and not update when unauthenticated", async () => {

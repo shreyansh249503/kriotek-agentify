@@ -59,6 +59,18 @@ describe("BotForm", () => {
     expect(screen.getByText("Create Bot")).toBeInTheDocument();
   });
 
+  it("shows an error message above the submit button when one is passed", () => {
+    render(<BotForm onSubmit={mockSubmit} submitLabel="Create Bot" error="Some bot settings are invalid: name: is required" />);
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Some bot settings are invalid: name: is required");
+  });
+
+  it("shows no error message by default", () => {
+    render(<BotForm onSubmit={mockSubmit} submitLabel="Create Bot" />);
+
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
   it("should render initial data when provided", () => {
     render(<BotForm initialData={mockBot} onSubmit={mockSubmit} submitLabel="Update Bot" />);
 
